@@ -85,14 +85,11 @@ Create a `.env` file or configure your project secrets:
 ### 3. Application Initialization
 Run the following commands in order:
 ```bash
-# 1. Install all dependencies
+# 1. Install all dependencies (Required for drivers and tools)
 npm install
 
-# 2. Push the schema to the database
+# 2. Push the schema to the database (Uses drizzle.config.ts)
 npm run db:push
-
-# 3. Populate the demo cafes
-npm run db:seed
 ```
 
 ### 4. Development Workflow
