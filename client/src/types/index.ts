@@ -52,6 +52,8 @@ export interface Cafe {
   reviewCount: number;
   featured: boolean;
   trending: boolean;
+  verified?: boolean;
+  coffeeType?: string;
   status: string;
   photos?: CafePhoto[];
   amenities?: CafeAmenity[];

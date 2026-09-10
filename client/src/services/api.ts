@@ -17,3 +17,12 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 
   return result;
 }
+
+export const cafeService = {
+  getAll: (page = 1, limit = 12) => {
+    return fetchApi<any>(`/cafes?page=${page}&limit=${limit}`);
+  },
+  getBySlug: (slug: string) => {
+    return fetchApi<any>(`/cafes/${slug}`);
+  },
+};

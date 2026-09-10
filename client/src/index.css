@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  --color-brand-coffee: #5A3825;
+  --color-brand-coffee-dark: #3B2418;
+  --color-brand-cream: #F8F4ED;
+  --color-brand-background: #FCFAF6;
+  --color-brand-charcoal: #252525;
+  --color-brand-muted: #6B6B6B;
+  --color-brand-accent-green: #5F7358;
+  --color-brand-accent-warm: #C98B52;
+  --color-brand-border: #E7E1D8;
+  --color-brand-success: #3F7D4A;
+  --color-brand-warning: #B7791F;
+  --color-brand-error: #B94A48;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-background text-brand-charcoal font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer utilities {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-spacing {
+    @apply py-16 md:py-24;
+  }
+
+  .editorial-title {
+    @apply font-serif italic font-medium;
+  }
+}

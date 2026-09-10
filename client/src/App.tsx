@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/HomePage.js';
-import ExplorePage from './pages/ExplorePage.js';
-import CafeProfilePage from './pages/CafeProfilePage.js';
-import PlaceholderPage from './pages/PlaceholderPage.js';
+import HomePage from '@/pages/HomePage';
+import ExplorePage from '@/pages/ExplorePage';
+import CafeProfilePage from '@/pages/CafeProfilePage';
+import PlaceholderPage from '@/pages/PlaceholderPage';
 
 export default function App() {
   return (

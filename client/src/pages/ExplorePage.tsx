@@ -1,108 +1,172 @@
-import React, { useEffect, useState } from 'react';
-import MainLayout from '../layouts/MainLayout.js';
-import CafeCard from '../components/CafeCard.js';
-import { LoadingState, ErrorState, EmptyState } from '../components/States.js';
-import { getCafes } from '../services/cafeService.js';
-import { Cafe } from '../types/index.js';
-import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import * as React from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { Button } from "@/components/ui/Button";
+import { CafeCard } from "@/components/cafe/CafeCard";
+import { CafeGrid, CafeGridSkeleton } from "@/components/cafe/CafeGrid";
+import { EmptyState, ErrorState } from "@/components/ui/States";
+import { cafeService } from "@/services/api";
+import { Cafe } from "@/types";
+import { Filter, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 export default function ExplorePage() {
-  const [cafes, setCafes] = useState<Cafe[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [cafes, setCafes] = React.useState<Cafe[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  
+  const page = parseInt(searchParams.get("page") || "1");
+  const query = searchParams.get("q") || "";
+  const [totalPages, setTotalPages] = React.useState(1);
 
   const fetchCafes = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getCafes(page, 12);
+      const response = await cafeService.getAll(page, 12);
       if (response.success) {
         setCafes(response.data);
         setTotalPages(response.pagination.totalPages);
       } else {
-        setError(response.error?.message || 'Failed to load cafes');
+        setError(response.error?.message || "Failed to load cafes");
       }
     } catch (err) {
-      setError('Connection to the coffee server lost. Please try again.');
+      setError("Unable to connect to the server. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchCafes();
-  }, [page]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page, query]);
+
+  const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Explore", href: "/explore" },
+  ];
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <header className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-stone-900 mb-4 tracking-tight">
-            Explore the best <span className="text-amber-800">cafes</span>
-          </h1>
-          <p className="text-lg text-stone-500 max-w-2xl">
-            Discover specialty coffee, quiet study spots, and vibrant social hubs in your neighborhood.
-          </p>
-        </header>
+      <PageHeader 
+        title="Explore Cafes"
+        description="Find coffee shops that match your mood, work style, and taste. Discover specialty brews and local favorites."
+        breadcrumbs={breadcrumbs}
+        background="cream"
+      />
 
-        {/* Search & Filter Placeholder */}
-        <div className="flex flex-col md:flex-row gap-4 mb-12">
-          <div className="relative flex-grow">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" />
-            <input
-              type="text"
-              placeholder="Search by name, city or vibes..."
-              className="w-full bg-white border border-stone-200 rounded-2xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-amber-800 focus:border-transparent transition-all outline-none"
+      <PageContainer className="pb-24">
+        {/* Filters and Search Bar */}
+        <div className="flex flex-col lg:flex-row gap-4 mb-12 -mt-8 relative z-10">
+          <div className="flex-grow">
+            <SearchInput 
+              placeholder="Search by cafe name, location, or vibe..." 
+              value={query}
+              onChange={(e) => {
+                const newParams = new URLSearchParams(searchParams);
+                if (e.target.value) newParams.set("q", e.target.value);
+                else newParams.delete("q");
+                setSearchParams(newParams);
+              }}
+              onClear={() => {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.delete("q");
+                setSearchParams(newParams);
+              }}
+              className="shadow-lg h-14 md:h-16"
             />
           </div>
-          <button className="flex items-center justify-center space-x-2 bg-white border border-stone-200 rounded-2xl px-6 py-4 font-bold text-stone-900 hover:bg-stone-50 transition-colors">
-            <Filter className="h-5 w-5" />
-            <span>Filters</span>
-          </button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="lg" className="h-14 md:h-16 px-6 bg-white shadow-lg">
+              <SlidersHorizontal className="h-5 w-5 mr-2" />
+              Filters
+            </Button>
+            <Button variant="outline" size="lg" className="h-14 md:h-16 px-6 bg-white shadow-lg">
+              Sort
+            </Button>
+          </div>
+        </div>
+
+        {/* Filter Chips Placeholder */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8 pb-2">
+          {["Specialty Coffee", "Quiet Workspace", "Outdoor Seating", "Fast Wi-Fi", "Pet Friendly", "Vegan Options"].map(filter => (
+            <button 
+              key={filter}
+              className="whitespace-nowrap px-4 py-2 rounded-full border border-brand-border bg-white text-sm font-medium text-brand-muted hover:border-brand-coffee hover:text-brand-coffee transition-all"
+            >
+              {filter}
+            </button>
+          ))}
         </div>
 
         {/* Results */}
         {loading ? (
-          <LoadingState />
+          <CafeGridSkeleton />
         ) : error ? (
-          <ErrorState message={error} onRetry={fetchCafes} />
+          <ErrorState onRetry={fetchCafes} />
         ) : cafes.length === 0 ? (
           <EmptyState />
         ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
+          <div className="space-y-12">
+            <div className="flex justify-between items-center border-b border-brand-border pb-4">
+              <span className="text-sm font-medium text-brand-muted">
+                Showing <span className="text-brand-charcoal">{cafes.length}</span> cafes
+              </span>
+              <div className="hidden md:flex gap-1">
+                 {/* Grid/List toggle placeholder */}
+              </div>
+            </div>
+
+            <CafeGrid>
               {cafes.map((cafe) => (
                 <CafeCard key={cafe.id} cafe={cafe} />
               ))}
-            </div>
+            </CafeGrid>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-4">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
+              <div className="flex justify-center items-center gap-4 pt-8">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.set("page", Math.max(1, page - 1).toString());
+                    setSearchParams(newParams);
+                  }}
                   disabled={page === 1}
-                  className="p-2 rounded-full bg-white border border-stone-200 text-stone-600 disabled:opacity-50 hover:bg-stone-50 transition-colors"
                 >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <span className="text-sm font-bold text-stone-900">
-                  Page {page} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-brand-charcoal">
+                    {page}
+                  </span>
+                  <span className="text-sm text-brand-muted">
+                    of {totalPages}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.set("page", Math.min(totalPages, page + 1).toString());
+                    setSearchParams(newParams);
+                  }}
                   disabled={page === totalPages}
-                  className="p-2 rounded-full bg-white border border-stone-200 text-stone-600 disabled:opacity-50 hover:bg-stone-50 transition-colors"
                 >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
               </div>
             )}
-          </>
+          </div>
         )}
-      </div>
+      </PageContainer>
     </MainLayout>
   );
 }
