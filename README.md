@@ -59,6 +59,7 @@ cafefinder/
 │   │   └── seed.ts         # Demo data populator
 │   └── lib/                # Shared utilities (Firebase, etc.)
 ├── drizzle/                # Drizzle migrations (auto-generated)
+├── drizzle.config.ts       # Drizzle configuration
 ├── .env.example            # Configuration template
 └── package.json            # Root configuration & scripts
 ```
