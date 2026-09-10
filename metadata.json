@@ -1,0 +1,6 @@
+{
+  "name": "CafeFinder",
+  "description": "Local coffee shop discovery and directory platform for coffee lovers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
