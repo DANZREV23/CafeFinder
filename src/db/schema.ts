@@ -1,22 +1,19 @@
-import { pgTable, serial, text, varchar, timestamp, integer, boolean, decimal, primaryKey, pgEnum } from "drizzle-orm/pg-core";
+import { mysqlTable, serial, text, varchar, timestamp, int, boolean, decimal, primaryKey, mysqlEnum } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
-export const userRoleEnum = pgEnum("user_role", ["USER", "OWNER", "ADMIN"]);
-export const userStatusEnum = pgEnum("user_status", ["ACTIVE", "INACTIVE", "SUSPENDED"]);
-
-export const users = pgTable("users", {
+export const users = mysqlTable("users", {
   id: serial("id").primaryKey(),
-  uid: text("uid").notNull().unique(), // Firebase UID
+  uid: varchar("uid", { length: 255 }).notNull().unique(), // Firebase UID
   name: text("name").notNull(),
   email: varchar("email", { length: 191 }).notNull().unique(),
   avatarUrl: text("avatar_url"),
-  role: userRoleEnum("role").default("USER").notNull(),
-  status: userStatusEnum("status").default("ACTIVE").notNull(),
+  role: mysqlEnum("role", ["USER", "OWNER", "ADMIN"]).default("USER").notNull(),
+  status: mysqlEnum("status", ["ACTIVE", "INACTIVE", "SUSPENDED"]).default("ACTIVE").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export const cafes = pgTable("cafes", {
+export const cafes = mysqlTable("cafes", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 191 }).notNull().unique(),
@@ -32,70 +29,70 @@ export const cafes = pgTable("cafes", {
   phone: varchar("phone", { length: 50 }),
   email: varchar("email", { length: 100 }),
   website: text("website"),
-  priceRange: integer("price_range").default(1),
+  priceRange: int("price_range").default(1),
   status: varchar("status", { length: 20 }).default("ACTIVE").notNull(),
   verified: boolean("verified").default(false),
   featured: boolean("featured").default(false),
   trending: boolean("trending").default(false),
   ratingAverage: decimal("rating_average", { precision: 3, scale: 2 }).default("0"),
-  reviewCount: integer("review_count").default(0),
-  ownerId: integer("owner_id").references(() => users.id),
+  reviewCount: int("review_count").default(0),
+  ownerId: int("owner_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export const amenities = pgTable("amenities", {
+export const amenities = mysqlTable("amenities", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   label: varchar("label", { length: 100 }).notNull(),
   icon: varchar("icon", { length: 50 }),
 });
 
-export const cafeAmenities = pgTable("cafe_amenities", {
-  cafeId: integer("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
-  amenityId: integer("amenity_id").references(() => amenities.id, { onDelete: "cascade" }).notNull(),
+export const cafeAmenities = mysqlTable("cafe_amenities", {
+  cafeId: int("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
+  amenityId: int("amenity_id").references(() => amenities.id, { onDelete: "cascade" }).notNull(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.cafeId, t.amenityId] }),
 }));
 
-export const cafePhotos = pgTable("cafe_photos", {
+export const cafePhotos = mysqlTable("cafe_photos", {
   id: serial("id").primaryKey(),
   url: text("url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   caption: text("caption"),
   altText: varchar("alt_text", { length: 255 }),
-  sortOrder: integer("sort_order").default(0),
+  sortOrder: int("sort_order").default(0),
   isCover: boolean("is_cover").default(false),
-  cafeId: integer("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
+  cafeId: int("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const cafeHours = pgTable("cafe_hours", {
+export const cafeHours = mysqlTable("cafe_hours", {
   id: serial("id").primaryKey(),
-  dayOfWeek: integer("day_of_week").notNull(),
+  dayOfWeek: int("day_of_week").notNull(),
   openTime: varchar("open_time", { length: 10 }),
   closeTime: varchar("close_time", { length: 10 }),
   isClosed: boolean("is_closed").default(false),
-  cafeId: integer("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
+  cafeId: int("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
 });
 
-export const reviews = pgTable("reviews", {
+export const reviews = mysqlTable("reviews", {
   id: serial("id").primaryKey(),
-  ratingOverall: integer("rating_overall").notNull(),
-  ratingCoffee: integer("rating_coffee").default(0),
-  ratingAmbiance: integer("rating_ambiance").default(0),
-  ratingService: integer("rating_service").default(0),
+  ratingOverall: int("rating_overall").notNull(),
+  ratingCoffee: int("rating_coffee").default(0),
+  ratingAmbiance: int("rating_ambiance").default(0),
+  ratingService: int("rating_service").default(0),
   comment: text("comment"),
   status: varchar("status", { length: 20 }).default("PENDING").notNull(),
-  cafeId: integer("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  cafeId: int("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
+  userId: int("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export const favorites = pgTable("favorites", {
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  cafeId: integer("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
+export const favorites = mysqlTable("favorites", {
+  userId: int("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  cafeId: int("cafe_id").references(() => cafes.id, { onDelete: "cascade" }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.cafeId] }),

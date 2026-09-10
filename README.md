@@ -9,9 +9,9 @@ CafeFinder is a production-ready, mobile-first web application designed for disc
 CafeFinder follows a traditional **Full-Stack (Client/Server)** architecture to ensure high performance, security, and scalability.
 
 - **Mobile-First Design**: The UI is crafted with a focus on small-screen usability without compromising the desktop experience.
-- **Relational Integrity**: Uses **MariaDB** with a normalized schema to manage complex relationships between cafes, amenities, reviews, and hours.
+- **Relational Integrity**: Configured for **MariaDB/MySQL** with **Drizzle ORM** for type-safe, performant queries. (Optimized for local development).
+- **Unified Auth**: Integrated with **Firebase Authentication** for secure, multi-role user management.
 - **Type Safety**: End-to-end TypeScript implementation ensures data consistency from the database layer to the UI components.
-- **Lazy Connectivity**: The application backend is resilient to configuration delays, using lazy initialization for database connections.
 
 ---
 
@@ -23,15 +23,15 @@ CafeFinder follows a traditional **Full-Stack (Client/Server)** architecture to 
 - **Routing**: React Router
 - **Icons**: Lucide React
 - **Animations**: Framer Motion
+- **Auth**: Firebase Client SDK
 
 ### Backend
 - **Runtime**: Node.js & Express
-- **ORM**: Prisma (using stable v5)
-- **Security**: Helmet, CORS, Morgan (logging)
-- **Validation**: Zod (planned for Stage 2)
+- **ORM**: Drizzle ORM
+- **Security**: Firebase Admin SDK, CORS, Morgan (logging)
 
 ### Database
-- **Primary**: MariaDB (connected via the MySQL protocol)
+- **Primary**: MariaDB / MySQL
 
 ---
 
@@ -50,12 +50,15 @@ cafefinder/
 ├── server/                 # Express Backend
 │   ├── src/
 │   │   ├── controllers/    # API request handlers
-│   │   ├── lib/            # Shared utilities (Prisma client)
-│   │   └── routes/         # API endpoint definitions
-├── prisma/                 # Database Layer
-│   ├── schema.prisma       # Database models
-│   └── seed.ts             # Demo data populator
-├── uploads/                # Placeholder for local photo storage
+│   │   ├── routes/         # API endpoint definitions
+│   │   └── middleware/     # Auth and other Express middlewares
+├── src/
+│   ├── db/                 # Database Layer (Drizzle)
+│   │   ├── schema.ts       # Database models
+│   │   ├── index.ts        # Database connection
+│   │   └── seed.ts         # Demo data populator
+│   └── lib/                # Shared utilities (Firebase, etc.)
+├── drizzle/                # Drizzle migrations (auto-generated)
 ├── .env.example            # Configuration template
 └── package.json            # Root configuration & scripts
 ```
@@ -65,18 +68,18 @@ cafefinder/
 ## ⚙️ Detailed Setup & Configuration
 
 ### 1. Database Provisioning
-CafeFinder requires a MariaDB instance.
+Ensure you have a MariaDB or MySQL instance running.
 ```sql
 CREATE DATABASE cafefinder;
 ```
 
 ### 2. Environment Configuration
-Create a `.env` file or configure your project secrets in the AI Studio panel:
-- `DATABASE_URL`: `mysql://USER:PASS@HOST:PORT/cafefinder`
-- `NODE_ENV`: `development`
-- `PORT`: `3000`
-
-> **Note on MariaDB Protocol**: If your provider gives you a `mariadb://` URL, the app automatically normalizes it to `mysql://` for Prisma compatibility.
+Create a `.env` file or configure your project secrets:
+- `DB_HOST`: Database host (e.g., `localhost`)
+- `DB_PORT`: Database port (default `3306`)
+- `DB_USERNAME`: Database user
+- `DB_PASSWORD`: Database password
+- `DB_NAME`: `cafefinder`
 
 ### 3. Application Initialization
 Run the following commands in order:
@@ -84,14 +87,11 @@ Run the following commands in order:
 # 1. Install all dependencies
 npm install
 
-# 2. Generate the Prisma client
-npm run prisma:generate
+# 2. Push the schema to the database
+npm run db:push
 
-# 3. Apply the database schema
-npm run prisma:migrate
-
-# 4. Populate the demo cafes
-npm run prisma:seed
+# 3. Populate the demo cafes
+npm run db:seed
 ```
 
 ### 4. Development Workflow
@@ -110,7 +110,6 @@ The application will be served at `http://localhost:3000`.
 | `GET` | `/api/health` | Service status check |
 | `GET` | `/api/cafes` | Paginated list of active cafes |
 | `GET` | `/api/cafes/:slug` | Detailed cafe profile by URL slug |
-| `POST` | `/api/cafes` | (Stage 2) Create new cafe |
 
 ### Response Format
 Successful requests always return:
@@ -123,17 +122,14 @@ Successful requests always return:
 
 ---
 
-## 🛠️ Internal Mechanics & Fixes
+## 🛠️ Internal Mechanics
 
-### Database Resiliency
-The backend uses a **Lazy Prisma Initialization** pattern. The server will boot even if the `DATABASE_URL` is missing. A connection error will only be triggered when a route actually requests database access, allowing the server to remain "Up" while configuration is finalized.
-
-### URL Protocol Normalization
-In `server/src/lib/prisma.ts`, we handle protocol mismatches. Prisma's `mysql` provider is strict; if a `mariadb://` string is detected, it is silently converted to `mysql://` to ensure the driver functions correctly with standard MariaDB hosts.
+### Auth Middleware
+The backend uses a `requireAuth` middleware (`server/src/middleware/auth.ts`) that verifies Firebase ID tokens sent in the `Authorization: Bearer <token>` header.
 
 ---
 
 ## 🗺️ Roadmap
-- **Stage 1 (Current)**: Core directory foundation, API infrastructure, and exploration views.
-- **Stage 2**: User Authentication, Cafe Ownership Claims, and Photo Uploads.
+- **Stage 1 (Current)**: Managed Cloud SQL & Drizzle foundation, API infrastructure, and exploration views.
+- **Stage 2**: User Authentication (Firebase), Cafe Ownership Claims, and Photo Uploads.
 - **Stage 3**: Advanced Filtering, Map Integrations (Google/Mapbox), and Reviews.
