@@ -1,44 +1,17 @@
 import { Request, Response } from 'express';
-import { db } from '../../../src/db/index.ts';
-import { cafes, cafePhotos, cafeAmenities, amenities, cafeHours, reviews, users } from '../../../src/db/schema.ts';
-import { eq, desc, sql, and, count } from 'drizzle-orm';
+import { cafeService } from '../services/cafe.service.js';
 
 export const getCafes = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 12 } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 12;
 
-    // Fetch cafes with cover photos and amenities
-    const cafesList = await db.query.cafes.findMany({
-      where: eq(cafes.status, 'ACTIVE'),
-      with: {
-        photos: {
-          where: eq(cafePhotos.isCover, true),
-          limit: 1,
-        },
-        amenities: {
-          with: {
-            amenity: true,
-          },
-        },
-      },
-      limit: Number(limit),
-      offset: offset,
-      orderBy: [desc(cafes.createdAt)],
-    });
-
-    const [totalResult] = await db.select({ value: count() }).from(cafes).where(eq(cafes.status, 'ACTIVE'));
-    const total = totalResult.value;
+    const result = await cafeService.getAllCafes(page, limit);
 
     res.json({
       success: true,
-      data: cafesList,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages: Math.ceil(total / Number(limit)),
-      },
+      data: result.cafes,
+      pagination: result.pagination,
     });
   } catch (error: any) {
     console.error('Error fetching cafes:', error);
@@ -52,40 +25,20 @@ export const getCafes = async (req: Request, res: Response) => {
 export const getCafeBySlug = async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    
-    const cafe = await db.query.cafes.findFirst({
-      where: eq(cafes.slug, slug),
-      with: {
-        photos: true,
-        amenities: {
-          with: {
-            amenity: true,
-          },
-        },
-        hours: true,
-        reviews: {
-          where: eq(reviews.status, 'APPROVED'),
-          with: {
-            user: true,
-          },
-          limit: 5,
-          orderBy: [desc(reviews.createdAt)],
-        },
-      },
-    });
-
-    if (!cafe) {
-      return res.status(404).json({
-        success: false,
-        error: { message: 'Cafe not found' },
-      });
-    }
+    const cafe = await cafeService.getCafeBySlug(slug);
 
     res.json({
       success: true,
       data: cafe,
     });
   } catch (error: any) {
+    if (error.message === 'Cafe not found') {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Cafe not found' },
+      });
+    }
+
     console.error('Error fetching cafe by slug:', error);
     res.status(500).json({
       success: false,
