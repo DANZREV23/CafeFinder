@@ -1,35 +1,38 @@
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../../../src/db/index.ts';
+import { cafes, cafePhotos, cafeAmenities, amenities, cafeHours, reviews, users } from '../../../src/db/schema.ts';
+import { eq, desc, sql, and, count } from 'drizzle-orm';
 
 export const getCafes = async (req: Request, res: Response) => {
   try {
     const { page = 1, limit = 12 } = req.query;
-    const skip = (Number(page) - 1) * Number(limit);
+    const offset = (Number(page) - 1) * Number(limit);
 
-    const [cafes, total] = await Promise.all([
-      prisma.cafe.findMany({
-        where: { status: 'ACTIVE' },
-        include: {
-          photos: {
-            where: { isCover: true },
-            take: 1,
-          },
-          amenities: {
-            include: {
-              amenity: true,
-            },
+    // Fetch cafes with cover photos and amenities
+    const cafesList = await db.query.cafes.findMany({
+      where: eq(cafes.status, 'ACTIVE'),
+      with: {
+        photos: {
+          where: eq(cafePhotos.isCover, true),
+          limit: 1,
+        },
+        amenities: {
+          with: {
+            amenity: true,
           },
         },
-        skip,
-        take: Number(limit),
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.cafe.count({ where: { status: 'ACTIVE' } }),
-    ]);
+      },
+      limit: Number(limit),
+      offset: offset,
+      orderBy: [desc(cafes.createdAt)],
+    });
+
+    const [totalResult] = await db.select({ value: count() }).from(cafes).where(eq(cafes.status, 'ACTIVE'));
+    const total = totalResult.value;
 
     res.json({
       success: true,
-      data: cafes,
+      data: cafesList,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -38,6 +41,7 @@ export const getCafes = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
+    console.error('Error fetching cafes:', error);
     res.status(500).json({
       success: false,
       error: { message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch cafes' },
@@ -48,25 +52,24 @@ export const getCafes = async (req: Request, res: Response) => {
 export const getCafeBySlug = async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const cafe = await prisma.cafe.findUnique({
-      where: { slug },
-      include: {
+    
+    const cafe = await db.query.cafes.findFirst({
+      where: eq(cafes.slug, slug),
+      with: {
         photos: true,
         amenities: {
-          include: {
+          with: {
             amenity: true,
           },
         },
         hours: true,
         reviews: {
-          where: { status: 'APPROVED' },
-          include: {
-            user: {
-              select: { name: true, avatar: true },
-            },
+          where: eq(reviews.status, 'APPROVED'),
+          with: {
+            user: true,
           },
-          take: 5,
-          orderBy: { createdAt: 'desc' },
+          limit: 5,
+          orderBy: [desc(reviews.createdAt)],
         },
       },
     });
@@ -83,6 +86,7 @@ export const getCafeBySlug = async (req: Request, res: Response) => {
       data: cafe,
     });
   } catch (error: any) {
+    console.error('Error fetching cafe by slug:', error);
     res.status(500).json({
       success: false,
       error: { message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to fetch cafe details' },
