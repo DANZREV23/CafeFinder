@@ -9,6 +9,20 @@ import { execSync } from 'child_process';
  */
 
 let url = process.env.DATABASE_URL;
+
+// If separate components are fully provided, we prioritize constructing a fresh URL
+// to ensure we have a valid protocol and all parts correctly assembled.
+if (process.env.DB_HOST && process.env.DB_USERNAME && process.env.DB_PASSWORD && process.env.DB_NAME) {
+  const host = process.env.DB_HOST;
+  const port = process.env.DB_PORT || '3306';
+  const user = process.env.DB_USERNAME;
+  const pass = process.env.DB_PASSWORD;
+  const db = process.env.DB_NAME;
+  
+  url = `mysql://${user}:${pass}@${host}:${port}/${db}`;
+  console.log(`[Prisma Fix]: Using constructed DATABASE_URL from DB_* variables.`);
+}
+
 console.log(`[Prisma Fix]: Initial DATABASE_URL: ${url ? url.split('@')[1] || 'URL present but no @ found' : 'undefined'}`);
 
 if (url) {

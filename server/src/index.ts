@@ -2,12 +2,24 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Normalize DATABASE_URL protocol for Prisma at the very start
-if (process.env.DATABASE_URL?.startsWith('mariadb://') || process.env.DATABASE_URL?.startsWith('mariadbs://')) {
-  const normalized = process.env.DATABASE_URL.replace(/^mariadb(s)?:\/\//, 'mysql://');
+let dbUrl = process.env.DATABASE_URL;
+
+if (process.env.DB_HOST && process.env.DB_USERNAME && process.env.DB_PASSWORD && process.env.DB_NAME) {
+  const host = process.env.DB_HOST;
+  const port = process.env.DB_PORT || '3306';
+  const user = process.env.DB_USERNAME;
+  const pass = process.env.DB_PASSWORD;
+  const db = process.env.DB_NAME;
+  dbUrl = `mysql://${user}:${pass}@${host}:${port}/${db}`;
+  process.env.DATABASE_URL = dbUrl;
+}
+
+if (dbUrl?.startsWith('mariadb://') || dbUrl?.startsWith('mariadbs://')) {
+  const normalized = dbUrl.replace(/^mariadb(s)?:\/\//, 'mysql://');
   process.env.PRISMA_DATABASE_URL = normalized;
   process.env.DATABASE_URL = normalized; // Overwrite for consistency
-} else if (process.env.DATABASE_URL) {
-  process.env.PRISMA_DATABASE_URL = process.env.DATABASE_URL;
+} else if (dbUrl) {
+  process.env.PRISMA_DATABASE_URL = dbUrl;
 }
 
 import { createApp } from './app.js';
