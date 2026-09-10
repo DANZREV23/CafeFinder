@@ -1,8 +1,8 @@
-import { mysqlTable, serial, text, varchar, timestamp, int, boolean, decimal, primaryKey, mysqlEnum } from "drizzle-orm/mysql-core";
+import { mysqlTable, serial, text, varchar, timestamp, int, boolean, decimal, primaryKey, mysqlEnum, bigint } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 export const users = mysqlTable("users", {
-  id: serial("id").primaryKey(),
+  id: int("id").primaryKey().autoincrement(),
   uid: varchar("uid", { length: 255 }).notNull().unique(), // Firebase UID
   name: text("name").notNull(),
   email: varchar("email", { length: 191 }).notNull().unique(),
@@ -14,7 +14,7 @@ export const users = mysqlTable("users", {
 });
 
 export const cafes = mysqlTable("cafes", {
-  id: serial("id").primaryKey(),
+  id: int("id").primaryKey().autoincrement(),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 191 }).notNull().unique(),
   description: text("description"),
@@ -42,7 +42,7 @@ export const cafes = mysqlTable("cafes", {
 });
 
 export const amenities = mysqlTable("amenities", {
-  id: serial("id").primaryKey(),
+  id: int("id").primaryKey().autoincrement(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   label: varchar("label", { length: 100 }).notNull(),
   icon: varchar("icon", { length: 50 }),
@@ -56,7 +56,7 @@ export const cafeAmenities = mysqlTable("cafe_amenities", {
 }));
 
 export const cafePhotos = mysqlTable("cafe_photos", {
-  id: serial("id").primaryKey(),
+  id: int("id").primaryKey().autoincrement(),
   url: text("url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   caption: text("caption"),
@@ -68,7 +68,7 @@ export const cafePhotos = mysqlTable("cafe_photos", {
 });
 
 export const cafeHours = mysqlTable("cafe_hours", {
-  id: serial("id").primaryKey(),
+  id: int("id").primaryKey().autoincrement(),
   dayOfWeek: int("day_of_week").notNull(),
   openTime: varchar("open_time", { length: 10 }),
   closeTime: varchar("close_time", { length: 10 }),
@@ -77,7 +77,7 @@ export const cafeHours = mysqlTable("cafe_hours", {
 });
 
 export const reviews = mysqlTable("reviews", {
-  id: serial("id").primaryKey(),
+  id: int("id").primaryKey().autoincrement(),
   ratingOverall: int("rating_overall").notNull(),
   ratingCoffee: int("rating_coffee").default(0),
   ratingAmbiance: int("rating_ambiance").default(0),
