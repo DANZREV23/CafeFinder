@@ -19,10 +19,9 @@ export default function HomePage() {
   React.useEffect(() => {
     const fetchCafes = async () => {
       try {
-        const response = await cafeService.getAll();
+        const response = await cafeService.getAll({ trending: true, limit: 4 });
         if (response.success) {
-          // For now just take first 4 as trending
-          setTrendingCafes(response.data.slice(0, 4));
+          setTrendingCafes(response.data);
         }
       } catch (error) {
         console.error("Failed to fetch trending cafes:", error);

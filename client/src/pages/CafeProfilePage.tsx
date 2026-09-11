@@ -203,11 +203,11 @@ export default function CafeProfilePage() {
               <h2 className="text-2xl font-serif text-brand-charcoal">Amenities & Features</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {cafe.amenities?.map((ca) => (
-                  <div key={ca.amenityId} className="flex items-center gap-3 p-4 rounded-xl border border-brand-border bg-white shadow-xs">
+                  <div key={ca.amenity.id} className="flex items-center gap-3 p-4 rounded-xl border border-brand-border bg-white shadow-xs">
                     <div className="text-brand-coffee shrink-0">
                       <Check className="h-4 w-4" />
                     </div>
-                    <span className="text-sm font-medium text-brand-charcoal">{ca.amenity.label}</span>
+                    <span className="text-sm font-medium text-brand-charcoal">{ca.amenity.name}</span>
                   </div>
                 ))}
               </div>
@@ -276,7 +276,7 @@ export default function CafeProfilePage() {
               <h3 className="font-serif font-bold text-brand-charcoal">Location</h3>
               <div className="text-sm text-brand-muted space-y-1">
                 <p>{cafe.address}</p>
-                <p>{cafe.city}, {cafe.state} {cafe.zipCode}</p>
+                <p>{cafe.city}, {cafe.state} {cafe.postalCode}</p>
               </div>
               <div className="aspect-square bg-brand-cream/50 rounded-2xl flex items-center justify-center border border-dashed border-brand-border">
                 <span className="text-xs text-brand-muted font-medium">Map View Placeholder</span>

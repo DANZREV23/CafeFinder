@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import * as cafeController from '../controllers/cafe.controller.js';
+import { CafeController } from '../controllers/cafeController.js';
 
 const router = Router();
+const cafeController = new CafeController();
 
-router.get('/', cafeController.getCafes);
-router.get('/:slug', cafeController.getCafeBySlug);
-router.post('/', cafeController.createCafe);
-router.put('/:id', cafeController.updateCafe);
-router.delete('/:id', cafeController.deleteCafe);
+router.get('/', cafeController.getAll);
+router.get('/:slug', cafeController.getBySlug);
+router.post('/', cafeController.create);
+router.put('/:id', cafeController.update);
+router.delete('/:id', cafeController.delete);
 
 export default router;

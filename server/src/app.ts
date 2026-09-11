@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
+import { errorHandler } from './middleware/errorHandler.js';
 
 // Routes
 import cafeRoutes from './routes/cafe.routes.js';
@@ -51,18 +52,7 @@ export async function createApp() {
   }
 
   // Centralized Error Handling
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(err.stack);
-    const status = err.status || 500;
-    const message = err.message || 'Something went wrong';
-    
-    res.status(status).json({
-      success: false,
-      error: {
-        message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : message,
-      },
-    });
-  });
+  app.use(errorHandler);
 
   return app;
 }
