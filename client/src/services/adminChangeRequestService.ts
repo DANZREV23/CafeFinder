@@ -1,0 +1,3 @@
+import { fetchApi } from './api';
+import { ApiResponse } from '../types';
+export const adminChangeRequestService = { getRequests: (params: Record<string,string> = {}) => { const query = new URLSearchParams(params); return fetchApi<ApiResponse<any[]>>(`/admin/change-requests?${query}`); }, getRequest: (id: string) => fetchApi<ApiResponse<any>>(`/admin/change-requests/${id}`), approve: (id: string) => fetchApi<ApiResponse<any>>(`/admin/change-requests/${id}/approve`, { method: 'POST' }), reject: (id: string, reason: string) => fetchApi<ApiResponse<any>>(`/admin/change-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }) };

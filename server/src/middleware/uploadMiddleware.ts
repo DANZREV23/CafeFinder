@@ -3,6 +3,7 @@ import path from 'path';
 import { 
   REVIEW_UPLOAD_DIR, 
   SUBMISSION_UPLOAD_DIR,
+  OWNER_UPLOAD_DIR,
   MAX_FILE_SIZE, 
   ALLOWED_MIME_TYPES 
 } from '../config/upload.js';
@@ -30,6 +31,11 @@ const submissionStorage = multer.diskStorage({
   },
 });
 
+const ownerStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, OWNER_UPLOAD_DIR),
+  filename: (_req, file, cb) => cb(null, `cafe-${crypto.randomBytes(8).toString('hex')}${path.extname(file.originalname).toLowerCase()}`),
+});
+
 const fileFilter = (req: any, file: any, cb: any) => {
   if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
@@ -51,5 +57,11 @@ export const uploadSubmissionPhoto = multer({
   limits: {
     fileSize: MAX_FILE_SIZE,
   },
+  fileFilter,
+});
+
+export const uploadOwnerPhoto = multer({
+  storage: ownerStorage,
+  limits: { fileSize: MAX_FILE_SIZE },
   fileFilter,
 });

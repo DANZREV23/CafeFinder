@@ -47,6 +47,23 @@ enum ClaimStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELLED
+}
+
+enum CafeChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum CafeChangeRequestType {
+  BUSINESS_INFO
+  LOCATION
+  HOURS
+  AMENITIES
+  PHOTOS
+  OTHER
 }
 
 enum CafeSubmissionStatus {
@@ -70,12 +87,15 @@ model User {
   ownedCafes      Cafe[]           @relation("CafeOwner")
   reviews         CafeReview[]
   favorites       CafeFavorite[]
-  claims          CafeOwnerClaim[]
+  claims          CafeOwnerClaim[] @relation("ClaimantClaims")
+  reviewedClaims  CafeOwnerClaim[] @relation("ClaimReviewer")
   blogPosts       BlogPost[]
   notifications   Notification[]
   activityLogs    ActivityLog[]
   sessions        Session[]
   cafeSubmissions CafeSubmission[] @relation("CafeSubmitter")
+  changeRequests  CafeChangeRequest[] @relation("ChangeRequestOwner")
+  reviewedChangeRequests CafeChangeRequest[] @relation("ChangeRequestReviewer")
 
   @@map("users")
 }
@@ -136,6 +156,7 @@ model Cafe {
   claims      CafeOwnerClaim[]
   curatedList CuratedListCafe[]
   submission  CafeSubmission?  @relation("CafeCreatedFrom")
+  changeRequests CafeChangeRequest[]
 
   @@index([status])
   @@index([city])
@@ -143,6 +164,7 @@ model Cafe {
   @@index([trending])
   @@index([ratingAverage])
   @@index([createdAt])
+  @@index([ownerId])
   @@map("cafes")
 }
 
@@ -300,23 +322,60 @@ model CafeReviewPhoto {
 }
 
 model CafeOwnerClaim {
-  id                     String      @id @default(cuid())
-  cafeId                 String
-  userId                 String
-  businessName           String
+  id                      String      @id @default(cuid())
+  cafeId                  String
+  userId                  String
+  businessName            String
+  contactName             String?
+  contactEmail            String?
+  contactPhone            String?
+  website                 String?
+  message                 String?     @db.Text
   verificationInformation String?     @db.Text
-  status                 ClaimStatus @default(PENDING)
-  submittedAt            DateTime    @default(now())
-  reviewedAt             DateTime?
-  reviewedBy             String?
+  verificationNotes       String?     @db.Text
+  rejectionReason         String?     @db.Text
+  status                  ClaimStatus @default(PENDING)
+  submittedAt             DateTime    @default(now())
+  reviewedAt              DateTime?
+  reviewedById            String?
 
-  cafe Cafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cafe       Cafe  @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  user       User  @relation("ClaimantClaims", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("ClaimReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([cafeId])
   @@index([userId])
   @@index([status])
+  @@index([submittedAt])
+  @@index([reviewedAt])
   @@map("cafe_owner_claims")
+}
+
+model CafeChangeRequest {
+  id            String                    @id @default(cuid())
+  cafeId        String
+  requestedById String
+  type          CafeChangeRequestType
+  status        CafeChangeRequestStatus   @default(PENDING)
+  payload       Json
+  reason        String?                   @db.Text
+  adminNotes    String?                   @db.Text
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  cafe        Cafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  requestedBy User @relation("ChangeRequestOwner", fields: [requestedById], references: [id], onDelete: Cascade)
+  reviewedBy  User? @relation("ChangeRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([cafeId])
+  @@index([requestedById])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@index([reviewedAt])
+  @@map("cafe_change_requests")
 }
 
 model CafeFavorite {

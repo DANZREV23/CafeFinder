@@ -591,6 +591,47 @@ async function main() {
     }
   }
 
+  // 4b. Seed owner claim scenarios
+  await prisma.cafe.update({ where: { id: createdCafes[0].id }, data: { ownerId: owner.id } });
+  await prisma.cafeOwnerClaim.create({
+    data: {
+      cafeId: createdCafes[0].id,
+      userId: owner.id,
+      businessName: 'Cafe Owner Demo',
+      contactName: 'Cafe Owner',
+      contactEmail: owner.email,
+      message: 'Approved demo ownership claim.',
+      status: 'APPROVED',
+      reviewedById: admin.id,
+      reviewedAt: new Date(),
+    },
+  });
+  await prisma.cafeOwnerClaim.create({
+    data: {
+      cafeId: createdCafes[1].id,
+      userId: user.id,
+      businessName: 'Community Coffee Demo',
+      contactName: 'Regular User',
+      contactEmail: user.email,
+      message: 'Pending demo ownership claim for admin review.',
+      status: 'PENDING',
+    },
+  });
+  await prisma.cafeOwnerClaim.create({
+    data: {
+      cafeId: createdCafes[2].id,
+      userId: maria.id,
+      businessName: 'Rejected Demo Cafe',
+      contactName: 'Maria Santos',
+      contactEmail: maria.email,
+      message: 'Rejected demo claim retained for history.',
+      status: 'REJECTED',
+      rejectionReason: 'Please provide additional authorization details.',
+      reviewedById: admin.id,
+      reviewedAt: new Date(),
+    },
+  });
+
   // 5. Seed Reviews
   console.log('⭐ Seeding reviews...');
   const reviews = [

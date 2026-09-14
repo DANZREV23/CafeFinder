@@ -73,6 +73,7 @@ export interface Cafe {
   reviews?: CafeReview[];
   relatedCafes?: Cafe[];
   isFavorite?: boolean;
+  claimStatus?: 'AVAILABLE' | 'PENDING' | 'MANAGED' | 'OWNED';
 }
 
 export interface CuratedList {

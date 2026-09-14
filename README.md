@@ -1,140 +1,606 @@
-# ☕ CafeFinder Davao
+# CafeFinder Davao
 
-CafeFinder Davao is a high-performance, mobile-first web application dedicated to discovering the vibrant coffee scene in Davao City. It serves as a community-driven directory where enthusiasts can explore, rate, and contribute to a curated list of local specialty coffee shops.
+CafeFinder Davao is a full-stack cafe discovery and ownership platform for Davao City. Visitors can explore published cafes, search and filter listings, view maps and profiles, save favorites, and read reviews. Authenticated users can submit cafes and reviews, while approved cafe owners receive a secure management workspace.
 
----
+## Current Features
 
-## 🏗️ Architecture & Design Philosophy
+### Discovery and Public Directory
 
-CafeFinder is built on a modern **Full-Stack (Client/Server)** architecture designed for responsiveness and reliability.
+- Browse published cafes from the home and Explore pages.
+- Search by cafe name, description, city, and address.
+- Filter by city, price range, amenities, rating, verified status, featured status, and trending status.
+- Sort by latest, name, rating, and popularity.
+- View cafes on the configured Google Maps interface.
+- Open detailed cafe profiles with photos, hours, amenities, contact information, social links, directions, related cafes, and public reviews.
+- Use responsive layouts on desktop, tablet, and mobile screens.
 
-- **Community-First**: Beyond a simple directory, users can submit new cafes, share reviews, and claim ownership of their business.
-- **Mobile-First UX**: Optimized for the on-the-go coffee explorer, with smooth transitions and touch-friendly interfaces.
-- **Relational Data**: Powered by **PostgreSQL** and **Prisma ORM**, ensuring data integrity for complex relationships (Cafes, Reviews, Submissions, Claims).
-- **Secure by Design**: Integrated with a custom **HTTP-only cookie session authentication** system for robust user management and role-based access control.
+### Accounts and Authentication
 
----
+- Register and sign in with email and password.
+- Use database-backed sessions stored in the `Session` model.
+- Authenticate with an HTTP-only cookie. The browser does not use localStorage for authentication tokens.
+- Sessions persist across refreshes and navigation.
+- Roles:
+  - `USER`: normal authenticated user.
+  - `OWNER`: user with at least one administrator-approved cafe claim.
+  - `ADMIN`: platform administrator.
+- Role and status changes are server-controlled.
+- Logout invalidates the current session.
 
-## 🚀 Technology Stack
+### Reviews and Favorites
+
+- Authenticated users can create reviews with ratings and comments.
+- Review photos can be uploaded using JPEG, PNG, or WebP files up to 10 MB each.
+- Users can edit and delete their own reviews according to the existing review rules.
+- Administrators can approve, reject, hide, restore, and moderate reviews.
+- Users can favorite and unfavorite cafes.
+- Favorite state is reflected in cafe listings and profiles.
+- Owners can view reviews for their own cafes but cannot edit ratings, comments, or review status.
+
+### Cafe Submissions
+
+- Authenticated users can submit a new cafe through a multi-step form.
+- Submissions support cafe information, location, contact details, social links, amenities, and photos.
+- Duplicate pending submissions are checked.
+- Users can view, edit, cancel, and track their submissions.
+- Administrators can review, approve, reject, and reopen submissions.
+- Approved submissions create published cafe listings through a transactional server workflow.
+
+### Owner Claims
+
+- Authenticated users can claim an existing published cafe.
+- A claim is always created as `PENDING`.
+- Submitting a claim never grants ownership automatically.
+- Duplicate pending claims are rejected.
+- Claims for unpublished or already-owned cafes are rejected.
+- Users can view, edit, and cancel their own pending claims.
+- Administrators can list, inspect, approve, reject, and reopen claims.
+- Approval transactionally:
+  - Assigns `Cafe.ownerId`.
+  - Promotes a `USER` to `OWNER`.
+  - Preserves `OWNER` and `ADMIN` roles correctly.
+  - Records activity logs.
+  - Creates owner notifications.
+- Public cafe responses expose coarse claim state without exposing owner identity.
+
+### Owner Cafe Management
+
+Approved owners can access `/owner` and manage only cafes assigned to their account.
+
+Owner functionality includes:
+
+- Owner dashboard statistics scoped to owned cafes.
+- Owned cafe list with status, verification, rating, reviews, photos, and favorites.
+- Cafe management overview.
+- Direct updates for whitelisted low-risk business fields:
+  - Short description.
+  - Description.
+  - Phone.
+  - Email.
+  - Website.
+  - Instagram.
+  - Facebook.
+  - Price range.
+- Weekly hours management, including overnight hours such as `21:00` to `02:00`.
+- Active amenity selection.
+- Cafe photo upload, delete, and cover-photo selection.
+- Owner review viewing.
+- Location change requests with address, city, country, postal code, latitude, and longitude.
+- Change-request history and cancellation for pending requests.
+
+Owners cannot modify:
+
+- `ownerId`
+- `verified`
+- `featured`
+- `trending`
+- `ratingAverage`
+- `reviewCount`
+- Cafe publication status.
+- Review status or review content.
+- Claim status.
+
+### Cafe Change Requests
+
+Higher-risk owner changes are represented by `CafeChangeRequest` records and require administrator review.
+
+Supported request types:
+
+- `BUSINESS_INFO`
+- `LOCATION`
+- `HOURS`
+- `AMENITIES`
+- `PHOTOS`
+- `OTHER`
+
+Administrators can approve or reject pending requests. Approval applies only explicitly permitted fields in a transaction and creates activity logs and owner notifications. Rejection requires a reason.
+
+### Admin Portal
+
+The admin portal is available at `/admin` for `ADMIN` users only.
+
+Admin areas include:
+
+- Dashboard metrics.
+- Cafe submissions.
+- User reviews.
+- Owner claims.
+- Cafe change requests.
+- Cafe directory management.
+- User status management.
+- Activity logs.
+
+Every admin API is protected by both authentication and the `ADMIN` role.
+
+## Technology Stack
 
 ### Frontend
-- **Framework**: React 19 (Vite)
-- **Styling**: Tailwind CSS 4.0
-- **Animations**: Framer Motion (via `motion/react`)
-- **Icons**: Lucide React
-- **Maps**: Google Maps JavaScript API
-- **State Management**: React Context API & Hooks
+
+- React 19.
+- TypeScript.
+- Vite.
+- React Router.
+- Tailwind CSS.
+- `motion/react` for animations.
+- Lucide React icons.
+- Google Maps integration through `@react-google-maps/api`.
+- React Context for authentication state.
 
 ### Backend
-- **Runtime**: Node.js (Runtime Type-Stripping)
-- **Server**: Express.js
-- **ORM**: Prisma ORM
-- **Database**: PostgreSQL (Cloud SQL)
-- **Session Management**: Secure, HTTP-only cookie sessions with database-backed storage.
 
----
+- Node.js.
+- Express.
+- TypeScript.
+- Prisma ORM.
+- PostgreSQL through the existing Prisma datasource configuration.
+- Zod request validation.
+- HTTP-only cookie sessions.
+- Multer for controlled image uploads.
+- Sharp is available for image-related processing where needed.
 
-## ✨ Key Features
+### Database and Storage
 
-- **🔍 Advanced Discovery**: Search cafes by name or filter by price range and specific amenities.
-- **📍 Interactive Mapping**: Visualize cafe locations on an integrated Google Map with custom markers.
-- **🖼️ Rich Cafe Profiles**: Explore specialty coffee shops with high-quality photo galleries and detailed info.
-- **⭐ Community Reviews**: Authenticated users can leave ratings, text reviews, and upload photos.
-- **📝 Cafe Submissions**: Users can contribute new cafes to the platform via a structured submission wizard.
-- **⚖️ Admin Moderation**: A comprehensive dashboard for admins to review and moderate cafe submissions and user reviews.
-- **🤝 Owner Claims**: Business owners can request to claim their cafe listing to manage their profile.
-- **💖 Favorites**: Save your must-visit spots to a personalized favorites list for quick access.
-- **📊 Activity Dashboard**: Track your submissions, claims, and reviews in a unified user dashboard.
-- **📜 Audit Logs**: Full administrative visibility into actions taken across the platform.
+- Prisma schema: `prisma/schema.prisma`.
+- Migrations: `prisma/migrations`.
+- Development uploads: `uploads/`.
+- Database sessions: `Session` model.
+- Notifications: `Notification` model.
+- Audit records: `ActivityLog` model.
 
----
+## Requirements
 
-## ⚙️ Installation & Setup Guide
+Install these before setup:
 
-### 1. Prerequisites
-- **Node.js** (v20+ recommended)
-- **PostgreSQL** instance (or MariaDB if configured)
-- **Google Maps API Key**
+- Node.js 20 or newer.
+- npm.
+- PostgreSQL running locally or a reachable PostgreSQL instance.
+- A Google Maps API key if map features are required.
+- Git, if cloning the repository.
 
-### 2. Environment Configuration
-Create a `.env` file in the root directory and configure the following variables:
+The repository currently uses PostgreSQL through `PRISMA_DATABASE_URL`. The application code still includes `mysql2` as a dependency for compatibility with older project infrastructure, but the active Prisma schema datasource is PostgreSQL. Configure the database URL to match the datasource in `prisma/schema.prisma`.
 
-```env
-# Database
-PRISMA_DATABASE_URL="postgresql://user:password@localhost:5432/cafefinder"
+## Installation
 
-# Session Secret
-SESSION_SECRET="your-secure-session-secret"
-
-# Maps
-VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
-```
-
-### 3. Application Initialization
-Execute these commands in your terminal:
+### 1. Install dependencies
 
 ```bash
-# 1. Install dependencies
 npm install
+```
 
-# 2. Synchronize database schema
-npm run db:push
+### 2. Configure environment variables
 
-# 3. Generate Prisma client
+Create a root `.env` file. A minimal local configuration is:
+
+```env
+PRISMA_DATABASE_URL="postgresql://postgres:password@localhost:5432/cafefinder"
+VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+VITE_MAP_PROVIDER="google"
+VITE_MAP_API_KEY="your-google-maps-api-key"
+GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+MAP_PROVIDER="google"
+MAP_API_KEY="your-google-maps-api-key"
+```
+
+The current server builds its Prisma connection from `PRISMA_DATABASE_URL`. Keep the database name, host, port, username, and password consistent with your local PostgreSQL installation.
+
+Do not commit real passwords, private keys, or production credentials.
+
+Firebase variables may exist in older environment files, but the current CafeFinder login and session workflow uses the Express/Prisma session system. Firebase is not required for email/password authentication.
+
+### 3. Apply the database schema
+
+For a new or existing development database, use migrations:
+
+```bash
+npx prisma migrate dev
+```
+
+The current repository includes migrations for the owner claim and cafe change-request workflows.
+
+To regenerate Prisma Client without changing the database:
+
+```bash
 npm run db:generate
+```
 
-# 4. Seed the database with initial amenities and an admin user
+Do not use `prisma db push` for production schema changes. The `npm run db:push` script remains available for disposable local experiments only.
+
+### 4. Seed development data
+
+```bash
 npm run db:seed
 ```
 
-### 4. Running the Application
-Start the development server:
+The seed recreates development data, including:
+
+- Demo users.
+- Amenities.
+- Published cafes.
+- Cafe photos and hours.
+- Reviews.
+- Approved, pending, and rejected owner-claim scenarios.
+- Testimonials, blog posts, and curated lists.
+
+The seed deletes existing development records before recreating them. Do not run it against a database containing data you need to keep.
+
+### 5. Start the development server
+
 ```bash
 npm run dev
 ```
-Access the application at `http://localhost:3000`.
 
----
+Open:
 
-## 📡 API Endpoints
+```text
+http://localhost:3000
+```
 
-### Public Endpoints
-| Method | Endpoint | Description |
+The Express server hosts the Vite development middleware and API from the same port.
+
+If you see `EADDRINUSE` for port `3000`, an existing development server is already running. Use that server or stop the existing Node process before starting another one. Do not start multiple copies of the app on the same port.
+
+## Demo Accounts
+
+The development seed uses the password `password123` for all demo accounts:
+
+| Email | Password | Role | Purpose |
+| :--- | :--- | :--- | :--- |
+| `admin@cafefinder.local` | `password123` | `ADMIN` | Admin portal and moderation |
+| `owner@cafefinder.local` | `password123` | `OWNER` | Owner dashboard and cafe management |
+| `user@cafefinder.local` | `password123` | `USER` | Standard user workflows |
+| `maria@example.com` | `password123` | `USER` | Review and claim testing |
+| `john@example.com` | `password123` | `USER` | Review and claim testing |
+
+Change or remove these credentials before deploying anywhere public.
+
+## Important Routes
+
+### Public and authenticated frontend routes
+
+| Route | Access | Purpose |
 | :--- | :--- | :--- |
-| `GET` | `/api/cafes` | List all verified cafes |
-| `GET` | `/api/cafes/:slug` | Get detailed cafe profile |
-| `GET` | `/api/amenities` | List all available cafe amenities |
+| `/` | Public | Home page |
+| `/explore` | Public | Search and filter cafes |
+| `/cafes/:slug` | Public | Cafe profile |
+| `/cafes/:slug/claim` | Authenticated | Submit a cafe claim |
+| `/favorites` | Authenticated | Saved cafes |
+| `/profile` | Authenticated | User profile |
+| `/submit-cafe` | Authenticated | Submit a new cafe |
+| `/my-submissions` | Authenticated | Track cafe submissions |
+| `/owner` | `OWNER`, `ADMIN` | Owner dashboard |
+| `/owner/cafes` | `OWNER`, `ADMIN` | Owned cafe list |
+| `/owner/cafes/:id` | `OWNER`, `ADMIN` | Cafe management overview |
+| `/owner/cafes/:id/edit` | `OWNER`, `ADMIN` | Business information |
+| `/owner/cafes/:id/location` | `OWNER`, `ADMIN` | Moderated location request |
+| `/owner/cafes/:id/hours` | `OWNER`, `ADMIN` | Business hours |
+| `/owner/cafes/:id/amenities` | `OWNER`, `ADMIN` | Cafe amenities |
+| `/owner/cafes/:id/photos` | `OWNER`, `ADMIN` | Cafe photos |
+| `/owner/cafes/:id/reviews` | `OWNER`, `ADMIN` | Owner review view |
+| `/owner/cafes/:id/change-requests` | `OWNER`, `ADMIN` | Change-request history |
+| `/owner/claims` | `OWNER`, `ADMIN` | Owner claims |
+| `/admin` | `ADMIN` | Admin dashboard |
+| `/admin/submissions` | `ADMIN` | Cafe submission moderation |
+| `/admin/reviews` | `ADMIN` | Review moderation |
+| `/admin/claims` | `ADMIN` | Owner claim moderation |
+| `/admin/change-requests` | `ADMIN` | Cafe change-request moderation |
+| `/admin/cafes` | `ADMIN` | Cafe directory management |
+| `/admin/users` | `ADMIN` | User administration |
+| `/admin/activity` | `ADMIN` | Audit logs |
 
-### User/Owner Endpoints (Auth Required)
-| Method | Endpoint | Description |
+## API Reference
+
+All API requests are relative to `http://localhost:3000/api` during development. Authenticated requests use the HTTP-only `cafefinder_session` cookie automatically through the frontend API client.
+
+### Authentication
+
+| Method | Endpoint | Purpose |
 | :--- | :--- | :--- |
-| `POST` | `/api/reviews` | Post a new review |
-| `POST` | `/api/cafe-submissions` | Submit a new cafe |
-| `POST` | `/api/claims` | Request cafe ownership |
-| `GET` | `/api/user/favorites` | Get user's favorite cafes |
+| `POST` | `/api/auth/register` | Create a user account |
+| `POST` | `/api/auth/login` | Start a session |
+| `POST` | `/api/auth/logout` | End a session |
+| `GET` | `/api/auth/me` | Restore the current session user |
 
-### Admin Endpoints (Admin Role Required)
-| Method | Endpoint | Description |
+### Public cafe and directory APIs
+
+| Method | Endpoint | Purpose |
 | :--- | :--- | :--- |
-| `GET` | `/api/admin/dashboard` | Get administrative stats |
-| `GET` | `/api/admin/cafe-submissions` | List cafe submissions for moderation |
-| `POST` | `/api/admin/cafe-submissions/:id/approve` | Approve a cafe submission |
-| `GET` | `/api/admin/reviews` | List reviews for moderation |
-| `GET` | `/api/admin/activity-logs` | View administrative audit logs |
+| `GET` | `/api/cafes` | Published cafe list with search, filters, sorting, and pagination |
+| `GET` | `/api/cafes/:slug` | Published cafe profile |
+| `GET` | `/api/amenities` | Active amenities |
+| `GET` | `/api/lists` | Curated lists |
+| `GET` | `/api/blog` | Published blog posts |
+| `GET` | `/api/testimonials` | Active testimonials |
 
----
+### Reviews and favorites
 
-## 📂 Project Structure
+| Method | Endpoint | Purpose |
+| :--- | :--- | :--- |
+| `POST` | `/api/reviews/cafe/:cafeId` | Create a review |
+| `GET` | `/api/reviews/cafe/:cafeId` | View approved cafe reviews |
+| `GET` | `/api/reviews/cafe/:cafeId/stats` | View rating statistics |
+| `PATCH` | `/api/reviews/:id` | Edit an owned review |
+| `DELETE` | `/api/reviews/:id` | Delete an owned review |
+| `POST` | `/api/reviews/:id/photos` | Upload a review photo |
+| `POST` | `/api/cafes/:cafeId/favorite` | Toggle a favorite |
+| `DELETE` | `/api/cafes/:cafeId/favorite` | Remove a favorite |
+| `GET` | `/api/user/me/favorites` | List current-user favorites |
 
-- `/client/src`: React application, components, and pages.
-- `/server/src`: Express server, controllers, services, and routes.
-- `/prisma`: Database schema and migration tracking.
-- `/uploads`: Storage for user-uploaded photos.
+### Cafe submissions
 
----
+| Method | Endpoint | Purpose |
+| :--- | :--- | :--- |
+| `POST` | `/api/cafe-submissions` | Create a cafe submission |
+| `GET` | `/api/cafe-submissions/me` | List current-user submissions |
+| `GET` | `/api/cafe-submissions/:id` | View an owned submission |
+| `PATCH` | `/api/cafe-submissions/:id` | Edit a pending submission |
+| `DELETE` | `/api/cafe-submissions/:id` | Cancel a pending submission |
+| `POST` | `/api/cafe-submissions/:id/photos` | Upload a submission photo |
 
-## 🛣️ Roadmap
-- [x] **Stage 11**: Owner Claim System & Cafe Scraper.
-- [x] **Stage 12**: User-Generated Cafe Submissions.
-- [x] **Stage 13**: Admin Moderation Dashboard & Audit Logs.
-- [ ] **Stage 14**: Real-time Notifications & User Messaging.
+### Owner claims
+
+| Method | Endpoint | Purpose |
+| :--- | :--- | :--- |
+| `POST` | `/api/cafes/:cafeId/claim` | Submit a claim for a published unowned cafe |
+| `GET` | `/api/cafe-owner-claims/me` | List current-user claims |
+| `GET` | `/api/cafe-owner-claims/:id` | View an owned claim |
+| `PATCH` | `/api/cafe-owner-claims/:id` | Edit a pending claim |
+| `POST` | `/api/cafe-owner-claims/:id/cancel` | Cancel a pending claim |
+| `GET` | `/api/admin/claims` | Admin claim list |
+| `GET` | `/api/admin/claims/:id` | Admin claim detail |
+| `POST` | `/api/admin/claims/:id/approve` | Approve a claim transactionally |
+| `POST` | `/api/admin/claims/:id/reject` | Reject a claim with a reason |
+| `POST` | `/api/admin/claims/:id/reopen` | Reopen a rejected or cancelled claim |
+
+### Owner management
+
+| Method | Endpoint | Purpose |
+| :--- | :--- | :--- |
+| `GET` | `/api/owner/dashboard` | Owner-scoped statistics |
+| `GET` | `/api/owner/cafes` | Owned cafe list |
+| `GET` | `/api/owner/cafes/:id` | Owned cafe detail |
+| `PATCH` | `/api/owner/cafes/:id/business` | Update whitelisted business fields |
+| `PUT` | `/api/owner/cafes/:id/hours` | Replace the seven-day schedule |
+| `PUT` | `/api/owner/cafes/:id/amenities` | Replace active amenities |
+| `GET` | `/api/owner/cafes/:id/reviews` | Read owner cafe reviews |
+| `POST` | `/api/owner/cafes/:id/photos` | Upload a cafe photo |
+| `DELETE` | `/api/owner/cafes/:id/photos/:photoId` | Delete an owned cafe photo |
+| `POST` | `/api/owner/cafes/:id/photos/:photoId/cover` | Set a cover photo |
+| `GET` | `/api/owner/cafes/:id/change-requests` | List cafe change requests |
+| `POST` | `/api/owner/cafes/:id/change-requests` | Submit a moderation request |
+| `POST` | `/api/owner/change-requests/:requestId/cancel` | Cancel a pending request |
+
+### Admin moderation and management
+
+| Method | Endpoint | Purpose |
+| :--- | :--- | :--- |
+| `GET` | `/api/admin/dashboard` | Admin statistics |
+| `GET` | `/api/admin/cafe-submissions` | Submission moderation list |
+| `POST` | `/api/admin/cafe-submissions/:id/approve` | Approve a submission |
+| `POST` | `/api/admin/cafe-submissions/:id/reject` | Reject a submission |
+| `GET` | `/api/admin/reviews` | Review moderation list |
+| `POST` | `/api/admin/reviews/:id/approve` | Approve a review |
+| `POST` | `/api/admin/reviews/:id/reject` | Reject a review |
+| `POST` | `/api/admin/reviews/:id/hide` | Hide a review |
+| `GET` | `/api/admin/change-requests` | Change-request moderation list |
+| `GET` | `/api/admin/change-requests/:id` | Change-request detail |
+| `POST` | `/api/admin/change-requests/:id/approve` | Apply a request transactionally |
+| `POST` | `/api/admin/change-requests/:id/reject` | Reject with a reason |
+| `GET` | `/api/admin/cafes` | Admin cafe list |
+| `PATCH` | `/api/admin/cafes/:id/status` | Change cafe status |
+| `PATCH` | `/api/admin/cafes/:id/toggle-flag` | Toggle verified/featured/trending flags |
+| `GET` | `/api/admin/users` | Admin user list |
+| `PATCH` | `/api/admin/users/:id/status` | Change user status |
+| `GET` | `/api/admin/activity-logs` | Audit logs |
+
+## File Upload Rules
+
+Cafe, submission, and review photo uploads use generated server-side filenames and are stored below `uploads/`.
+
+- Accepted MIME types: JPEG, PNG, WebP.
+- Maximum file size: 10 MB per image.
+- Owner cafes have a maximum of 20 photos.
+- Uploaded original filenames are never used as filesystem paths.
+- SVG, HTML, JavaScript, PHP, executable, and other non-image uploads are rejected.
+- Deleting a cover photo promotes another cafe photo when available.
+
+## Database Workflow
+
+Useful commands:
+
+```bash
+# Validate schema without changing the database
+npx prisma validate
+
+# Show migration state
+npx prisma migrate status
+
+# Create and apply a development migration
+npx prisma migrate dev --name describe_your_change
+
+# Regenerate Prisma Client
+npm run db:generate
+
+# Reset and reseed a disposable development database
+npm run db:seed
+```
+
+Use migrations for schema changes. Avoid resetting or seeding any database that contains data you need to preserve.
+
+## Development Commands
+
+```bash
+npm run dev          # Start Express and Vite on port 3000
+npm run build        # Generate Prisma Client, build Vite, bundle the server
+npm run start        # Start the production bundle from dist
+npm run lint         # TypeScript validation
+npm run clean        # Remove dist output on Unix-like shells
+npm run db:generate  # Generate Prisma Client
+npm run db:migrate   # Run Prisma migrate dev
+npm run db:seed      # Seed demo data
+npm run scrape:cafes # Run the cafe scraper
+```
+
+On Windows PowerShell, `npm run clean` may require manual removal of the `dist` directory because the script uses `rm -rf`.
+
+## Troubleshooting
+
+### Port 3000 is already in use
+
+The app uses port `3000` by default. Check for an existing Node process before starting another server:
+
+```powershell
+Get-NetTCPConnection -LocalPort 3000 -State Listen
+Get-Process node
+```
+
+Stop only the stale process if necessary, then run `npm run dev` again.
+
+### Prisma reports `EPERM` while replacing the query engine
+
+A running Node process is holding Prisma's Windows query engine. Stop stale development servers, then run:
+
+```powershell
+Get-Process node | Stop-Process -Force
+npx prisma generate
+```
+
+Do not delete the database to resolve an `EPERM` file-lock error.
+
+### Prisma reports schema drift
+
+First inspect the database and migration state:
+
+```bash
+npx prisma migrate status
+```
+
+For a disposable local database, `npx prisma migrate reset` followed by `npm run db:seed` can recreate it. This deletes all data in that database. Never use reset for production data.
+
+### The admin portal shows access denied
+
+Use an account with `ADMIN` role. The seed account is:
+
+```text
+admin@cafefinder.local
+password123
+```
+
+Normal users and owners are intentionally denied access to `/admin` and `/api/admin/*`.
+
+### The owner portal shows access denied
+
+The signed-in account must have `OWNER` or `ADMIN` role, and an `OWNER` must own at least one cafe through an approved claim. Claim submission alone does not grant ownership.
+
+### Maps do not render
+
+Confirm the Google Maps key is present in the Vite environment variables and that the required Maps API is enabled for the key. The owner location workflow still supports moderated manual coordinates when interactive map configuration is unavailable.
+
+### Login appears to disappear after refresh
+
+Confirm that:
+
+- The server is running on the same origin used by the browser.
+- The browser allows cookies.
+- `/api/auth/me` returns the current user.
+- The server session exists and has not expired.
+
+The frontend sends `credentials: 'include'` for API requests, and authentication is stored in an HTTP-only cookie.
+
+## Security Model
+
+The backend is authoritative for authentication, roles, ownership, moderation, and protected fields.
+
+- Frontend route guards improve UX but are not security boundaries.
+- Owner endpoints load the cafe from the database and verify `ownerId`.
+- Admin endpoints require `requireAuth` and `requireRole('ADMIN')`.
+- Owner update endpoints use explicit field whitelists.
+- User input is validated with Zod.
+- Change-request approval applies only permitted fields.
+- Public cafe DTOs do not expose private owner identity unnecessarily.
+- Passwords, cookies, sessions, and secrets are never written to activity logs.
+
+## Project Structure
+
+```text
+client/
+  src/
+    components/       Shared UI, cafe, admin, map, auth, and layout components
+    contexts/         Authentication context
+    pages/            Public, owner, and authenticated pages
+    services/         Frontend API services
+    types.ts          Shared frontend types
+server/
+  src/
+    controllers/      HTTP request handlers
+    dtos/             API response and request DTOs
+    middleware/       Auth, uploads, and error handling
+    repositories/     Prisma data access helpers
+    routes/           Express route definitions
+    services/         Business logic and transactions
+prisma/
+  schema.prisma      Database schema
+  migrations/        Prisma migrations
+server/prisma/seed.ts Development seed data
+uploads/              Local development photo storage
+```
+
+## Validation Checklist
+
+Before opening a pull request or deploying:
+
+```bash
+npm run lint
+npx prisma validate
+npx prisma migrate status
+npm run build
+```
+
+For owner-management changes, also manually verify:
+
+1. A normal user cannot access `/admin` or `/owner`.
+2. An owner can access only cafes assigned to that owner.
+3. Protected field manipulation is rejected.
+4. Business updates appear on the public profile.
+5. Overnight hours save correctly.
+6. Amenities and photos update only for the owned cafe.
+7. Change requests remain pending until admin approval.
+8. Admin rejection requires a reason.
+9. Public cafes remain limited to `PUBLISHED` records.
+
+## Project Status
+
+Completed application areas include:
+
+- Cafe discovery and search.
+- Maps and cafe profiles.
+- Favorites.
+- Reviews and review moderation.
+- Cafe submissions and submission moderation.
+- Authentication and role protection.
+- Owner claims and transactional approval.
+- Owner dashboard.
+- Owner cafe management.
+- Cafe change-request moderation.
+- Notifications and audit logging for moderation workflows.
+
+The project intentionally does not include billing, subscriptions, reservations, messaging, loyalty programs, marketing automation, or other unrelated future features.

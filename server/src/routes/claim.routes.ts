@@ -1,17 +1,19 @@
 import { Router } from 'express';
 import { ClaimController } from '../controllers/claimController.js';
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
-import { Role } from '@prisma/client';
 
 const router = Router();
-const claimController = new ClaimController();
+const controller = new ClaimController();
 
-// User routes
-router.post('/', requireAuth, claimController.submitClaim);
-router.get('/me', requireAuth, claimController.getMyClaims);
+router.post('/cafes/:cafeId/claim', requireAuth, controller.submitClaim);
+router.post('/claims', requireAuth, controller.submitClaim);
+router.get('/cafe-owner-claims/me', requireAuth, controller.getMyClaims);
+router.get('/cafe-owner-claims/:id', requireAuth, controller.getClaim);
+router.patch('/cafe-owner-claims/:id', requireAuth, controller.updateClaim);
+router.post('/cafe-owner-claims/:id/cancel', requireAuth, controller.cancelClaim);
 
-// Admin routes
-router.get('/pending', requireAuth, requireRole(Role.ADMIN), claimController.getPendingClaims);
-router.patch('/:claimId/review', requireAuth, requireRole(Role.ADMIN), claimController.reviewClaim);
+router.get('/claims/me', requireAuth, controller.getMyClaims);
+router.get('/claims/pending', requireAuth, requireRole('ADMIN'), controller.getAdminClaims);
+router.patch('/claims/:claimId/review', requireAuth, requireRole('ADMIN'), controller.legacyReviewClaim);
 
 export default router;

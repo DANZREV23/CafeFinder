@@ -31,7 +31,6 @@ import { FavoriteButton } from "@/components/cafe/FavoriteButton";
 import { CafeGallery } from "@/components/cafe/CafeGallery";
 import { RelatedCafes } from "@/components/cafe/RelatedCafes";
 import { CafeMenuHighlights } from "@/components/cafe/CafeMenuHighlights";
-import { ClaimCafeModal } from "@/components/cafe/ClaimCafeModal";
 
 import { MapProvider } from "@/components/map/MapProvider";
 import { CafeMap } from "@/components/map/CafeMap";
@@ -58,9 +57,6 @@ export default function CafeProfilePage() {
   const [editingReview, setEditingReview] = React.useState<Review | null>(null);
   const [reviewTotal, setReviewTotal] = React.useState(0);
   const [reviewPage, setReviewPage] = React.useState(1);
-
-  // Claim state
-  const [isClaimModalOpen, setIsClaimModalOpen] = React.useState(false);
 
   const fetchReviews = async (page = 1, append = false) => {
     if (!cafe?.id) return;
@@ -360,15 +356,20 @@ export default function CafeProfilePage() {
                   <div className="h-4 w-px bg-brand-border hidden md:block" />
                   <CafePrice priceRange={cafe.priceRange} className="text-sm font-bold text-brand-coffee" />
                   
-                  {!cafe.ownerId && !cafe.verified && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => isAuthenticated ? setIsClaimModalOpen(true) : window.location.href = `/login?redirect=/cafes/${cafe.slug}`}
-                      className="rounded-full border-brand-coffee/20 text-brand-coffee hover:bg-brand-cream h-8 px-4"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-                      Claim this cafe
+                  {cafe.claimStatus === 'MANAGED' && (
+                    <Button as={Link} to={`/owner/cafes/${cafe.id}`} variant="outline" size="sm" className="rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-8 px-4">
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> You manage this cafe
+                    </Button>
+                  )}
+                  {cafe.claimStatus === 'PENDING' && (
+                    <Button as={Link} to="/owner/claims" variant="outline" size="sm" className="rounded-full border-amber-200 text-amber-700 hover:bg-amber-50 h-8 px-4">
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim pending
+                    </Button>
+                  )}
+                  {cafe.claimStatus === 'OWNED' && <span className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 text-xs font-bold">Owner claimed</span>}
+                  {cafe.claimStatus === 'AVAILABLE' && (
+                    <Button as={Link} to={isAuthenticated ? `/cafes/${cafe.slug}/claim` : `/login?redirect=/cafes/${cafe.slug}/claim`} variant="outline" size="sm" className="rounded-full border-brand-coffee/20 text-brand-coffee hover:bg-brand-cream h-8 px-4">
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim this cafe
                     </Button>
                   )}
                 </div>
@@ -590,12 +591,6 @@ export default function CafeProfilePage() {
         </PageContainer>
       </div>
 
-      <ClaimCafeModal 
-        isOpen={isClaimModalOpen} 
-        onClose={() => setIsClaimModalOpen(false)} 
-        cafeId={cafe.id} 
-        cafeName={cafe.name} 
-      />
     </MainLayout>
   );
 }

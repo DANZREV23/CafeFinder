@@ -1,13 +1,27 @@
 import { Router } from 'express';
 import { AdminController } from '../controllers/adminController.js';
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
+import { ClaimController } from '../controllers/claimController.js';
+import { ChangeRequestController } from '../controllers/changeRequestController.js';
 
 const router = Router();
 const adminController = new AdminController();
+const claimController = new ClaimController();
+const changeRequestController = new ChangeRequestController();
 
 // All admin routes require authentication and ADMIN role
 router.use(requireAuth);
 router.use(requireRole('ADMIN'));
+
+router.get('/claims', claimController.getAdminClaims);
+router.get('/claims/:id', claimController.getAdminClaim);
+router.post('/claims/:id/approve', claimController.approveClaim);
+router.post('/claims/:id/reject', claimController.rejectClaim);
+router.post('/claims/:id/reopen', claimController.reopenClaim);
+router.get('/change-requests', changeRequestController.list);
+router.get('/change-requests/:id', changeRequestController.get);
+router.post('/change-requests/:id/approve', changeRequestController.approve);
+router.post('/change-requests/:id/reject', changeRequestController.reject);
 
 // Dashboard
 router.get('/dashboard', adminController.getDashboardStats);

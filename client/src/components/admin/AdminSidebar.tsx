@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Coffee, 
+  ShieldCheck,
   FileText, 
   Star, 
   Users, 
@@ -29,6 +30,8 @@ const MENU_ITEMS = [
     items: [
       { id: 'submissions', label: 'Cafe Submissions', icon: Coffee, path: '/admin/submissions' },
       { id: 'reviews', label: 'Reviews', icon: Star, path: '/admin/reviews' },
+          { id: 'claims', label: 'Owner Claims', icon: ShieldCheck, path: '/admin/claims' },
+          { id: 'change-requests', label: 'Cafe Change Requests', icon: FileText, path: '/admin/change-requests' },
     ]
   },
   { 

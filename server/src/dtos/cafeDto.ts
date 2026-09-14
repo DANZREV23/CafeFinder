@@ -88,6 +88,7 @@ export interface PublicCafeProfileDto {
   }[];
   relatedCafes: any[];
   isFavorite: boolean;
+  claimStatus: 'AVAILABLE' | 'PENDING' | 'MANAGED' | 'OWNED';
 }
 
 export function mapToPublicCafeProfile(cafe: any): PublicCafeProfileDto {
@@ -161,5 +162,6 @@ export function mapToPublicCafeProfile(cafe: any): PublicCafeProfileDto {
       photos: rc.photos,
     })),
     isFavorite: cafe.favorites ? cafe.favorites.length > 0 : false,
+    claimStatus: cafe.claimStatus || 'AVAILABLE',
   };
 }

@@ -1,0 +1,22 @@
+import { Router } from 'express';
+import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
+import { OwnerController } from '../controllers/ownerController.js';
+import { uploadOwnerPhoto } from '../middleware/uploadMiddleware.js';
+
+const router = Router();
+const controller = new OwnerController();
+router.use(requireAuth, requireRole('OWNER', 'ADMIN'));
+router.get('/dashboard', controller.getDashboard);
+router.get('/cafes', controller.getCafes);
+router.get('/cafes/:id', controller.getCafe);
+router.patch('/cafes/:id/business', controller.updateBusiness);
+router.put('/cafes/:id/hours', controller.updateHours);
+router.put('/cafes/:id/amenities', controller.updateAmenities);
+router.get('/cafes/:id/reviews', controller.getReviews);
+router.post('/cafes/:id/photos', uploadOwnerPhoto.single('photo'), controller.uploadPhoto);
+router.delete('/cafes/:id/photos/:photoId', controller.deletePhoto);
+router.post('/cafes/:id/photos/:photoId/cover', controller.setCoverPhoto);
+router.get('/cafes/:id/change-requests', controller.getChangeRequests);
+router.post('/cafes/:id/change-requests', controller.createChangeRequest);
+router.post('/change-requests/:requestId/cancel', controller.cancelChangeRequest);
+export default router;

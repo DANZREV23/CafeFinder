@@ -99,8 +99,13 @@ export class CafeService {
       take: 4,
     });
 
+    const pendingClaim = currentUserId && !cafe.ownerId
+      ? await prisma.cafeOwnerClaim.findFirst({ where: { cafeId: cafe.id, userId: currentUserId, status: 'PENDING' } })
+      : null;
+
     return {
       ...cafe,
+      claimStatus: cafe.ownerId === currentUserId ? 'MANAGED' : cafe.ownerId ? 'OWNED' : pendingClaim ? 'PENDING' : 'AVAILABLE',
       relatedCafes,
     };
   }
