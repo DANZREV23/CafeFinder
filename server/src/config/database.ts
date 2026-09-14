@@ -14,7 +14,8 @@ const getDatabaseUrl = () => {
   if (sqlUser && sqlPass && sqlHost && sqlDb) {
     // For Cloud SQL PostgreSQL, the host parameter is the directory containing the socket
     // We add connection_limit and other params to improve stability
-    return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connection_limit=10&pool_timeout=20&connect_timeout=20`;
+    // Adding socket_timeout=30 to help detect closed connections faster
+    return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connection_limit=5&pool_timeout=30&connect_timeout=30&socket_timeout=30`;
   }
 
   // Fallback logic
