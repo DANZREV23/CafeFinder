@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { CafeService } from '../services/cafeService.js';
 import { z } from 'zod';
+import { mapToPublicCafeProfile, mapToPublicCafeSummary } from '../dtos/cafeDto.js';
+import { AuthRequest } from '../middleware/authMiddleware.js';
 
 // Validation Schemas
 export const getCafesQuerySchema = z.object({
@@ -22,24 +24,28 @@ export class CafeController {
     this.cafeService = new CafeService();
   }
 
-  getAll = async (req: Request, res: Response, next: NextFunction) => {
+  getAll = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const validatedQuery = getCafesQuerySchema.parse(req.query);
-      const result = await this.cafeService.getPublishedCafes(validatedQuery);
+      const result = await this.cafeService.getPublishedCafes({
+        ...validatedQuery,
+        currentUserId: req.user?.id
+      });
       
       res.json({
         success: true,
-        ...result
+        data: result.data.map(mapToPublicCafeSummary),
+        pagination: result.pagination
       });
     } catch (error) {
       next(error);
     }
   };
 
-  getBySlug = async (req: Request, res: Response, next: NextFunction) => {
+  getBySlug = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { slug } = req.params;
-      const cafe = await this.cafeService.getCafeBySlug(slug);
+      const cafe = await this.cafeService.getCafeBySlug(slug, req.user?.id);
       
       if (!cafe) {
         return res.status(404).json({
@@ -50,7 +56,7 @@ export class CafeController {
 
       res.json({
         success: true,
-        data: cafe
+        data: mapToPublicCafeProfile(cafe)
       });
     } catch (error) {
       next(error);

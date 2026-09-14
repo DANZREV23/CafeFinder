@@ -3,12 +3,16 @@ import { ApiResponse, Cafe } from "../types";
 const API_URL = '/api';
 
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const headers = { ...options.headers } as Record<string, string>;
+  
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
+    credentials: 'include',
   });
 
   const result = await response.json();
@@ -19,18 +23,3 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 
   return result;
 }
-
-export const cafeService = {
-  getAll: (params: Record<string, any> = {}) => {
-    const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        query.append(key, value.toString());
-      }
-    });
-    return fetchApi<ApiResponse<Cafe[]>>(`/cafes?${query.toString()}`);
-  },
-  getBySlug: (slug: string) => {
-    return fetchApi<ApiResponse<Cafe>>(`/cafes/${slug}`);
-  },
-};

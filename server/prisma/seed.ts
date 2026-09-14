@@ -1,30 +1,39 @@
 import { PrismaClient, Role, UserStatus, CafeStatus, ReviewStatus, PostStatus } from '@prisma/client';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
 
-const getDatabaseUrl = () => {
-  if (process.env.PRISMA_DATABASE_URL) return process.env.PRISMA_DATABASE_URL;
+dotenv.config();
+
+// Construct PRISMA_DATABASE_URL if missing
+if (!process.env.PRISMA_DATABASE_URL) {
+  const sqlUser = process.env.SQL_USER || process.env.SQL_ADMIN_USER;
+  const sqlPass = process.env.SQL_PASSWORD || process.env.SQL_ADMIN_PASSWORD;
+  const sqlHost = process.env.SQL_HOST;
+  const sqlDb = process.env.SQL_DB_NAME || process.env.DB_NAME;
   
-  // Try to construct from SQL_ variables (Cloud SQL)
-  const user = process.env.SQL_ADMIN_USER || process.env.SQL_USER;
-  const pass = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD;
-  const host = process.env.SQL_HOST;
-  const db = process.env.SQL_DB_NAME;
-  
-  if (user && pass && host && db) {
-    return `postgresql://${user}:${encodeURIComponent(pass)}@localhost/${db}?host=${host}`;
+  if (sqlUser && sqlPass && sqlHost && sqlDb) {
+    // For Cloud SQL PostgreSQL, the host parameter is the directory containing the socket
+    process.env.PRISMA_DATABASE_URL = `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connection_limit=10&connect_timeout=30`;
+  } else {
+    // Fallback logic
+    const user = process.env.DB_USERNAME || process.env.DB_USER || 'root';
+    const pass = process.env.DB_PASSWORD || '';
+    const host = process.env.DATABASE_URL || process.env.DB_HOST || 'localhost';
+    const port = process.env.DB_PORT || '3306';
+    const db = process.env.DB_NAME || 'cafefinder';
+    
+    if (host && host.includes('://')) {
+      process.env.PRISMA_DATABASE_URL = host;
+    } else if (host) {
+      // Keep mysql fallback just in case of local dev variations
+      process.env.PRISMA_DATABASE_URL = `mysql://${user}:${encodeURIComponent(pass)}@${host}:${port}/${db}`;
+    }
   }
-  
-  return process.env.DATABASE_URL;
-};
+}
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: getDatabaseUrl(),
-    },
-  },
-});
+const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting seed...');
@@ -50,11 +59,14 @@ async function main() {
 
   // 2. Seed Users
   console.log('👤 Seeding users...');
+  const passwordHash = await bcrypt.hash('password123', 12);
+  
   const users = await Promise.all([
     prisma.user.create({
       data: {
         name: 'Admin User',
         email: 'admin@cafefinder.local',
+        passwordHash,
         role: Role.ADMIN,
         status: UserStatus.ACTIVE,
         avatarUrl: 'https://i.pravatar.cc/150?u=admin',
@@ -64,6 +76,7 @@ async function main() {
       data: {
         name: 'Cafe Owner',
         email: 'owner@cafefinder.local',
+        passwordHash,
         role: Role.OWNER,
         status: UserStatus.ACTIVE,
         avatarUrl: 'https://i.pravatar.cc/150?u=owner',
@@ -73,14 +86,35 @@ async function main() {
       data: {
         name: 'Regular User',
         email: 'user@cafefinder.local',
+        passwordHash,
         role: Role.USER,
         status: UserStatus.ACTIVE,
         avatarUrl: 'https://i.pravatar.cc/150?u=user',
       },
     }),
+    prisma.user.create({
+      data: {
+        name: 'Maria Santos',
+        email: 'maria@example.com',
+        passwordHash,
+        role: Role.USER,
+        status: UserStatus.ACTIVE,
+        avatarUrl: 'https://i.pravatar.cc/150?u=maria',
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: 'John Rivera',
+        email: 'john@example.com',
+        passwordHash,
+        role: Role.USER,
+        status: UserStatus.ACTIVE,
+        avatarUrl: 'https://i.pravatar.cc/150?u=john',
+      },
+    }),
   ]);
 
-  const [admin, owner, user] = users;
+  const [admin, owner, user, maria, john] = users;
 
   // 3. Seed Amenities
   console.log('✨ Seeding amenities...');
@@ -108,79 +142,422 @@ async function main() {
   console.log('☕ Seeding cafes...');
   const cafesData = [
     {
-      name: 'The Daily Grind',
-      slug: 'the-daily-grind',
-      shortDescription: 'Industrial-chic spot with single-origin beans and artisanal pastries.',
-      description: 'The Daily Grind is more than just a coffee shop. It is a community hub where tradition meets modern brewing techniques. Our beans are sourced directly from sustainable farms in Ethiopia and Colombia, roasted in small batches to ensure maximum flavor profile. Whether you are looking for a quick caffeine fix or a quiet corner to work, our spacious industrial-chic interior provides the perfect ambiance.',
-      address: '123 Arab Street',
-      city: 'Singapore',
-      state: 'Singapore',
-      country: 'Singapore',
-      postalCode: '199702',
-      latitude: 1.3005,
-      longitude: 103.8587,
-      phone: '+65 6123 4567',
-      website: 'https://dailygrind.local',
+      name: 'Green Coffee - Marfori',
+      slug: 'green-coffee-marfori',
+      shortDescription: 'Cozy and trendy spot known for its late hours and great Wi-Fi.',
+      description: 'Green Coffee in Marfori Heights is a favorite among students and professionals for its relaxing atmosphere and consistent coffee quality. It offers a wide range of beverages and pastries in a cozy, industrial-inspired setting.',
+      address: 'Ruby corner Turquoise Street, Marfori Heights',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0863,
+      longitude: 125.6083,
+      phone: '+63 82 123 4567',
+      website: 'https://thegreencoffee.com',
       priceRange: 2,
       status: CafeStatus.PUBLISHED,
       verified: true,
       featured: true,
       trending: true,
-      ratingAverage: 4.8,
-      reviewCount: 124,
+      ratingAverage: 4.5,
+      reviewCount: 156,
       ownerId: owner.id,
     },
     {
-      name: 'Bean & Bloom',
-      slug: 'bean-and-bloom',
-      shortDescription: 'Floral-themed cafe serving specialty lattes and floral-infused teas.',
-      description: 'A sanctuary in the heart of the city, Bean & Bloom combines a boutique florist with a specialty coffee bar. Surround yourself with seasonal blooms as you sip on our signature Lavender Latte or a perfectly balanced V60 pour-over. Our menu features locally sourced ingredients and a wide selection of vegan-friendly treats.',
-      address: '456 Orchard Road',
-      city: 'Singapore',
-      state: 'Singapore',
-      country: 'Singapore',
-      postalCode: '238879',
-      latitude: 1.3048,
-      longitude: 103.8318,
-      phone: '+65 6789 0123',
+      name: 'Fourth Street Cafe',
+      slug: 'fourth-street-cafe',
+      shortDescription: 'Minimalist white-and-wood aesthetic cafe with locally roasted specialty coffee.',
+      description: 'Fourth Street Cafe is a serene haven in the city, offering high-quality local roasts. Its minimalist design and quiet atmosphere make it perfect for deep work or intimate conversations. It is pet-friendly and known for its excellent V60 pour-overs.',
+      address: 'Narra St, Poblacion District',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0741421,
+      longitude: 125.6169814,
+      phone: '+63 82 234 5678',
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: true,
+      trending: false,
+      ratingAverage: 4.8,
+      reviewCount: 92,
+    },
+    {
+      name: 'Purge Coffee Roasters',
+      slug: 'purge-coffee-roasters',
+      shortDescription: 'Award-winning roastery and specialty coffee shop in Matina.',
+      description: 'Purge Coffee Roasters is dedicated to the craft of coffee. They roast their own beans and offer a variety of single-origin options. The space is professional and quiet, ideal for those who take their coffee and their work seriously.',
+      address: 'Tulip Drive, Matina',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0544,
+      longitude: 125.5898,
+      phone: '+63 82 345 6789',
       priceRange: 3,
       status: CafeStatus.PUBLISHED,
       verified: true,
       featured: false,
       trending: true,
-      ratingAverage: 4.5,
-      reviewCount: 89,
+      ratingAverage: 4.7,
+      reviewCount: 110,
     },
     {
-      name: 'Roast Republic',
-      slug: 'roast-republic',
-      shortDescription: 'Micro-roastery focusing on the science of the perfect roast.',
-      description: 'At Roast Republic, we take coffee seriously. Our laboratory-style setup allows us to monitor every variable in the roasting and brewing process. We host weekly cupping sessions for enthusiasts and serve some of the rarest micro-lots available in the region.',
-      address: '789 Tiong Bahru Road',
-      city: 'Singapore',
-      state: 'Singapore',
-      country: 'Singapore',
-      postalCode: '168732',
-      latitude: 1.2847,
-      longitude: 103.8271,
+      name: 'Glasshouse Coffee - Oboza',
+      slug: 'glasshouse-coffee-oboza',
+      shortDescription: 'A literal glass box set in a lush heritage garden.',
+      description: 'Located in the garden of the historic Oboza Heritage House, Glasshouse Coffee offers a unique aesthetic experience. It serves local beans from Mount Apo in a peaceful, nature-filled environment.',
+      address: '143 Rizal St, Poblacion District',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0700,
+      longitude: 125.6080,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: true,
+      trending: true,
+      ratingAverage: 4.6,
+      reviewCount: 75,
+    },
+    {
+      name: 'Stash Coffee Co.',
+      slug: 'stash-coffee-co',
+      shortDescription: 'Specialty coffee nook with a professional environment and great Wi-Fi.',
+      description: 'Stash Coffee Co. provides a clean, well-lit space for coffee lovers and remote workers. Located on the second floor, it offers private nooks and a quiet atmosphere for focus.',
+      address: 'Iñigo and Porras St, Poblacion District',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0805,
+      longitude: 125.6087,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: true,
+      ratingAverage: 4.4,
+      reviewCount: 64,
+    },
+    {
+      name: 'Cafe Demitasse',
+      slug: 'cafe-demitasse',
+      shortDescription: 'Spacious and accessible cafe perfect for meetings and hangouts.',
+      description: 'Cafe Demitasse is a well-known spot in Davao for its wide menu, ranging from coffee and cakes to full meals. It is spacious, air-conditioned, and has reliable Wi-Fi, making it a go-to for business meetings.',
+      address: '727 F. Torres St, Poblacion District',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0772834,
+      longitude: 125.6052335,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: false,
+      trending: false,
+      ratingAverage: 4.3,
+      reviewCount: 203,
+    },
+    {
+      name: 'Paramount Coffee - Riverfront',
+      slug: 'paramount-coffee-riverfront',
+      shortDescription: 'Mindanao single-origin roastery with a view of the Davao River.',
+      description: 'Paramount Coffee showcases the best of Mindanao coffee. Their Riverfront branch offers a spacious, library-style setting with beautiful views of the river, perfect for a peaceful afternoon.',
+      address: 'Riverfront Corporate City, Diversion Road, Ma-a',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0543,
+      longitude: 125.5898,
+      priceRange: 3,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: true,
+      trending: false,
+      ratingAverage: 4.7,
+      reviewCount: 88,
+    },
+    {
+      name: 'Espresso Lab Cafe',
+      slug: 'espresso-lab-cafe',
+      shortDescription: 'Modern hotel cafe with stable Wi-Fi and comfortable work spaces.',
+      description: 'Located in The Lanang Suites, Espresso Lab Cafe is a modern space designed for productivity. With fast Wi-Fi and plenty of power outlets, it is a top choice for digital nomads in Davao.',
+      address: 'The Lanang Suites, J.P. Laurel Ave',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0946,
+      longitude: 125.6321,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: false,
+      trending: true,
+      ratingAverage: 4.5,
+      reviewCount: 112,
+    },
+    {
+      name: 'Blugré Coffee - MTS',
+      slug: 'blugre-coffee-mts',
+      shortDescription: 'Iconic Davao cafe famous for its signature Durian Coffee Blend.',
+      description: 'Blugré Coffee is a Davao institution. Their branch at Matina Town Square is a popular hangout spot, offering a unique taste of Davao through their world-famous Durian Coffee.',
+      address: 'Matina Town Square, Matina',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0601,
+      longitude: 125.5684,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: true,
+      trending: true,
+      ratingAverage: 4.2,
+      reviewCount: 345,
+    },
+    {
+      name: 'Café Chalet',
+      slug: 'cafe-chalet',
+      shortDescription: 'Elegant French-American inspired cafe in Ecoland.',
+      description: 'Café Chalet offers an elegant dining and coffee experience with Parisian-inspired pastries and brunch. The interiors are clean and well-lit, providing a sophisticated atmosphere for guests.',
+      address: 'Ecoland Subd Phase 1',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0519,
+      longitude: 125.5901,
+      priceRange: 3,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: true,
+      ratingAverage: 4.6,
+      reviewCount: 54,
+    },
+    {
+      name: 'Aloha Kakou Neighborhood Cafe',
+      slug: 'aloha-kakou',
+      shortDescription: 'Hawaiian-themed cafe serving unique delights and Filipino favorites.',
+      description: 'Aloha Kakou brings the spirit of Hawaii to Davao. With tropical decor and a menu featuring Hawaiian treats, it provides a refreshing escape for coffee lovers.',
+      address: 'Quimpo Blvd, Talomo',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0543,
+      longitude: 125.5843,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: false,
+      trending: false,
+      ratingAverage: 4.4,
+      reviewCount: 78,
+    },
+    {
+      name: 'Balay Davao',
+      slug: 'balay-davao',
+      shortDescription: 'Homey cafe with local roasts and a warm, open-air feel.',
+      description: 'Balay Davao is a charming spot that feels like home. It serves excellent pour-over coffee using local beans and offers a hearty local breakfast in a relaxed setting.',
+      address: '20E Teodoro Palma Gil St',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0782,
+      longitude: 125.6067,
       priceRange: 2,
       status: CafeStatus.PUBLISHED,
       verified: false,
       featured: true,
       trending: false,
-      ratingAverage: 4.9,
-      reviewCount: 215,
+      ratingAverage: 4.7,
+      reviewCount: 42,
+    },
+    {
+      name: 'Keepsakes Cafe - Mayon',
+      slug: 'keepsakes-cafe-mayon',
+      shortDescription: 'Popular local cafe known for its consistent quality and chill vibes.',
+      description: 'Keepsakes Cafe is a staple in the Davao coffee scene, offering a reliable place for coffee and food. Its Mayon branch is well-loved for its friendly staff and cozy atmosphere.',
+      address: 'Mount Mayon St, Poblacion',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0805,
+      longitude: 125.6087,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: true,
+      featured: false,
+      trending: false,
+      ratingAverage: 4.3,
+      reviewCount: 128,
+    },
+    {
+      name: 'Kapeweñoz - V. Mapa',
+      slug: 'kapewenoz-v-mapa',
+      shortDescription: 'Specialty coffee shop known for its bold and consistent brews.',
+      description: 'Kapeweñoz is dedicated to providing high-quality specialty coffee. Their V. Mapa branch is a favorite for those who appreciate a strong, well-crafted cup of coffee.',
+      address: 'V. Mapa St, Davao City',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0740,
+      longitude: 125.6100,
+      priceRange: 1,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: true,
+      ratingAverage: 4.6,
+      reviewCount: 67,
+    },
+    {
+      name: 'Overdose Coffee',
+      slug: 'overdose-coffee',
+      shortDescription: 'Chill cafe on Bonifacio St with a focus on good coffee and food.',
+      description: 'Overdose Coffee offers a relaxed environment for coffee enthusiasts. Located along Bonifacio Street, it is a great place to unwind with a good book or catch up with friends.',
+      address: 'Bonifacio St, Davao City',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0700,
+      longitude: 125.6080,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: false,
+      ratingAverage: 4.4,
+      reviewCount: 45,
+    },
+    {
+      name: 'Psalms Coffee + Pastry',
+      slug: 'psalms-coffee-pastry',
+      shortDescription: 'Cozy pastry shop and cafe perfect for unwinding.',
+      description: 'Psalms Coffee + Pastry is known for its warm lighting, relaxing music, and delicious baked goods. It provides a sanctuary for those looking to escape the hustle and bustle of the city.',
+      address: 'Davao City',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0730,
+      longitude: 125.6120,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: true,
+      ratingAverage: 4.5,
+      reviewCount: 38,
+    },
+    {
+      name: 'Darkk Coffee',
+      slug: 'darkk-coffee',
+      shortDescription: 'Small, nostalgic nook using manual espresso makers for artisanal coffee.',
+      description: 'Darkk Coffee is a hidden gem that focuses on the art of coffee. Using manual espresso makers, they craft each cup with care, offering a nostalgic and artisanal experience.',
+      address: 'Davao City',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0750,
+      longitude: 125.6150,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: false,
+      ratingAverage: 4.8,
+      reviewCount: 29,
+    },
+    {
+      name: 'Caffeñero',
+      slug: 'caffenero',
+      shortDescription: 'Chill vibes and good food in the heart of the city.',
+      description: 'Caffeñero is a must-try for its great coffee and relaxed atmosphere. It offers a variety of food options that complement its high-quality coffee perfectly.',
+      address: 'Poblacion District, Davao City',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0720,
+      longitude: 125.6110,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: true,
+      ratingAverage: 4.3,
+      reviewCount: 52,
+    },
+    {
+      name: 'Miss Bridgette',
+      slug: 'miss-bridgette',
+      shortDescription: 'Charming cafe on Tulip Drive with chill vibes and good eats.',
+      description: 'Miss Bridgette offers a cozy space for coffee and brunch. Located along Tulip Drive, it is a popular spot for its friendly atmosphere and delicious menu.',
+      address: 'Tulip Drive, Matina',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0544,
+      longitude: 125.5898,
+      priceRange: 2,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: false,
+      ratingAverage: 4.4,
+      reviewCount: 41,
+    },
+    {
+      name: 'Olo Coffee and Concepts',
+      slug: 'olo-coffee-concepts',
+      shortDescription: 'Modern coffee shop focusing on quality concepts and brews.',
+      description: 'Olo Coffee and Concepts is a forward-thinking cafe that emphasizes quality in both its coffee and its design. It is a great place to discover new coffee concepts in Davao.',
+      address: 'Davao City',
+      city: 'Davao City',
+      state: 'Davao del Sur',
+      country: 'Philippines',
+      postalCode: '8000',
+      latitude: 7.0710,
+      longitude: 125.6090,
+      priceRange: 3,
+      status: CafeStatus.PUBLISHED,
+      verified: false,
+      featured: false,
+      trending: true,
+      ratingAverage: 4.5,
+      reviewCount: 33,
     },
   ];
 
+  const createdCafes = [];
   for (const cafeData of cafesData) {
     const cafe = await prisma.cafe.create({ data: cafeData });
+    createdCafes.push(cafe);
 
     // Seed Photos
     await prisma.cafePhoto.create({
       data: {
         cafeId: cafe.id,
-        url: `https://images.unsplash.com/photo-${cafe.slug === 'the-daily-grind' ? '1501339847302-ac426a4a7cbb' : '1554118811-1e0d58224f24'}?auto=format&fit=crop&q=80&w=1200`,
+        url: `https://images.unsplash.com/photo-${cafe.slug === 'green-coffee-marfori' ? '1501339847302-ac426a4a7cbb' : '1554118811-1e0d58224f24'}?auto=format&fit=crop&q=80&w=1200`,
         isCover: true,
         altText: `${cafe.name} Interior`,
       },
@@ -214,7 +591,75 @@ async function main() {
     }
   }
 
-  // 5. Seed Testimonials
+  // 5. Seed Reviews
+  console.log('⭐ Seeding reviews...');
+  const reviews = [
+    {
+      cafeId: createdCafes[0].id,
+      userId: user.id,
+      coffeeRating: 5,
+      ambianceRating: 4,
+      serviceRating: 5,
+      overallRating: 5,
+      comment: 'Excellent coffee, friendly service, and a comfortable place to spend time. Perfect for working!',
+      status: ReviewStatus.APPROVED,
+    },
+    {
+      cafeId: createdCafes[0].id,
+      userId: maria.id,
+      coffeeRating: 4,
+      ambianceRating: 5,
+      serviceRating: 4,
+      overallRating: 4,
+      comment: 'Love the industrial vibe here. The pastries are also great!',
+      status: ReviewStatus.APPROVED,
+    },
+    {
+      cafeId: createdCafes[1].id,
+      userId: john.id,
+      coffeeRating: 5,
+      ambianceRating: 5,
+      serviceRating: 5,
+      overallRating: 5,
+      comment: 'Best specialty coffee in Davao! The minimalist design is so calming.',
+      status: ReviewStatus.APPROVED,
+    },
+    {
+      cafeId: createdCafes[1].id,
+      userId: maria.id,
+      coffeeRating: 4,
+      ambianceRating: 4,
+      serviceRating: 4,
+      overallRating: 4,
+      comment: 'Very quiet and peaceful. Good for reading a book.',
+      status: ReviewStatus.PENDING,
+    },
+  ];
+
+  for (const reviewData of reviews) {
+    await prisma.cafeReview.create({ data: reviewData });
+  }
+
+  // Recalculate Cafe Ratings
+  console.log('📊 Recalculating cafe ratings...');
+  for (const cafe of createdCafes) {
+    const approvedReviews = await prisma.cafeReview.findMany({
+      where: { cafeId: cafe.id, status: ReviewStatus.APPROVED },
+    });
+
+    if (approvedReviews.length > 0) {
+      const avg = approvedReviews.reduce((acc, r) => acc + r.overallRating, 0) / approvedReviews.length;
+      await prisma.cafe.update({
+        where: { id: cafe.id },
+        data: {
+          ratingAverage: avg,
+          reviewCount: approvedReviews.length,
+        },
+      });
+    }
+  }
+
+  // 6. Seed Testimonials
   console.log('💬 Seeding testimonials...');
   await prisma.testimonial.createMany({
     data: [
@@ -229,26 +674,106 @@ async function main() {
         name: 'Marcus Tan',
         role: 'Coffee Enthusiast',
         content: 'The detailed reviews and amenity filters are game changers. I found some hidden gems in Tiong Bahru I never knew existed.',
-        rating: 4,
+        rating: 5,
         avatarUrl: 'https://i.pravatar.cc/150?u=marcus',
+      },
+      {
+        name: 'Elena Rodriguez',
+        role: 'Freelance Writer',
+        content: 'I love how I can filter by "vibe". Sometimes I need a quiet library atmosphere, other times a lively social spot. This app gets it.',
+        rating: 4,
+        avatarUrl: 'https://i.pravatar.cc/150?u=elena',
       },
     ],
   });
 
   // 6. Seed Blog Posts
   console.log('📰 Seeding blog posts...');
-  await prisma.blogPost.create({
-    data: {
-      title: 'Top 5 Work-Friendly Cafes in Singapore',
-      slug: 'top-5-work-friendly-cafes-singapore',
-      excerpt: 'Struggling to find a productive space? We have curated the best spots with fast Wi-Fi and plenty of outlets.',
-      content: 'Finding the perfect balance between a good latte and a reliable internet connection can be tricky. In this post, we explore five cafes that offer the ideal environment for deep work...',
-      authorId: admin.id,
-      status: PostStatus.PUBLISHED,
-      publishedAt: new Date(),
-      coverImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200',
-    },
+  await prisma.blogPost.createMany({
+    data: [
+      {
+        title: 'Top 5 Work-Friendly Cafes in Davao City',
+        slug: 'top-5-work-friendly-cafes-davao',
+        excerpt: 'Struggling to find a productive space in Davao? We have curated the best spots with fast Wi-Fi and plenty of outlets.',
+        content: 'Finding the perfect balance between a good latte and a reliable internet connection can be tricky. In Davao, the coffee scene is thriving with spaces that cater to digital nomads and students alike. In this post, we explore five cafes that offer the ideal environment for deep work, from the modern Espresso Lab to the cozy Green Coffee...',
+        authorId: admin.id,
+        status: PostStatus.PUBLISHED,
+        publishedAt: new Date(),
+        coverImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200',
+      },
+      {
+        title: 'Davao Specialty Coffee: From Mt. Apo to Your Cup',
+        slug: 'davao-specialty-coffee-guide',
+        excerpt: 'Discover the unique flavors of coffee grown on the slopes of Mt. Apo, the highest peak in the Philippines.',
+        content: 'Mindanao is home to some of the best coffee beans in the world, specifically those harvested from the fertile soils of Mt. Apo. Local roasters like Purge Coffee and Paramount are leading the charge in showcasing these unique single-origin profiles...',
+        authorId: admin.id,
+        status: PostStatus.PUBLISHED,
+        publishedAt: new Date(Date.now() - 86400000), // 1 day ago
+        coverImage: 'https://images.unsplash.com/photo-1544787210-282bb218999b?auto=format&fit=crop&q=80&w=1200',
+      },
+      {
+        title: 'Hidden Garden Cafes in the Heart of Davao',
+        slug: 'hidden-garden-cafes-davao',
+        excerpt: 'Escape the city hustle and discover these green sanctuaries tucked away in the city center.',
+        content: 'Sometimes you just need to get away from the noise without leaving the city. Davao has some incredible garden cafes that offer a breath of fresh air, like the stunning Glasshouse at Oboza Heritage House...',
+        authorId: admin.id,
+        status: PostStatus.PUBLISHED,
+        publishedAt: new Date(Date.now() - 172800000), // 2 days ago
+        coverImage: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=1200',
+      },
+    ]
   });
+
+  // 7. Seed Curated Lists
+  console.log('📚 Seeding curated lists...');
+  const allCafes = await prisma.cafe.findMany();
+  
+  const list1 = await prisma.curatedList.create({
+    data: {
+      title: 'Davao Digital Nomad Favorites',
+      slug: 'davao-digital-nomad-favorites',
+      description: 'The best spots in Davao for deep work, fast Wi-Fi, and endless refills.',
+      coverImage: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&q=80&w=1200',
+      featured: true,
+    }
+  });
+
+  const list2 = await prisma.curatedList.create({
+    data: {
+      title: 'Aesthetic Weekend Brunch in Davao',
+      slug: 'aesthetic-weekend-brunch-davao',
+      description: 'Instagram-worthy interiors paired with exceptional Davao coffee and food.',
+      coverImage: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&q=80&w=1200',
+      featured: true,
+    }
+  });
+
+  const list3 = await prisma.curatedList.create({
+    data: {
+      title: 'Mindanao Specialty Coffee Guide',
+      slug: 'mindanao-specialty-coffee-guide',
+      description: 'For the serious enthusiasts: where to find the rarest Mindanao roasts and best techniques.',
+      coverImage: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1200',
+      featured: true,
+    }
+  });
+
+  // Link cafes to lists
+  for (const list of [list1, list2, list3]) {
+    const randomCafes = allCafes
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 3);
+    
+    for (let i = 0; i < randomCafes.length; i++) {
+      await prisma.curatedListCafe.create({
+        data: {
+          listId: list.id,
+          cafeId: randomCafes[i].id,
+          sortOrder: i,
+        }
+      });
+    }
+  }
 
   console.log('✅ Seeding completed successfully!');
 }

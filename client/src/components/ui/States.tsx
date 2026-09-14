@@ -1,3 +1,4 @@
+import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 import { Coffee, AlertCircle, SearchX } from "lucide-react";
@@ -5,10 +6,7 @@ import { Coffee, AlertCircle, SearchX } from "lucide-react";
 interface EmptyStateProps {
   title?: string;
   description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
+  action?: React.ReactNode;
   className?: string;
 }
 
@@ -26,9 +24,9 @@ export function EmptyState({
       <h3 className="text-xl font-serif font-bold text-brand-charcoal mb-2">{title}</h3>
       <p className="text-brand-muted max-w-sm mb-8">{description}</p>
       {action && (
-        <Button onClick={action.onClick} variant="outline">
-          {action.label}
-        </Button>
+        <div className="flex justify-center">
+          {action}
+        </div>
       )}
     </div>
   );

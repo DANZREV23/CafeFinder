@@ -34,6 +34,7 @@ enum ReviewStatus {
   PENDING
   APPROVED
   REJECTED
+  HIDDEN
 }
 
 enum PostStatus {
@@ -48,6 +49,13 @@ enum ClaimStatus {
   REJECTED
 }
 
+enum CafeSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model User {
   id           String     @id @default(cuid())
   name         String
@@ -59,15 +67,35 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  ownedCafes    Cafe[]          @relation("CafeOwner")
-  reviews       CafeReview[]
-  favorites     CafeFavorite[]
-  claims        CafeOwnerClaim[]
-  blogPosts     BlogPost[]
-  notifications Notification[]
-  activityLogs  ActivityLog[]
+  ownedCafes      Cafe[]           @relation("CafeOwner")
+  reviews         CafeReview[]
+  favorites       CafeFavorite[]
+  claims          CafeOwnerClaim[]
+  blogPosts       BlogPost[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
+  sessions        Session[]
+  cafeSubmissions CafeSubmission[] @relation("CafeSubmitter")
 
   @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([tokenHash])
+  @@map("sessions")
 }
 
 model Cafe {
@@ -107,6 +135,7 @@ model Cafe {
   favorites   CafeFavorite[]
   claims      CafeOwnerClaim[]
   curatedList CuratedListCafe[]
+  submission  CafeSubmission?  @relation("CafeCreatedFrom")
 
   @@index([status])
   @@index([city])
@@ -115,6 +144,65 @@ model Cafe {
   @@index([ratingAverage])
   @@index([createdAt])
   @@map("cafes")
+}
+
+model CafeSubmission {
+  id                      String               @id @default(cuid())
+  submittedById           String
+  cafeId                  String?              @unique
+  name                    String
+  shortDescription        String               @db.Text
+  description             String               @db.Text
+  address                 String
+  city                    String
+  state                   String?
+  country                 String
+  postalCode              String?
+  latitude                Decimal?             @db.Decimal(10, 7)
+  longitude               Decimal?             @db.Decimal(10, 7)
+  phone                   String?
+  email                   String?
+  website                 String?              @db.Text
+  instagram               String?              @db.Text
+  facebook                String?              @db.Text
+  priceRange              Int?                 @default(1)
+  status                  CafeSubmissionStatus @default(PENDING)
+  rejectionReason         String?              @db.Text
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+
+  submittedBy User                    @relation("CafeSubmitter", fields: [submittedById], references: [id])
+  cafe        Cafe?                   @relation("CafeCreatedFrom", fields: [cafeId], references: [id])
+  photos      CafeSubmissionPhoto[]
+  amenities   CafeSubmissionAmenity[]
+
+  @@index([submittedById])
+  @@index([status])
+  @@map("cafe_submissions")
+}
+
+model CafeSubmissionPhoto {
+  id           String   @id @default(cuid())
+  submissionId String
+  url          String   @db.Text
+  caption      String?  @db.Text
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  submission CafeSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("cafe_submission_photos")
+}
+
+model CafeSubmissionAmenity {
+  submissionId String
+  amenityId    String
+
+  submission CafeSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  amenity    Amenity        @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([submissionId, amenityId])
+  @@map("cafe_submission_amenities")
 }
 
 model Amenity {
@@ -127,7 +215,8 @@ model Amenity {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  cafes CafeAmenity[]
+  cafes           CafeAmenity[]
+  cafeSubmissions CafeSubmissionAmenity[]
 
   @@map("amenities")
 }
@@ -191,6 +280,7 @@ model CafeReview {
   user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   photos CafeReviewPhoto[]
 
+  @@unique([cafeId, userId])
   @@index([cafeId])
   @@index([userId])
   @@index([status])
@@ -239,6 +329,9 @@ model CafeFavorite {
   cafe Cafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, cafeId])
+  @@index([userId])
+  @@index([cafeId])
+  @@index([userId, createdAt])
   @@map("cafe_favorites")
 }
 

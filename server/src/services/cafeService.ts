@@ -1,6 +1,7 @@
 import { CafeRepository, CafeFilters } from '../repositories/cafeRepository.js';
 import { generateSlug } from '../utils/slug.js';
 import { Prisma } from '@prisma/client';
+import { prisma } from '../config/database.js';
 
 export class CafeService {
   private cafeRepository: CafeRepository;
@@ -30,12 +31,78 @@ export class CafeService {
     };
   }
 
-  async getCafeBySlug(slug: string) {
-    const cafe = await this.cafeRepository.findBySlug(slug);
+  async getCafeBySlug(slug: string, currentUserId?: string) {
+    const cafe = await prisma.cafe.findUnique({
+      where: { slug },
+      include: {
+        photos: {
+          orderBy: { sortOrder: 'asc' },
+        },
+        hours: {
+          orderBy: { dayOfWeek: 'asc' },
+        },
+        amenities: {
+          include: {
+            amenity: true,
+          },
+        },
+        reviews: {
+          where: { status: 'APPROVED' },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+            photos: true,
+          },
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            role: true,
+          },
+        },
+        favorites: currentUserId ? {
+          where: { userId: currentUserId },
+          take: 1,
+        } : false,
+      },
+    });
+
     if (!cafe || cafe.status !== 'PUBLISHED') {
       return null;
     }
-    return cafe;
+
+    // Get related cafes (same city, excluding current)
+    const relatedCafes = await prisma.cafe.findMany({
+      where: {
+        city: cafe.city,
+        id: { not: cafe.id },
+        status: 'PUBLISHED',
+      },
+      include: {
+        photos: {
+          where: { isCover: true },
+          take: 1,
+        },
+        favorites: currentUserId ? {
+          where: { userId: currentUserId },
+          take: 1,
+        } : false,
+      },
+      take: 4,
+    });
+
+    return {
+      ...cafe,
+      relatedCafes,
+    };
   }
 
   async createCafe(data: Prisma.CafeCreateInput) {

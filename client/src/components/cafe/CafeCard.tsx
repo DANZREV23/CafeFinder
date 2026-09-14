@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +9,7 @@ import { CafeLocation } from "./CafeLocation";
 import { CafePrice } from "./CafePrice";
 import { CafeAmenities } from "./CafeAmenities";
 import { Cafe } from "@/types";
+import { FavoriteButton } from "./FavoriteButton";
 
 interface CafeCardProps {
   cafe: Cafe;
@@ -18,8 +18,6 @@ interface CafeCardProps {
 }
 
 export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured = false }) => {
-  const [isFavorited, setIsFavorited] = React.useState(false);
-
   return (
     <Card 
       variant="interactive" 
@@ -49,21 +47,15 @@ export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured 
           )}
         </div>
 
-        {/* Favorite Button */}
-        <button 
-          onClick={(e) => {
-            e.preventDefault();
-            setIsFavorited(!isFavorited);
-          }}
-          className={cn(
-            "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all shadow-sm z-10",
-            isFavorited 
-              ? "bg-rose-500 text-white" 
-              : "bg-white/80 text-brand-charcoal hover:bg-white hover:text-rose-500"
-          )}
-        >
-          <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} />
-        </button>
+        {/* Favorite Button Overlay */}
+        <div className="absolute top-3 right-3 z-10">
+          <FavoriteButton 
+            cafeId={cafe.id} 
+            cafeName={cafe.name} 
+            initialIsFavorite={cafe.isFavorite}
+            size="sm"
+          />
+        </div>
       </div>
 
       <div className="p-4 flex flex-col flex-grow">

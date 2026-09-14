@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
@@ -10,12 +11,23 @@ import { errorHandler } from './middleware/errorHandler.js';
 // Routes
 import cafeRoutes from './routes/cafe.routes.js';
 import healthRoutes from './routes/health.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import listRoutes from './routes/list.routes.js';
+import testimonialRoutes from './routes/testimonial.routes.js';
+import blogRoutes from './routes/blog.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import userRoutes from './routes/user.routes.js';
+import claimRoutes from './routes/claim.routes.js';
+import submissionRoutes from './routes/submission.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function createApp() {
   const app = express();
+
+  // Trust the first proxy (required for rate limiting on Cloud Run/behind Nginx)
+  app.set('trust proxy', 1);
 
   // Basic security and logging
   app.use(helmet({
@@ -28,6 +40,7 @@ export async function createApp() {
   app.use(morgan('dev'));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
 
   // Static files for uploads
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -35,6 +48,14 @@ export async function createApp() {
   // API Routes
   app.use('/api/health', healthRoutes);
   app.use('/api/cafes', cafeRoutes);
+  app.use('/api/auth', authRoutes);
+  app.use('/api/lists', listRoutes);
+  app.use('/api/testimonials', testimonialRoutes);
+  app.use('/api/blog', blogRoutes);
+  app.use('/api/reviews', reviewRoutes);
+  app.use('/api/users', userRoutes);
+  app.use('/api/claims', claimRoutes);
+  app.use('/api/cafe-submissions', submissionRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {

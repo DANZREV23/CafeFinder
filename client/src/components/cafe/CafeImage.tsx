@@ -38,6 +38,7 @@ export const CafeImage: React.FC<CafeImageProps> = ({
         <img
           src={src || fallback}
           alt={alt || "Cafe image"}
+          loading="lazy"
           className={cn(
             "h-full w-full object-cover transition-all duration-300",
             isLoading ? "scale-105 opacity-0" : "scale-100 opacity-100",

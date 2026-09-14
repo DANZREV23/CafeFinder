@@ -34,6 +34,14 @@ export function errorHandler(
     });
   }
 
+  // Handle Prisma Connection Errors
+  if (err.message && (err.message.includes('Can\'t reach database server') || err.message.includes('connection due to administrator command'))) {
+    return res.status(503).json({
+      success: false,
+      error: { message: 'Database service temporarily unavailable. Please try again in a moment.' },
+    });
+  }
+
   // Generic internal error
   const status = err.status || 500;
   const message = process.env.NODE_ENV === 'production' 

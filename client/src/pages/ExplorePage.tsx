@@ -1,16 +1,26 @@
 import * as React from "react";
+import { useSearchParams } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { Button } from "@/components/ui/Button";
 import { CafeCard } from "@/components/cafe/CafeCard";
 import { CafeGrid, CafeGridSkeleton } from "@/components/cafe/CafeGrid";
 import { EmptyState, ErrorState } from "@/components/ui/States";
-import { cafeService } from "@/services/api";
+import { cafeService } from "@/services/cafeService";
 import { Cafe } from "@/types";
-import { Filter, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { SlidersHorizontal } from "lucide-react";
+import { ExploreHeader } from "@/components/explore/ExploreHeader";
+import { FilterPanel } from "@/components/explore/FilterPanel";
+import { SortSelect } from "@/components/explore/SortSelect";
+import { ActiveFilters } from "@/components/explore/ActiveFilters";
+import { ExplorePagination } from "@/components/explore/ExplorePagination";
+import { MobileFilterDrawer } from "@/components/explore/MobileFilterDrawer";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+
+import { MapProvider } from "@/components/map/MapProvider";
+import { CafeMap } from "@/components/map/CafeMap";
+import { Map, List } from "lucide-react";
 
 export default function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,12 +28,31 @@ export default function ExplorePage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [totalItems, setTotalItems] = React.useState(0);
-  
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = React.useState(false);
+  const [selectedCafeId, setSelectedCafeId] = React.useState<string | null>(null);
+  const [viewMode, setViewMode] = React.useState<"list" | "map">("list");
+
+  // Ref for result list container to handle scrolling
+  const resultListRef = React.useRef<HTMLDivElement>(null);
+
+  // Parse URL parameters
   const page = parseInt(searchParams.get("page") || "1");
   const search = searchParams.get("search") || "";
-  const sort = searchParams.get("sort") || "latest";
+  const sort = searchParams.get("sort") || "rating";
   const city = searchParams.get("city") || "";
-  const [totalPages, setTotalPages] = React.useState(1);
+  const priceRange = searchParams.get("priceRange") ? parseInt(searchParams.get("priceRange")!) : undefined;
+  const featured = searchParams.get("featured") === "true";
+  const trending = searchParams.get("trending") === "true";
+  const verified = searchParams.get("verified") === "true";
+
+  const filters = {
+    city,
+    priceRange,
+    featured,
+    trending,
+    verified,
+  };
 
   const fetchCafes = async () => {
     setLoading(true);
@@ -34,7 +63,11 @@ export default function ExplorePage() {
         limit: 12,
         search,
         sort,
-        city
+        city,
+        priceRange,
+        featured,
+        trending,
+        verified,
       });
       if (response.success) {
         setCafes(response.data);
@@ -53,147 +86,212 @@ export default function ExplorePage() {
   React.useEffect(() => {
     fetchCafes();
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page, search, sort, city]);
+  }, [page, search, sort, city, priceRange, featured, trending, verified]);
 
-  const handleSearch = (value: string) => {
+  const updateParams = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
-    if (value) newParams.set("search", value);
-    else newParams.delete("search");
-    newParams.set("page", "1");
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "" || value === false) {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, value.toString());
+      }
+    });
+    // Always reset to page 1 when filters change, unless page is explicitly being set
+    if (!updates.page) {
+      newParams.set("page", "1");
+    }
     setSearchParams(newParams);
   };
 
-  const handleSortChange = (value: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("sort", value);
-    newParams.set("page", "1");
-    setSearchParams(newParams);
+  const handleFilterChange = (key: string, value: any) => {
+    updateParams({ [key]: value });
   };
 
-  const breadcrumbs = [
-    { label: "Home", href: "/" },
-    { label: "Explore", href: "/explore" },
-  ];
+  const handleRemoveFilter = (key: string) => {
+    updateParams({ [key]: undefined });
+  };
+
+  const handleClearAll = () => {
+    setSearchParams({});
+  };
+
+  const handleCafeSelect = (cafeId: string | null) => {
+    setSelectedCafeId(cafeId);
+    if (cafeId && resultListRef.current) {
+      const element = document.getElementById(`cafe-card-${cafeId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
 
   return (
-    <MainLayout>
-      <PageHeader 
-        title="Explore Cafes"
-        description="Find coffee shops that match your mood, work style, and taste. Discover specialty brews and local favorites."
-        breadcrumbs={breadcrumbs}
-        background="cream"
-      />
-
-      <PageContainer className="pb-24">
-        {/* Filters and Search Bar */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-12 -mt-8 relative z-10">
-          <div className="flex-grow">
-            <SearchInput 
-              placeholder="Search by cafe name, location, or vibe..." 
-              defaultValue={search}
-              onSearch={handleSearch}
-              onClear={() => handleSearch("")}
-              className="shadow-lg h-14 md:h-16"
-            />
-          </div>
-          <div className="flex gap-2">
-            <select 
-              value={sort}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="h-14 md:h-16 px-6 bg-white shadow-lg border border-brand-border rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-coffee/20 appearance-none min-w-[140px] cursor-pointer"
-            >
-              <option value="latest">Newest</option>
-              <option value="rating">Top Rated</option>
-              <option value="popular">Most Popular</option>
-              <option value="name">Name (A-Z)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Filter Chips Placeholder */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8 pb-2">
-          {["Singapore", "Central", "East", "West"].map(filterCity => (
-            <button 
-              key={filterCity}
-              onClick={() => {
-                const newParams = new URLSearchParams(searchParams);
-                if (city === filterCity) newParams.delete("city");
-                else newParams.set("city", filterCity);
-                newParams.set("page", "1");
-                setSearchParams(newParams);
-              }}
-              className={`whitespace-nowrap px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                city === filterCity 
-                ? "bg-brand-coffee text-white border-brand-coffee" 
-                : "bg-white text-brand-muted border-brand-border hover:border-brand-coffee hover:text-brand-coffee"
-              }`}
-            >
-              {filterCity}
-            </button>
-          ))}
-        </div>
-
-        {/* Results */}
-        {loading ? (
-          <CafeGridSkeleton />
-        ) : error ? (
-          <ErrorState onRetry={fetchCafes} />
-        ) : cafes.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="space-y-12">
-            <div className="flex justify-between items-center border-b border-brand-border pb-4">
-              <span className="text-sm font-medium text-brand-muted">
-                Showing <span className="text-brand-charcoal">{totalItems}</span> cafes
-              </span>
-            </div>
-
-            <CafeGrid>
-              {cafes.map((cafe) => (
-                <CafeCard key={cafe.id} cafe={cafe} />
-              ))}
-            </CafeGrid>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 pt-8">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    const newParams = new URLSearchParams(searchParams);
-                    newParams.set("page", Math.max(1, page - 1).toString());
-                    setSearchParams(newParams);
-                  }}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-brand-charcoal">
-                    {page}
-                  </span>
-                  <span className="text-sm text-brand-muted">
-                    of {totalPages}
-                  </span>
+    <MainLayout showFooter={false}>
+      <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-brand-background">
+        {/* Header Area */}
+          <header className="bg-white border-b border-brand-border px-6 py-4 z-20">
+            <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row gap-4 items-center">
+              <div className="flex-1 w-full">
+                <SearchInput 
+                  placeholder="Search cafes, cities, or vibes..." 
+                  defaultValue={search}
+                  onSearch={(val) => handleFilterChange("search", val)}
+                  onClear={() => handleRemoveFilter("search")}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="bg-brand-cream/50 p-1 rounded-xl border border-brand-border flex md:hidden">
+                  <button 
+                    onClick={() => setViewMode("list")}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+                      viewMode === "list" ? "bg-white text-brand-coffee shadow-sm" : "text-brand-muted"
+                    )}
+                  >
+                    <List className="w-4 h-4" />
+                    List
+                  </button>
+                  <button 
+                    onClick={() => setViewMode("map")}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+                      viewMode === "map" ? "bg-white text-brand-coffee shadow-sm" : "text-brand-muted"
+                    )}
+                  >
+                    <Map className="w-4 h-4" />
+                    Map
+                  </button>
                 </div>
                 <Button
                   variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    const newParams = new URLSearchParams(searchParams);
-                    newParams.set("page", Math.min(totalPages, page + 1).toString());
-                    setSearchParams(newParams);
-                  }}
-                  disabled={page === totalPages}
+                  className="h-10 px-4 border-brand-border flex items-center gap-2"
+                  onClick={() => setIsMobileFiltersOpen(true)}
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Filters
+                </Button>
+                <SortSelect 
+                  value={sort}
+                  onChange={(val) => handleFilterChange("sort", val)}
+                />
+              </div>
+            </div>
+          </header>
+
+          <div className="flex-1 flex overflow-hidden relative">
+            {/* Results Sidebar / List */}
+            <aside 
+              className={cn(
+                "w-full lg:w-[40%] xl:w-[35%] border-r border-brand-border bg-white flex flex-col transition-all duration-300 z-10",
+                viewMode === "map" ? "hidden lg:flex" : "flex"
+              )}
+            >
+              {/* Active Filters Bar */}
+              <div className="px-6 py-3 border-b border-brand-border bg-brand-background/30 overflow-x-auto no-scrollbar">
+                <ActiveFilters 
+                  search={search}
+                  city={city}
+                  priceRange={priceRange}
+                  featured={featured}
+                  trending={trending}
+                  verified={verified}
+                  onRemove={handleRemoveFilter}
+                  onClearAll={handleClearAll}
+                />
+              </div>
+
+              <div 
+                ref={resultListRef}
+                className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-thin scrollbar-thumb-brand-border"
+              >
+                {loading ? (
+                  <div className="space-y-6">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="h-[400px] bg-brand-border/10 animate-pulse rounded-3xl" />
+                    ))}
+                  </div>
+                ) : error ? (
+                  <ErrorState onRetry={fetchCafes} />
+                ) : cafes.length === 0 ? (
+                  <EmptyState 
+                    title={search ? `No results for "${search}"` : "No cafes found"}
+                    description="Try adjusting your filters to find what you're looking for."
+                    action={<Button onClick={handleClearAll} variant="outline">Clear filters</Button>}
+                  />
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-widest text-brand-muted">
+                        {totalItems} Cafes Found
+                      </span>
+                    </div>
+                    <div className="space-y-6 pb-24 lg:pb-6">
+                      {cafes.map((cafe) => (
+                        <div 
+                          key={cafe.id} 
+                          id={`cafe-card-${cafe.id}`}
+                          className={cn(
+                            "transition-all duration-300",
+                            selectedCafeId === cafe.id && "ring-2 ring-brand-coffee ring-offset-4 rounded-3xl"
+                          )}
+                          onClick={() => setSelectedCafeId(cafe.id)}
+                        >
+                          <CafeCard cafe={cafe} />
+                        </div>
+                      ))}
+                      
+                      <div className="pt-4">
+                        <ExplorePagination 
+                          currentPage={page}
+                          totalPages={totalPages}
+                          onPageChange={(p) => updateParams({ page: p })}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </aside>
+
+            {/* Map Area */}
+            <main 
+              className={cn(
+                "flex-1 relative bg-brand-cream/10",
+                viewMode === "list" ? "hidden lg:block" : "block"
+              )}
+            >
+              <CafeMap 
+                cafes={cafes}
+                selectedCafeId={selectedCafeId}
+                onCafeSelect={handleCafeSelect}
+                className="rounded-none border-0"
+              />
+              
+              {/* Floating Map Actions */}
+              <div className="absolute top-6 left-6 flex flex-col gap-2">
+                <Button 
+                  onClick={() => setIsMobileFiltersOpen(true)}
+                  className="lg:hidden bg-white text-brand-charcoal hover:bg-brand-background shadow-xl rounded-2xl h-12 px-6 border-brand-border"
+                >
+                  <SlidersHorizontal className="w-4 h-4 mr-2" />
+                  Filters
                 </Button>
               </div>
-            )}
+            </main>
           </div>
-        )}
-      </PageContainer>
+        </div>
+
+        <MobileFilterDrawer 
+          isOpen={isMobileFiltersOpen}
+          onClose={() => setIsMobileFiltersOpen(false)}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClearAll={handleClearAll}
+          totalResults={totalItems}
+        />
     </MainLayout>
   );
 }
+

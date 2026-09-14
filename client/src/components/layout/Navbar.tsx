@@ -1,22 +1,23 @@
 import * as React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Coffee, Search, User } from "lucide-react";
+import { Menu, X, Coffee, Search, User, LogOut, LayoutDashboard, Settings, Heart, ShieldCheck, ClipboardList, PlusCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { PageContainer } from "./PageContainer";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { label: "Explore", href: "/explore" },
-  { label: "Cafes", href: "/cafes" },
-  { label: "Lists", href: "/lists" },
   { label: "Journal", href: "/blog" },
   { label: "About", href: "/about" },
 ];
 
 export function Navbar() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const location = useLocation();
 
   React.useEffect(() => {
@@ -27,10 +28,16 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close menu on route change
+  // Close menus on route change
   React.useEffect(() => {
     setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
   }, [location]);
+
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+  };
 
   return (
     <>
@@ -77,12 +84,80 @@ export function Navbar() {
               </button>
               
               <div className="hidden sm:flex items-center gap-2">
-                <Link to="/owner">
-                  <Button variant="ghost" size="sm" className="hidden lg:flex">For Owners</Button>
+                <Link to="/owner" className="hidden lg:flex">
+                  <Button variant="ghost" size="sm">For Owners</Button>
                 </Link>
-                <Link to="/login">
-                  <Button variant="primary" size="sm">Sign In</Button>
-                </Link>
+                
+                {isAuthenticated ? (
+                  <div className="relative">
+                    <button 
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center gap-2 p-1 pl-3 bg-brand-background rounded-full border border-brand-border hover:border-brand-coffee transition-all"
+                    >
+                      <span className="text-sm font-medium text-brand-charcoal hidden md:block">
+                        {user?.name.split(' ')[0]}
+                      </span>
+                      <div className="w-8 h-8 rounded-full bg-brand-coffee text-white flex items-center justify-center overflow-hidden">
+                        {user?.avatarUrl ? (
+                          <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User size={16} />
+                        )}
+                      </div>
+                    </button>
+
+                    <AnimatePresence>
+                      {isUserMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute right-0 mt-2 w-48 bg-white border border-brand-border rounded-xl shadow-xl py-2 overflow-hidden"
+                        >
+                          <Link to="/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
+                            <LayoutDashboard size={16} className="text-brand-muted" />
+                            Dashboard
+                          </Link>
+                          <Link to="/my-submissions" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
+                            <ClipboardList size={16} className="text-brand-muted" />
+                            My Submissions
+                          </Link>
+                          <Link to="/favorites" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
+                            <Heart size={16} className="text-brand-muted" />
+                            Saved Cafes
+                          </Link>
+                          {user?.role === "ADMIN" && (
+                            <Link to="/admin/claims" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
+                              <ShieldCheck size={16} className="text-brand-muted" />
+                              Review Claims
+                            </Link>
+                          )}
+                          <Link to="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
+                            <Settings size={16} className="text-brand-muted" />
+                            Account
+                          </Link>
+                          <div className="h-px bg-brand-border my-1" />
+                          <button 
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <LogOut size={16} />
+                            Sign Out
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Link to="/login">
+                      <Button variant="ghost" size="sm">Sign In</Button>
+                    </Link>
+                    <Link to="/register">
+                      <Button variant="primary" size="sm">Sign Up</Button>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Mobile Menu Toggle */}
@@ -123,13 +198,53 @@ export function Navbar() {
                   </Link>
                 ))}
                 <div className="h-px bg-brand-border my-2" />
-                <Link to="/owner" className="text-lg font-medium text-brand-muted">For Owners</Link>
-                <Link to="/submit-cafe" className="text-lg font-medium text-brand-muted">Submit a Cafe</Link>
-                <div className="flex flex-col gap-3 mt-4">
-                  <Link to="/login">
-                    <Button fullWidth>Sign In</Button>
-                  </Link>
-                </div>
+                
+                {isAuthenticated ? (
+                  <>
+                    <Link to="/dashboard" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
+                      <LayoutDashboard size={20} className="text-brand-coffee" />
+                      Dashboard
+                    </Link>
+                    <Link to="/my-submissions" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
+                      <ClipboardList size={20} className="text-brand-coffee" />
+                      My Submissions
+                    </Link>
+                    <Link to="/favorites" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
+                      <Heart size={20} className="text-brand-coffee" />
+                      Saved Cafes
+                    </Link>
+                    {user?.role === "ADMIN" && (
+                      <Link to="/admin/claims" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
+                        <ShieldCheck size={20} className="text-brand-coffee" />
+                        Review Claims
+                      </Link>
+                    )}
+                    <Link to="/profile" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
+                      <Settings size={20} className="text-brand-coffee" />
+                      Account Settings
+                    </Link>
+                    <button 
+                      onClick={handleLogout}
+                      className="text-lg font-medium text-red-600 flex items-center gap-2"
+                    >
+                      <LogOut size={20} />
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/owner" className="text-lg font-medium text-brand-muted">For Owners</Link>
+                    <Link to="/submit-cafe" className="text-lg font-medium text-brand-muted">Submit a Cafe</Link>
+                    <div className="flex flex-col gap-3 mt-4">
+                      <Link to="/login">
+                        <Button fullWidth variant="outline">Sign In</Button>
+                      </Link>
+                      <Link to="/register">
+                        <Button fullWidth>Create Account</Button>
+                      </Link>
+                    </div>
+                  </>
+                )}
               </nav>
             </div>
           </motion.div>
@@ -142,19 +257,24 @@ export function Navbar() {
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-brand-border pb-safe">
         <div className="flex justify-around items-center h-16">
-          <Link to="/explore" className="flex flex-col items-center gap-1 text-brand-coffee">
+          <Link to="/" className={cn(
+            "flex flex-col items-center gap-1",
+            location.pathname === "/" ? "text-brand-coffee" : "text-brand-muted"
+          )}>
+            <Coffee className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Home</span>
+          </Link>
+          <Link to="/explore" className={cn(
+            "flex flex-col items-center gap-1",
+            location.pathname === "/explore" ? "text-brand-coffee" : "text-brand-muted"
+          )}>
             <Search className="h-5 w-5" />
             <span className="text-[10px] font-medium">Explore</span>
           </Link>
-          <Link to="/map" className="flex flex-col items-center gap-1 text-brand-muted">
-            <User className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Map</span>
-          </Link>
-          <Link to="/saved" className="flex flex-col items-center gap-1 text-brand-muted">
-             <Coffee className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Saved</span>
-          </Link>
-          <Link to="/login" className="flex flex-col items-center gap-1 text-brand-muted">
+          <Link to={isAuthenticated ? "/profile" : "/login"} className={cn(
+            "flex flex-col items-center gap-1",
+            location.pathname === "/profile" || location.pathname === "/login" ? "text-brand-coffee" : "text-brand-muted"
+          )}>
             <User className="h-5 w-5" />
             <span className="text-[10px] font-medium">Account</span>
           </Link>

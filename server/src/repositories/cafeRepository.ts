@@ -12,6 +12,7 @@ export interface CafeFilters {
   verified?: boolean;
   sort?: 'rating' | 'latest' | 'name' | 'popular';
   status?: string;
+  currentUserId?: string;
 }
 
 export class CafeRepository {
@@ -26,7 +27,8 @@ export class CafeRepository {
       trending,
       verified,
       sort = 'latest',
-      status = 'PUBLISHED'
+      status = 'PUBLISHED',
+      currentUserId
     } = filters;
 
     const skip = (page - 1) * limit;
@@ -37,11 +39,11 @@ export class CafeRepository {
 
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { shortDescription: { contains: search } },
-        { description: { contains: search } },
-        { city: { contains: search } },
-        { address: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { shortDescription: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+        { address: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -90,6 +92,10 @@ export class CafeRepository {
               amenity: true,
             },
           },
+          favorites: currentUserId ? {
+            where: { userId: currentUserId },
+            take: 1,
+          } : false,
         },
         skip,
         take: limit,
@@ -102,14 +108,32 @@ export class CafeRepository {
   }
 
   async findBySlug(slug: string) {
-    return prisma.cafe.findUnique({
+    const cafe = await prisma.cafe.findUnique({
       where: { slug },
       include: {
-        photos: true,
-        hours: true,
+        photos: {
+          orderBy: { sortOrder: 'asc' },
+        },
+        hours: {
+          orderBy: { dayOfWeek: 'asc' },
+        },
         amenities: {
           include: {
             amenity: true,
+          },
+        },
+        reviews: {
+          where: { status: 'APPROVED' },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+            photos: true,
           },
         },
         owner: {
@@ -122,6 +146,29 @@ export class CafeRepository {
         },
       },
     });
+
+    if (!cafe) return null;
+
+    // Get related cafes (same city, excluding current)
+    const relatedCafes = await prisma.cafe.findMany({
+      where: {
+        city: cafe.city,
+        id: { not: cafe.id },
+        status: 'PUBLISHED',
+      },
+      include: {
+        photos: {
+          where: { isCover: true },
+          take: 1,
+        },
+      },
+      take: 4,
+    });
+
+    return {
+      ...cafe,
+      relatedCafes,
+    };
   }
 
   async findById(id: string) {
