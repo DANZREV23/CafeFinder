@@ -127,9 +127,9 @@ export function Navbar() {
                             Saved Cafes
                           </Link>
                           {user?.role === "ADMIN" && (
-                            <Link to="/admin/claims" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
+                            <Link to="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
                               <ShieldCheck size={16} className="text-brand-muted" />
-                              Review Claims
+                              Admin Portal
                             </Link>
                           )}
                           <Link to="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
@@ -214,9 +214,9 @@ export function Navbar() {
                       Saved Cafes
                     </Link>
                     {user?.role === "ADMIN" && (
-                      <Link to="/admin/claims" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
+                      <Link to="/admin" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
                         <ShieldCheck size={20} className="text-brand-coffee" />
-                        Review Claims
+                        Admin Portal
                       </Link>
                     )}
                     <Link to="/profile" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">

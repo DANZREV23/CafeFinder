@@ -129,8 +129,34 @@ export interface PaginatedResponse<T> {
 }
 
 export type Role = 'USER' | 'OWNER' | 'ADMIN';
-
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+export type CafeStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED' | 'ARCHIVED';
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
 export type CafeSubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface AdminDashboardStats {
+  pendingCafeSubmissions: number;
+  pendingReviews: number;
+  publishedCafes: number;
+  rejectedSubmissions: number;
+  totalUsers: number;
+}
+
+export interface ActivityLog {
+  id: string;
+  userId: string | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  description: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  } | null;
+}
 
 export interface CafeSubmission {
   id: string;
@@ -156,12 +182,19 @@ export interface CafeSubmission {
   rejectionReason: string | null;
   createdAt: string;
   updatedAt: string;
+  submittedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
   photos: {
     id: string;
     url: string;
     caption: string | null;
   }[];
   amenities: {
+    amenity: Amenity;
+  }[] | {
     id: string;
     name: string;
   }[];
@@ -172,7 +205,9 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  status: UserStatus;
   avatarUrl?: string | null;
+  createdAt: string;
 }
 
 export interface ApiResponse<T> {
