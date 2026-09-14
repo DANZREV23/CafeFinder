@@ -129,6 +129,18 @@ export class AdminService {
       if (!submission) throw new Error('Submission not found');
       if (submission.status !== 'PENDING') throw new Error('Submission is not in PENDING status');
 
+      const requiredFields = [
+        ['name', submission.name],
+        ['short description', submission.shortDescription],
+        ['address', submission.address],
+        ['city', submission.city],
+        ['country', submission.country]
+      ] as const;
+      const missingField = requiredFields.find(([, value]) => !value?.trim());
+      if (missingField) {
+        throw new Error(`Submission is missing required field: ${missingField[0]}`);
+      }
+
       // Check for duplicates
       const existingCafe = await tx.cafe.findFirst({
         where: {
@@ -157,15 +169,15 @@ export class AdminService {
         data: {
           name: submission.name,
           slug: uniqueSlug,
-          shortDescription: submission.shortDescription,
-          description: submission.description,
+          shortDescription: submission.shortDescription.trim(),
+          description: submission.description.trim(),
           address: submission.address,
           city: submission.city,
           state: submission.state || '',
           country: submission.country,
           postalCode: submission.postalCode || '',
-          latitude: submission.latitude,
-          longitude: submission.longitude,
+          latitude: submission.latitude === null ? null : Number(submission.latitude),
+          longitude: submission.longitude === null ? null : Number(submission.longitude),
           phone: submission.phone,
           email: submission.email,
           website: submission.website,

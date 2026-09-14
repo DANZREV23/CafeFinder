@@ -20,7 +20,7 @@ const authLimiter = rateLimit({
 router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/logout', authController.logout);
-router.get('/me', authController.me);
+router.get('/me', requireAuth, authController.me);
 
 // Test routes for authorization
 router.get('/test-auth', requireAuth, (req, res) => {

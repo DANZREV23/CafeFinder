@@ -4,6 +4,7 @@ import {
   Star, 
   MapPin, 
   Users, 
+  History,
   Clock, 
   ArrowRight,
   AlertCircle,
