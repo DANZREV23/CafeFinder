@@ -27,10 +27,28 @@ export function errorHandler(
     });
   }
 
+  if (err.code === 'P2003') {
+    return res.status(400).json({
+      success: false,
+      error: { message: 'Foreign key constraint failed: A related record is required or missing' },
+    });
+  }
+
   if (err.code === 'P2025') {
     return res.status(404).json({
       success: false,
       error: { message: 'Record not found' },
+    });
+  }
+
+  if (err.code && err.code.startsWith('P')) {
+    return res.status(400).json({
+      success: false,
+      error: { 
+        message: 'Database operation failed',
+        code: err.code,
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      },
     });
   }
 

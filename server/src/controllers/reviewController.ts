@@ -27,8 +27,10 @@ export class ReviewController {
   getCafeReviews = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { cafeId } = req.params;
-      const page = req.query.page ? parseInt(req.query.page as string) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const parsedPage = req.query.page ? parseInt(req.query.page as string) : 1;
+      const page = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+      const parsedLimit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const limit = isNaN(parsedLimit) || parsedLimit < 1 ? 10 : Math.min(parsedLimit, 100);
 
       const result = await this.reviewService.getCafeReviews(cafeId, { page, limit });
 

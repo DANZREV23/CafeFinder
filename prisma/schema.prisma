@@ -157,6 +157,7 @@ model Cafe {
   curatedList CuratedListCafe[]
   submission  CafeSubmission?  @relation("CafeCreatedFrom")
   changeRequests CafeChangeRequest[]
+  menus          Menu[]
 
   @@index([status])
   @@index([city])
@@ -490,4 +491,97 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("activity_logs")
+}
+
+model Menu {
+  id          String   @id @default(cuid())
+  cafeId      String
+  name        String
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cafe       Cafe           @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  categories MenuCategory[]
+
+  @@index([cafeId])
+  @@map("menus")
+}
+
+model MenuCategory {
+  id          String   @id @default(cuid())
+  menuId      String
+  name        String
+  description String?  @db.Text
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menu  Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  items MenuItem[]
+
+  @@index([menuId])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  categoryId  String
+  name        String
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?  @db.Text
+  isAvailable Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category     MenuCategory          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tags         MenuItemTag[]
+  optionGroups MenuItemOptionGroup[]
+
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+model MenuItemTag {
+  id     String @id @default(cuid())
+  itemId String
+  name   String
+
+  item MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("menu_item_tags")
+}
+
+model MenuItemOptionGroup {
+  id           String   @id @default(cuid())
+  itemId       String
+  name         String
+  minSelection Int      @default(0)
+  maxSelection Int      @default(1)
+  isRequired   Boolean  @default(false)
+
+  item    MenuItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  options MenuItemOption[]
+
+  @@index([itemId])
+  @@map("menu_item_option_groups")
+}
+
+model MenuItemOption {
+  id            String  @id @default(cuid())
+  optionGroupId String
+  name          String
+  priceModifier Decimal @default(0) @db.Decimal(10, 2)
+  isAvailable   Boolean @default(true)
+
+  group MenuItemOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+
+  @@index([optionGroupId])
+  @@map("menu_item_options")
 }

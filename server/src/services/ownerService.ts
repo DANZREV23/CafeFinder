@@ -5,6 +5,9 @@ import { prisma } from '../config/database.js';
 import { ActivityLogService } from './activityLogService.js';
 import { OwnerCafeSummaryDto, OwnerChangeRequestDto, OwnerDashboardDto, OwnerReviewDto } from '../dtos/ownerDto.js';
 
+import { MenuRepository } from '../repositories/menuRepository.js';
+import { mapToMenuDto } from '../dtos/menuDto.js';
+
 const fail = (message: string, status = 400) => Object.assign(new Error(message), { status });
 const ownerCafeInclude = {
   photos: { orderBy: { sortOrder: 'asc' as const } },
@@ -37,11 +40,13 @@ export class OwnerService {
 
   async getOwnedCafes(userId: string, isAdmin: boolean, page = 1, limit = 20) {
     const where = isAdmin ? {} : { ownerId: userId };
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
     const [cafes, total] = await Promise.all([
-      prisma.cafe.findMany({ where, orderBy: { updatedAt: 'desc' }, skip: (page - 1) * limit, take: limit, include: ownerCafeInclude }),
+      prisma.cafe.findMany({ where, orderBy: { updatedAt: 'desc' }, skip: (safePage - 1) * safeLimit, take: safeLimit, include: ownerCafeInclude }),
       prisma.cafe.count({ where })
     ]);
-    return { data: cafes.map(cafe => this.mapSummary(cafe)), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data: cafes.map(cafe => this.mapSummary(cafe)), pagination: { page: safePage, limit: safeLimit, total, totalPages: Math.ceil(total / safeLimit) } };
   }
 
   async getOwnedCafe(id: string, userId: string, isAdmin: boolean) {
@@ -116,12 +121,14 @@ export class OwnerService {
 
   async getReviews(cafeId: string, userId: string, isAdmin: boolean, page = 1, limit = 20): Promise<{ data: OwnerReviewDto[]; pagination: any }> {
     await this.requireCafe(cafeId, userId, isAdmin);
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
     const where = { cafeId, status: { in: ['PENDING', 'APPROVED'] as any[] } };
     const [reviews, total] = await Promise.all([
-      prisma.cafeReview.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true, avatarUrl: true } }, photos: true } }),
+      prisma.cafeReview.findMany({ where, skip: (safePage - 1) * safeLimit, take: safeLimit, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true, avatarUrl: true } }, photos: true } }),
       prisma.cafeReview.count({ where })
     ]);
-    return { data: reviews.map(review => ({ id: review.id, overallRating: review.overallRating, coffeeRating: review.coffeeRating, ambianceRating: review.ambianceRating, serviceRating: review.serviceRating, comment: review.comment, createdAt: review.createdAt, reviewer: review.user, photos: review.photos })), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data: reviews.map(review => ({ id: review.id, overallRating: review.overallRating, coffeeRating: review.coffeeRating, ambianceRating: review.ambianceRating, serviceRating: review.serviceRating, comment: review.comment, createdAt: review.createdAt, reviewer: review.user, photos: review.photos })), pagination: { page: safePage, limit: safeLimit, total, totalPages: Math.ceil(total / safeLimit) } };
   }
 
   async uploadPhoto(cafeId: string, userId: string, isAdmin: boolean, file: { filename: string }) {
@@ -157,6 +164,191 @@ export class OwnerService {
     });
     await this.activityLogs.logAction({ userId, action: 'OWNER_CHANGED_COVER_PHOTO', entityType: 'CafePhoto', entityId: photo.id, description: `Changed cover photo for ${cafe.name}` });
     return prisma.cafePhoto.findMany({ where: { cafeId: cafe.id }, orderBy: { sortOrder: 'asc' } });
+  }
+
+  // Menu Management
+  private menuRepository = new MenuRepository();
+
+  async getMenus(cafeId: string, userId: string, isAdmin: boolean) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    const menus = await this.menuRepository.findByCafeId(cafeId, false);
+    return menus.map(mapToMenuDto);
+  }
+
+  async createMenu(cafeId: string, userId: string, isAdmin: boolean, data: any) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const menu = await this.menuRepository.create({
+      name: data.name,
+      description: data.description,
+      isActive: data.isActive ?? true,
+      sortOrder: data.sortOrder ?? 0,
+      cafe: { connect: { id: cafe.id } }
+    });
+    await this.activityLogs.logAction({ userId, action: 'OWNER_CREATED_MENU', entityType: 'Menu', entityId: menu.id, description: `Created menu ${menu.name} for ${cafe.name}` });
+    return mapToMenuDto(menu);
+  }
+
+  async updateMenu(cafeId: string, menuId: string, userId: string, isAdmin: boolean, data: any) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const existingMenu = await this.menuRepository.findById(menuId);
+    if (!existingMenu || existingMenu.cafeId !== cafe.id) throw fail('Menu not found', 404);
+
+    const menu = await this.menuRepository.update(menuId, {
+      name: data.name,
+      description: data.description,
+      isActive: data.isActive,
+      sortOrder: data.sortOrder
+    });
+    await this.activityLogs.logAction({ userId, action: 'OWNER_UPDATED_MENU', entityType: 'Menu', entityId: menu.id, description: `Updated menu ${menu.name} for ${cafe.name}` });
+    return mapToMenuDto(menu);
+  }
+
+  async deleteMenu(cafeId: string, menuId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const existingMenu = await this.menuRepository.findById(menuId);
+    if (!existingMenu || existingMenu.cafeId !== cafe.id) throw fail('Menu not found', 404);
+
+    await this.menuRepository.delete(menuId);
+    await this.activityLogs.logAction({ userId, action: 'OWNER_DELETED_MENU', entityType: 'Menu', entityId: menuId, description: `Deleted menu ${existingMenu.name} for ${cafe.name}` });
+    return { message: 'Menu deleted' };
+  }
+
+  // Categories
+  async createCategory(cafeId: string, menuId: string, userId: string, isAdmin: boolean, data: any) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const menu = await this.menuRepository.findById(menuId);
+    if (!menu || menu.cafeId !== cafe.id) throw fail('Menu not found', 404);
+
+    const category = await this.menuRepository.createCategory({
+      name: data.name,
+      description: data.description,
+      sortOrder: data.sortOrder ?? 0,
+      menu: { connect: { id: menuId } }
+    });
+    await this.activityLogs.logAction({ userId, action: 'OWNER_CREATED_MENU_CATEGORY', entityType: 'MenuCategory', entityId: category.id, description: `Created category ${category.name} in menu ${menu.name}` });
+    return category;
+  }
+
+  async updateCategory(cafeId: string, categoryId: string, userId: string, isAdmin: boolean, data: any) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const category = await this.menuRepository.findCategoryWithOwnership(categoryId);
+    if (!category || category.menu.cafe.id !== cafe.id) throw fail('Category not found', 404);
+
+    const updated = await this.menuRepository.updateCategory(categoryId, {
+      name: data.name,
+      description: data.description,
+      sortOrder: data.sortOrder
+    });
+    await this.activityLogs.logAction({ userId, action: 'OWNER_UPDATED_MENU_CATEGORY', entityType: 'MenuCategory', entityId: categoryId, description: `Updated category ${updated.name}` });
+    return updated;
+  }
+
+  async deleteCategory(cafeId: string, categoryId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const category = await this.menuRepository.findCategoryWithOwnership(categoryId);
+    if (!category || category.menu.cafe.id !== cafe.id) throw fail('Category not found', 404);
+
+    await this.menuRepository.deleteCategory(categoryId);
+    await this.activityLogs.logAction({ userId, action: 'OWNER_DELETED_MENU_CATEGORY', entityType: 'MenuCategory', entityId: categoryId, description: `Deleted category ${category.name}` });
+    return { message: 'Category deleted' };
+  }
+
+  // Items
+  async createMenuItem(cafeId: string, categoryId: string, userId: string, isAdmin: boolean, data: any) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const category = await this.menuRepository.findCategoryWithOwnership(categoryId);
+    if (!category || category.menu.cafe.id !== cafe.id) throw fail('Category not found', 404);
+
+    const { tags, optionGroups, ...rest } = data;
+    const item = await this.menuRepository.createItem({
+      name: rest.name,
+      description: rest.description,
+      price: new Prisma.Decimal(rest.price),
+      imageUrl: rest.imageUrl,
+      isAvailable: rest.isAvailable ?? true,
+      isFeatured: rest.isFeatured ?? false,
+      sortOrder: rest.sortOrder ?? 0,
+      category: { connect: { id: categoryId } },
+      tags: tags ? {
+        create: tags.map((t: string) => ({ name: t }))
+      } : undefined,
+      optionGroups: optionGroups ? {
+        create: optionGroups.map((og: any) => ({
+          name: og.name,
+          minSelection: og.minSelection ?? 0,
+          maxSelection: og.maxSelection ?? 1,
+          isRequired: og.isRequired ?? false,
+          options: {
+            create: og.options.map((opt: any) => ({
+              name: opt.name,
+              priceModifier: new Prisma.Decimal(opt.priceModifier ?? 0),
+              isAvailable: opt.isAvailable ?? true
+            }))
+          }
+        }))
+      } : undefined
+    });
+
+    await this.activityLogs.logAction({ userId, action: 'OWNER_CREATED_MENU_ITEM', entityType: 'MenuItem', entityId: item.id, description: `Created item ${item.name} in category ${category.name}` });
+    return item;
+  }
+
+  async updateMenuItem(cafeId: string, itemId: string, userId: string, isAdmin: boolean, data: any) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const item = await this.menuRepository.findItemWithOwnership(itemId);
+    if (!item || item.category.menu.cafe.id !== cafe.id) throw fail('Item not found', 404);
+
+    const { tags, optionGroups, ...rest } = data;
+    const updateData: Prisma.MenuItemUpdateInput = {
+      name: rest.name,
+      description: rest.description,
+      price: rest.price !== undefined ? new Prisma.Decimal(rest.price) : undefined,
+      imageUrl: rest.imageUrl,
+      isAvailable: rest.isAvailable,
+      isFeatured: rest.isFeatured,
+      sortOrder: rest.sortOrder,
+    };
+
+    if (tags !== undefined) {
+      updateData.tags = {
+        deleteMany: {},
+        create: tags.map((t: string) => ({ name: t }))
+      };
+    }
+
+    if (optionGroups !== undefined) {
+      // Simplified: replace all option groups
+      updateData.optionGroups = {
+        deleteMany: {},
+        create: optionGroups.map((og: any) => ({
+          name: og.name,
+          minSelection: og.minSelection ?? 0,
+          maxSelection: og.maxSelection ?? 1,
+          isRequired: og.isRequired ?? false,
+          options: {
+            create: og.options.map((opt: any) => ({
+              name: opt.name,
+              priceModifier: new Prisma.Decimal(opt.priceModifier ?? 0),
+              isAvailable: opt.isAvailable ?? true
+            }))
+          }
+        }))
+      };
+    }
+
+    const updated = await this.menuRepository.updateItem(itemId, updateData);
+    await this.activityLogs.logAction({ userId, action: 'OWNER_UPDATED_MENU_ITEM', entityType: 'MenuItem', entityId: itemId, description: `Updated item ${updated.name}` });
+    return updated;
+  }
+
+  async deleteMenuItem(cafeId: string, itemId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const item = await this.menuRepository.findItemWithOwnership(itemId);
+    if (!item || item.category.menu.cafe.id !== cafe.id) throw fail('Item not found', 404);
+
+    await this.menuRepository.deleteItem(itemId);
+    await this.activityLogs.logAction({ userId, action: 'OWNER_DELETED_MENU_ITEM', entityType: 'MenuItem', entityId: itemId, description: `Deleted item ${item.name}` });
+    return { message: 'Item deleted' };
   }
 
   private mapSummary(cafe: any): OwnerCafeSummaryDto {

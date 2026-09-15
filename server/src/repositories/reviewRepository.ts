@@ -12,7 +12,9 @@ export interface ReviewFilters {
 export class ReviewRepository {
   async findAll(filters: ReviewFilters) {
     const { cafeId, userId, status, page = 1, limit = 10 } = filters;
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.CafeReviewWhereInput = {};
     if (cafeId) where.cafeId = cafeId;
@@ -34,7 +36,7 @@ export class ReviewRepository {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       prisma.cafeReview.count({ where }),
     ]);

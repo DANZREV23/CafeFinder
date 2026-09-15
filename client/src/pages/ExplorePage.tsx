@@ -45,6 +45,7 @@ export default function ExplorePage() {
   const featured = searchParams.get("featured") === "true";
   const trending = searchParams.get("trending") === "true";
   const verified = searchParams.get("verified") === "true";
+  const amenities = searchParams.get("amenities") ? searchParams.get("amenities")!.split(",") : [];
 
   const filters = {
     city,
@@ -52,6 +53,7 @@ export default function ExplorePage() {
     featured,
     trending,
     verified,
+    amenities,
   };
 
   const fetchCafes = async () => {
@@ -68,6 +70,7 @@ export default function ExplorePage() {
         featured,
         trending,
         verified,
+        amenities: amenities.length > 0 ? amenities.join(",") : undefined,
       });
       if (response.success) {
         setCafes(response.data);
@@ -86,7 +89,7 @@ export default function ExplorePage() {
   React.useEffect(() => {
     fetchCafes();
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page, search, sort, city, priceRange, featured, trending, verified]);
+  }, [page, search, sort, city, priceRange, featured, trending, verified, amenities.join(",")]);
 
   const updateParams = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -108,8 +111,13 @@ export default function ExplorePage() {
     updateParams({ [key]: value });
   };
 
-  const handleRemoveFilter = (key: string) => {
-    updateParams({ [key]: undefined });
+  const handleRemoveFilter = (key: string, value?: any) => {
+    if (key === "amenities" && value) {
+      const newAmenities = amenities.filter(a => a !== value);
+      updateParams({ [key]: newAmenities.length > 0 ? newAmenities.join(",") : undefined });
+    } else {
+      updateParams({ [key]: undefined });
+    }
   };
 
   const handleClearAll = () => {
@@ -197,6 +205,7 @@ export default function ExplorePage() {
                   featured={featured}
                   trending={trending}
                   verified={verified}
+                  amenities={amenities}
                   onRemove={handleRemoveFilter}
                   onClearAll={handleClearAll}
                 />

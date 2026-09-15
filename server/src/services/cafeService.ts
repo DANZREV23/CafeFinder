@@ -32,47 +32,52 @@ export class CafeService {
   }
 
   async getCafeBySlug(slug: string, currentUserId?: string) {
+    const include: Prisma.CafeInclude = {
+      photos: {
+        orderBy: { sortOrder: 'asc' },
+      },
+      hours: {
+        orderBy: { dayOfWeek: 'asc' },
+      },
+      amenities: {
+        include: {
+          amenity: true,
+        },
+      },
+      reviews: {
+        where: { status: 'APPROVED' },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+            },
+          },
+          photos: true,
+        },
+      },
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+          role: true,
+        },
+      },
+    };
+
+    if (currentUserId) {
+      include.favorites = {
+        where: { userId: currentUserId },
+        take: 1,
+      };
+    }
+
     const cafe = await prisma.cafe.findUnique({
       where: { slug },
-      include: {
-        photos: {
-          orderBy: { sortOrder: 'asc' },
-        },
-        hours: {
-          orderBy: { dayOfWeek: 'asc' },
-        },
-        amenities: {
-          include: {
-            amenity: true,
-          },
-        },
-        reviews: {
-          where: { status: 'APPROVED' },
-          orderBy: { createdAt: 'desc' },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatarUrl: true,
-              },
-            },
-            photos: true,
-          },
-        },
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            role: true,
-          },
-        },
-        favorites: currentUserId ? {
-          where: { userId: currentUserId },
-          take: 1,
-        } : false,
-      },
+      include,
     });
 
     if (!cafe || cafe.status !== 'PUBLISHED') {
@@ -80,22 +85,27 @@ export class CafeService {
     }
 
     // Get related cafes (same city, excluding current)
+    const relatedInclude: Prisma.CafeInclude = {
+      photos: {
+        where: { isCover: true },
+        take: 1,
+      },
+    };
+
+    if (currentUserId) {
+      relatedInclude.favorites = {
+        where: { userId: currentUserId },
+        take: 1,
+      };
+    }
+
     const relatedCafes = await prisma.cafe.findMany({
       where: {
         city: cafe.city,
         id: { not: cafe.id },
         status: 'PUBLISHED',
       },
-      include: {
-        photos: {
-          where: { isCover: true },
-          take: 1,
-        },
-        favorites: currentUserId ? {
-          where: { userId: currentUserId },
-          take: 1,
-        } : false,
-      },
+      include: relatedInclude,
       take: 4,
     });
 

@@ -60,7 +60,9 @@ export class AdminService {
 
   async getSubmissions(filters: any) {
     const { status, search, page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.CafeSubmissionWhereInput = {
       ...(status && status !== 'ALL' && { status: status as CafeSubmissionStatus }),
@@ -85,7 +87,7 @@ export class AdminService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: safeLimit
       }),
       prisma.cafeSubmission.count({ where })
     ]);
@@ -93,10 +95,10 @@ export class AdminService {
     return {
       data,
       pagination: {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / safeLimit)
       }
     };
   }
@@ -290,7 +292,9 @@ export class AdminService {
 
   async getReviews(filters: any) {
     const { status, search, page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.CafeReviewWhereInput = {
       ...(status && status !== 'ALL' && { status: status as ReviewStatus }),
@@ -314,7 +318,7 @@ export class AdminService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: safeLimit
       }),
       prisma.cafeReview.count({ where })
     ]);
@@ -322,10 +326,10 @@ export class AdminService {
     return {
       data,
       pagination: {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / safeLimit)
       }
     };
   }
@@ -374,7 +378,9 @@ export class AdminService {
 
   async getCafes(filters: any) {
     const { status, verified, featured, trending, city, search, sortBy, page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.CafeWhereInput = {
       ...(status && { status: status as CafeStatus }),
@@ -401,7 +407,7 @@ export class AdminService {
         where,
         orderBy,
         skip,
-        take: limit,
+        take: safeLimit,
         include: {
           _count: { select: { reviews: true } }
         }
@@ -412,10 +418,10 @@ export class AdminService {
     return {
       data,
       pagination: {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / safeLimit)
       }
     };
   }
@@ -461,7 +467,9 @@ export class AdminService {
 
   async getUsers(filters: any) {
     const { role, status, search, page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.UserWhereInput = {
       ...(role && { role: role as Role }),
@@ -488,7 +496,7 @@ export class AdminService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: safeLimit
       }),
       prisma.user.count({ where })
     ]);
@@ -496,10 +504,10 @@ export class AdminService {
     return {
       data,
       pagination: {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / safeLimit)
       }
     };
   }

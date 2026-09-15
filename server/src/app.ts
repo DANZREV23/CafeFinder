@@ -22,6 +22,7 @@ import submissionRoutes from './routes/submission.routes.js';
 import amenityRoutes from './routes/amenity.routes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import ownerRoutes from './routes/owner.routes.js';
+import menuRoutes from './routes/menu.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,6 +63,7 @@ export async function createApp() {
   app.use('/api/amenities', amenityRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/owner', ownerRoutes);
+  app.use('/api/menu', menuRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {

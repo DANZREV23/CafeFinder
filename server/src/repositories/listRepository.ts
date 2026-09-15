@@ -8,7 +8,8 @@ export interface ListFilters {
 
 export class CuratedListRepository {
   async findAll(filters: ListFilters = {}) {
-    const { featured, limit } = filters;
+    const { featured, limit = 10 } = filters;
+    const safeLimit = Math.max(limit, 1);
     
     const where: Prisma.CuratedListWhereInput = {};
     
@@ -23,7 +24,7 @@ export class CuratedListRepository {
           select: { cafes: true }
         }
       },
-      take: limit,
+      take: safeLimit,
       orderBy: { createdAt: 'desc' }
     });
   }

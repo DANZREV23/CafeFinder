@@ -5,12 +5,24 @@ import { mapToFavoriteDto } from '../dtos/favoriteDto.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 
 export const getFavoritesQuerySchema = z.object({
-  page: z.string().optional().transform((v) => (v ? parseInt(v) : 1)),
-  limit: z.string().optional().transform((v) => (v ? Math.min(parseInt(v), 50) : 12)),
+  page: z.string().optional().transform((v) => {
+    const parsed = v ? parseInt(v) : 1;
+    return isNaN(parsed) ? 1 : parsed;
+  }),
+  limit: z.string().optional().transform((v) => {
+    const parsed = v ? parseInt(v) : 12;
+    return isNaN(parsed) ? 12 : Math.min(parsed, 50);
+  }),
   search: z.string().optional(),
   city: z.string().optional(),
-  priceRange: z.string().optional().transform((v) => (v ? parseInt(v) : undefined)),
-  minRating: z.string().optional().transform((v) => (v ? parseFloat(v) : undefined)),
+  priceRange: z.string().optional().transform((v) => {
+    const parsed = v ? parseInt(v) : undefined;
+    return parsed === undefined || isNaN(parsed) ? undefined : parsed;
+  }),
+  minRating: z.string().optional().transform((v) => {
+    const parsed = v ? parseFloat(v) : undefined;
+    return parsed === undefined || isNaN(parsed) ? undefined : parsed;
+  }),
   amenities: z.string().optional().transform((v) => (v ? v.split(',') : undefined)),
   sort: z.enum(['recently_saved', 'rating', 'name_asc', 'name_desc']).optional(),
 });

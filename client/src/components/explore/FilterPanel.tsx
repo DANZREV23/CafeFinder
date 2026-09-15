@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Button } from "../ui/Button";
 import { Check, X } from "lucide-react";
+import { cafeService } from "@/services/cafeService";
 
 interface FilterPanelProps {
   filters: {
@@ -9,6 +10,7 @@ interface FilterPanelProps {
     featured?: boolean;
     trending?: boolean;
     verified?: boolean;
+    amenities?: string[];
   };
   onFilterChange: (key: string, value: any) => void;
   onClearAll: () => void;
@@ -21,7 +23,38 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   onClearAll,
   className = "",
 }) => {
+  const [availableAmenities, setAvailableAmenities] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const priceRanges = [1, 2, 3, 4];
+
+  React.useEffect(() => {
+    const fetchAmenities = async () => {
+      try {
+        const response = await cafeService.getAmenities();
+        if (response.success) {
+          setAvailableAmenities(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch amenities", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAmenities();
+  }, []);
+
+  const handleAmenityToggle = (slug: string) => {
+    const current = filters.amenities || [];
+    if (current.includes(slug)) {
+      onFilterChange("amenities", current.filter(s => s !== slug));
+    } else {
+      onFilterChange("amenities", [...current, slug]);
+    }
+  };
+
+  const vibeSlugs = ['study-friendly', 'work-friendly', 'quiet', 'late-night'];
+  const vibes = availableAmenities.filter(a => vibeSlugs.includes(a.slug));
+  const amenities = availableAmenities.filter(a => !vibeSlugs.includes(a.slug));
 
   return (
     <div className={`space-y-8 ${className}`}>
@@ -104,37 +137,69 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         </div>
       </div>
 
-      {/* Amenities (Coming Soon) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
+      {/* Vibes Filter */}
+      {vibes.length > 0 && (
+        <div className="space-y-3">
           <label className="text-sm font-bold text-brand-charcoal uppercase tracking-wider">
-            Amenities
+            Vibe
           </label>
-          <span className="text-[10px] bg-brand-cream text-brand-coffee px-1.5 py-0.5 rounded font-bold uppercase">
-            Soon
-          </span>
+          <div className="flex flex-wrap gap-2">
+            {vibes.map((vibe) => (
+              <button
+                key={vibe.id}
+                onClick={() => handleAmenityToggle(vibe.slug)}
+                className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                  (filters.amenities || []).includes(vibe.slug)
+                    ? "bg-brand-coffee text-white border-brand-coffee shadow-md"
+                    : "bg-brand-cream/30 text-brand-coffee border-brand-coffee/10 hover:border-brand-coffee/30"
+                }`}
+              >
+                {vibe.name}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 opacity-60">
-          {[
-            "Fast Wi-Fi",
-            "Pet Friendly",
-            "Outdoor Seating",
-            "Vegan Options",
-            "Power Outlets",
-            "Quiet",
-            "Air Conditioned",
-            "Study Friendly",
-          ].map((amenity) => (
-            <div
-              key={amenity}
-              className="flex items-center gap-2 px-2 py-1.5 rounded bg-brand-cream/50 text-xs font-medium text-brand-muted cursor-not-allowed"
-            >
-              <div className="w-3 h-3 rounded-full border border-brand-border" />
-              {amenity}
-            </div>
-          ))}
-        </div>
+      )}
+
+      {/* Amenities Filter */}
+      <div className="space-y-3">
+        <label className="text-sm font-bold text-brand-charcoal uppercase tracking-wider">
+          Amenities
+        </label>
+        {loading ? (
+          <div className="grid grid-cols-2 gap-2">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-8 bg-brand-cream/50 animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {amenities.map((amenity) => (
+              <button
+                key={amenity.id}
+                onClick={() => handleAmenityToggle(amenity.slug)}
+                className={`flex items-center gap-2 px-2 py-2 rounded-lg border text-left transition-all ${
+                  (filters.amenities || []).includes(amenity.slug)
+                    ? "bg-brand-coffee/5 border-brand-coffee text-brand-coffee"
+                    : "bg-white border-brand-border hover:border-brand-coffee/30 text-brand-muted"
+                }`}
+              >
+                <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all ${
+                  (filters.amenities || []).includes(amenity.slug)
+                    ? "bg-brand-coffee border-brand-coffee text-white"
+                    : "bg-white border-brand-border"
+                }`}>
+                  {(filters.amenities || []).includes(amenity.slug) && <Check className="w-2.5 h-2.5" />}
+                </div>
+                <span className="text-[11px] font-bold uppercase tracking-tight line-clamp-1">
+                  {amenity.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 };
+

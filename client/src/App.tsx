@@ -3,6 +3,7 @@ import OwnerCafeHoursPage from './pages/OwnerCafeHoursPage';
 import OwnerCafeAmenitiesPage from './pages/OwnerCafeAmenitiesPage';
 import OwnerCafePhotosPage from './pages/OwnerCafePhotosPage';
 import OwnerCafeReviewsPage from './pages/OwnerCafeReviewsPage';
+import OwnerCafeMenuPage from './pages/OwnerCafeMenuPage';
 import OwnerChangeRequestsPage from './pages/OwnerChangeRequestsPage';
 import OwnerCafeLocationPage from './pages/OwnerCafeLocationPage';
 import React from 'react';
@@ -10,6 +11,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from '@/pages/HomePage';
 import ExplorePage from '@/pages/ExplorePage';
 import CafeProfilePage from '@/pages/CafeProfilePage';
+import CafeMenuPage from '@/pages/CafeMenuPage';
 import PlaceholderPage from '@/pages/PlaceholderPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
@@ -53,6 +55,7 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/cafes/:slug" element={<CafeProfilePage />} />
+            <Route path="/cafes/:slug/menu" element={<CafeMenuPage />} />
             <Route path="/cafes/:slug/claim" element={<ProtectedRoute><CafeClaimPage /></ProtectedRoute>} />
             <Route path="/about" element={<PlaceholderPage title="About Us" />} />
             <Route path="/blog" element={<PlaceholderPage title="Coffee Journal" />} />
@@ -106,6 +109,7 @@ export default function App() {
                         <Route path="/owner/cafes/:id/hours" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeHoursPage /></RoleRoute>} />
                         <Route path="/owner/cafes/:id/amenities" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeAmenitiesPage /></RoleRoute>} />
                         <Route path="/owner/cafes/:id/photos" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafePhotosPage /></RoleRoute>} />
+                        <Route path="/owner/cafes/:id/menu" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeMenuPage /></RoleRoute>} />
                         <Route path="/owner/cafes/:id/reviews" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeReviewsPage /></RoleRoute>} />
                         <Route path="/owner/cafes/:id/change-requests" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerChangeRequestsPage /></RoleRoute>} />
             <Route path="/owner/claims" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerClaimsPage /></RoleRoute>} />

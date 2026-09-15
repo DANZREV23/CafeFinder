@@ -63,7 +63,9 @@ export class FavoriteRepository {
       sort = 'recently_saved',
     } = filters;
 
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.CafeFavoriteWhereInput = {
       userId,
@@ -100,13 +102,16 @@ export class FavoriteRepository {
       }
 
       if (amenities?.length) {
-        cafeWhere.amenities = {
-          every: {
-            amenity: {
-              slug: { in: amenities },
-            },
-          },
-        };
+        cafeWhere.AND = [
+          ...(cafeWhere.AND as any[] || []),
+          ...amenities.map(slug => ({
+            amenities: {
+              some: {
+                amenity: { slug }
+              }
+            }
+          }))
+        ];
       }
 
       where.cafe = cafeWhere;
@@ -124,26 +129,28 @@ export class FavoriteRepository {
       orderBy = { createdAt: 'desc' };
     }
 
-    const [data, total] = await Promise.all([
-      prisma.cafeFavorite.findMany({
-        where,
+    const include: Prisma.CafeFavoriteInclude = {
+      cafe: {
         include: {
-          cafe: {
+          photos: {
+            where: { isCover: true },
+            take: 1,
+          },
+          amenities: {
             include: {
-              photos: {
-                where: { isCover: true },
-                take: 1,
-              },
-              amenities: {
-                include: {
-                  amenity: true,
-                },
-              },
+              amenity: true,
             },
           },
         },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.cafeFavorite.findMany({
+        where,
+        include,
         skip,
-        take: limit,
+        take: safeLimit,
         orderBy,
       }),
       prisma.cafeFavorite.count({ where }),

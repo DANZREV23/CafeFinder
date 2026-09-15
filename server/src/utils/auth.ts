@@ -5,8 +5,11 @@ export const COOKIE_NAME = 'cafefinder_session';
 
 export const getCookieOptions = (): CookieOptions => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  // In many dev environments (like AI Studio preview), the app is accessed via HTTPS
+  // but the internal server runs on HTTP. trust-proxy handles this.
+  // We should allow secure cookies if we are on HTTPS.
+  secure: true, 
+  sameSite: 'none', // Required for many iframe scenarios
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 });

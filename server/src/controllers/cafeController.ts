@@ -6,14 +6,24 @@ import { AuthRequest } from '../middleware/authMiddleware.js';
 
 // Validation Schemas
 export const getCafesQuerySchema = z.object({
-  page: z.string().optional().transform((v) => (v ? parseInt(v) : 1)),
-  limit: z.string().optional().transform((v) => (v ? Math.min(parseInt(v), 50) : 12)),
+  page: z.string().optional().transform((v) => {
+    const parsed = v ? parseInt(v) : 1;
+    return isNaN(parsed) || parsed < 1 ? 1 : parsed;
+  }),
+  limit: z.string().optional().transform((v) => {
+    const parsed = v ? parseInt(v) : 12;
+    return isNaN(parsed) || parsed < 1 ? 12 : Math.min(parsed, 50);
+  }),
   search: z.string().optional(),
   city: z.string().optional(),
-  priceRange: z.string().optional().transform((v) => (v ? parseInt(v) : undefined)),
-  featured: z.string().optional().transform((v) => v === 'true'),
-  trending: z.string().optional().transform((v) => v === 'true'),
-  verified: z.string().optional().transform((v) => v === 'true'),
+  priceRange: z.string().optional().transform((v) => {
+    const parsed = v ? parseInt(v) : undefined;
+    return parsed === undefined || isNaN(parsed) ? undefined : parsed;
+  }),
+  featured: z.string().optional().transform((v) => v === undefined ? undefined : v === 'true'),
+  trending: z.string().optional().transform((v) => v === undefined ? undefined : v === 'true'),
+  verified: z.string().optional().transform((v) => v === undefined ? undefined : v === 'true'),
+  amenities: z.string().optional().transform((v) => v ? v.split(',') : undefined),
   sort: z.enum(['rating', 'latest', 'name', 'popular']).optional(),
 });
 

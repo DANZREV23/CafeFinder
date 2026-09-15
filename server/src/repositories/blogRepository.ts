@@ -9,6 +9,7 @@ export interface BlogFilters {
 export class BlogPostRepository {
   async findAll(filters: BlogFilters = {}) {
     const { status = PostStatus.PUBLISHED, limit = 3 } = filters;
+    const safeLimit = Math.max(limit, 1);
     
     return prisma.blogPost.findMany({
       where: { status },
@@ -20,7 +21,7 @@ export class BlogPostRepository {
           }
         }
       },
-      take: limit,
+      take: safeLimit,
       orderBy: { publishedAt: 'desc' }
     });
   }

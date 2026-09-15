@@ -22,8 +22,11 @@ export class ClaimRepository {
         { businessName: { contains: search, mode: 'insensitive' } }
       ] })
     };
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
     const [data, total] = await Promise.all([
-      prisma.cafeOwnerClaim.findMany({ where, include: claimInclude, orderBy: { submittedAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+      prisma.cafeOwnerClaim.findMany({ where, include: claimInclude, orderBy: { submittedAt: 'desc' }, skip, take: safeLimit }),
       prisma.cafeOwnerClaim.count({ where })
     ]);
     return { data, total };

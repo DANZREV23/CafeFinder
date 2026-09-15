@@ -19,4 +19,21 @@ router.post('/cafes/:id/photos/:photoId/cover', controller.setCoverPhoto);
 router.get('/cafes/:id/change-requests', controller.getChangeRequests);
 router.post('/cafes/:id/change-requests', controller.createChangeRequest);
 router.post('/change-requests/:requestId/cancel', controller.cancelChangeRequest);
+
+// Menu management
+router.get('/cafes/:id/menus', controller.getMenus);
+router.post('/cafes/:id/menus', controller.createMenu);
+router.patch('/cafes/:id/menus/:menuId', controller.updateMenu);
+router.delete('/cafes/:id/menus/:menuId', controller.deleteMenu);
+
+// Category management
+router.post('/cafes/:id/menus/:menuId/categories', controller.createCategory);
+router.patch('/cafes/:id/categories/:categoryId', controller.updateCategory);
+router.delete('/cafes/:id/categories/:categoryId', controller.deleteCategory);
+
+// Item management
+router.post('/cafes/:id/categories/:categoryId/items', controller.createMenuItem);
+router.patch('/cafes/:id/items/:itemId', controller.updateMenuItem);
+router.delete('/cafes/:id/items/:itemId', controller.deleteMenuItem);
+
 export default router;

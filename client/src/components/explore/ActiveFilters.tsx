@@ -8,7 +8,8 @@ interface ActiveFiltersProps {
   featured?: boolean;
   trending?: boolean;
   verified?: boolean;
-  onRemove: (key: string) => void;
+  amenities?: string[];
+  onRemove: (key: string, value?: any) => void;
   onClearAll: () => void;
 }
 
@@ -19,12 +20,17 @@ export const ActiveFilters: React.FC<ActiveFiltersProps> = ({
   featured,
   trending,
   verified,
+  amenities = [],
   onRemove,
   onClearAll,
 }) => {
-  const activeCount = [search, city, priceRange, featured, trending, verified].filter(Boolean).length;
+  const activeCount = [search, city, priceRange, featured, trending, verified].filter(Boolean).length + amenities.length;
 
   if (activeCount === 0) return null;
+
+  const formatSlug = (slug: string) => {
+    return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -53,6 +59,14 @@ export const ActiveFilters: React.FC<ActiveFiltersProps> = ({
       {trending && (
         <FilterChip label="Trending Only" onRemove={() => onRemove("trending")} />
       )}
+
+      {amenities.map(amenity => (
+        <FilterChip 
+          key={amenity} 
+          label={formatSlug(amenity)} 
+          onRemove={() => onRemove("amenities", amenity)} 
+        />
+      ))}
 
       {activeCount > 1 && (
         <button

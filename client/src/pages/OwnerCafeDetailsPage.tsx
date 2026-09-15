@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, MapPin, ShieldCheck, Clock, Image, ListChecks, MessageSquare, Pencil } from 'lucide-react';
+import { ArrowLeft, MapPin, ShieldCheck, Clock, Image, ListChecks, MessageSquare, Pencil, Utensils } from 'lucide-react';
 import { MainLayout } from '../components/layout/MainLayout';
 import { PageContainer } from '../components/layout/PageContainer';
 import { ownerService } from '../services/ownerService';

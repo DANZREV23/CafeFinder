@@ -32,8 +32,8 @@ export class AdminController {
       const filters = {
         status: req.query.status as string,
         search: req.query.search as string,
-        page: parseInt(req.query.page as string) || 1,
-        limit: Math.min(parseInt(req.query.limit as string) || 20, 50)
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50)
       };
 
       const result = await this.adminService.getSubmissions(filters);
@@ -91,8 +91,8 @@ export class AdminController {
       const filters = {
         status: req.query.status as string,
         search: req.query.search as string,
-        page: parseInt(req.query.page as string) || 1,
-        limit: Math.min(parseInt(req.query.limit as string) || 20, 50)
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50)
       };
 
       const result = await this.adminService.getReviews(filters);
@@ -172,8 +172,8 @@ export class AdminController {
         city: req.query.city as string,
         search: req.query.search as string,
         sortBy: req.query.sortBy as string,
-        page: parseInt(req.query.page as string) || 1,
-        limit: Math.min(parseInt(req.query.limit as string) || 20, 50)
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50)
       };
 
       const result = await this.adminService.getCafes(filters);
@@ -229,8 +229,8 @@ export class AdminController {
         role: req.query.role as string,
         status: req.query.status as string,
         search: req.query.search as string,
-        page: parseInt(req.query.page as string) || 1,
-        limit: Math.min(parseInt(req.query.limit as string) || 20, 50)
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50)
       };
 
       const result = await this.adminService.getUsers(filters);
@@ -260,8 +260,8 @@ export class AdminController {
         entityType: req.query.entityType as string,
         entityId: req.query.entityId as string,
         search: req.query.search as string,
-        page: parseInt(req.query.page as string) || 1,
-        limit: Math.min(parseInt(req.query.limit as string) || 20, 50)
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50)
       };
 
       const result = await this.activityLogService.getLogs(filters);

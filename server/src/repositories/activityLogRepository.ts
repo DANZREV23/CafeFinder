@@ -27,7 +27,9 @@ export class ActivityLogRepository {
       limit = 20,
     } = filters;
 
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.ActivityLogWhereInput = {
       ...(userId && { userId }),
@@ -65,7 +67,7 @@ export class ActivityLogRepository {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       prisma.activityLog.count({ where }),
     ]);
