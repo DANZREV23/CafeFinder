@@ -22,9 +22,11 @@ export const CafeMenuHighlights: React.FC = () => {
             <h3 className="text-xl font-bold text-brand-charcoal">Explore our full menu</h3>
             <p className="text-brand-muted">Check out our signature brews, artisanal pastries, and seasonal specialties.</p>
           </div>
-          <Button as={Link} to={`/cafes/${slug}/menu`} variant="primary" className="h-12 px-8 rounded-2xl group-hover:gap-4 transition-all">
-            View Menu
-            <ArrowRight className="w-4 h-4" />
+          <Button asChild variant="primary" className="h-12 px-8 rounded-2xl group-hover:gap-4 transition-all">
+            <Link to={`/cafes/${slug}/menu`}>
+              View Menu
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </Button>
         </div>
       </div>

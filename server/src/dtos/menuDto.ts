@@ -55,35 +55,35 @@ export function mapToMenuDto(menu: any): MenuDto {
     description: menu.description,
     isActive: menu.isActive,
     sortOrder: menu.sortOrder,
-    categories: menu.categories ? menu.categories.sort((a: any, b: any) => a.sortOrder - b.sortOrder).map((cat: any) => ({
+    categories: (menu.categories || []).sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0)).map((cat: any) => ({
       id: cat.id,
       name: cat.name,
       description: cat.description,
-      sortOrder: cat.sortOrder,
-      items: cat.items ? cat.items.sort((a: any, b: any) => a.sortOrder - b.sortOrder).map((item: any) => ({
+      sortOrder: cat.sortOrder || 0,
+      items: (cat.items || []).sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0)).map((item: any) => ({
         id: item.id,
         name: item.name,
         description: item.description,
-        price: parseFloat(item.price.toString()),
+        price: item.price ? parseFloat(item.price.toString()) : 0,
         imageUrl: item.imageUrl,
         isAvailable: item.isAvailable,
         isFeatured: item.isFeatured,
-        sortOrder: item.sortOrder,
-        tags: item.tags ? item.tags.map((t: any) => t.name) : [],
-        optionGroups: item.optionGroups ? item.optionGroups.map((group: any) => ({
+        sortOrder: item.sortOrder || 0,
+        tags: (item.tags || []).map((t: any) => t.name),
+        optionGroups: (item.optionGroups || []).map((group: any) => ({
           id: group.id,
           name: group.name,
           minSelection: group.minSelection,
           maxSelection: group.maxSelection,
           isRequired: group.isRequired,
-          options: group.options ? group.options.map((opt: any) => ({
+          options: (group.options || []).map((opt: any) => ({
             id: opt.id,
             name: opt.name,
-            priceModifier: parseFloat(opt.priceModifier.toString()),
+            priceModifier: opt.priceModifier ? parseFloat(opt.priceModifier.toString()) : 0,
             isAvailable: opt.isAvailable,
-          })) : [],
-        })) : [],
-      })) : [],
-    })) : [],
+          })),
+        })),
+      })),
+    })),
   };
 }

@@ -816,6 +816,71 @@ async function main() {
     }
   }
 
+  // 8. Seed Sample Menu for Green Coffee
+  console.log('📖 Seeding sample menu...');
+  const firstCafe = createdCafes[0];
+  const sampleMenu = await prisma.menu.create({
+    data: {
+      cafeId: firstCafe.id,
+      name: 'Main Menu',
+      description: 'Our full selection of specialty coffee and food.',
+      isActive: true,
+      categories: {
+        create: [
+          {
+            name: 'Specialty Coffee',
+            sortOrder: 0,
+            items: {
+              create: [
+                {
+                  name: 'Signature Latte',
+                  description: 'Creamy espresso with our secret house syrup.',
+                  price: 180.00,
+                  sortOrder: 0,
+                  tags: { create: [{ name: 'Popular' }, { name: 'Signature' }] }
+                },
+                {
+                  name: 'Flat White',
+                  description: 'Double shot of espresso with silky micro-foam.',
+                  price: 160.00,
+                  sortOrder: 1
+                },
+                {
+                  name: 'V60 Pour Over',
+                  description: 'Hand-brewed single-origin beans from Mt. Apo.',
+                  price: 200.00,
+                  sortOrder: 2,
+                  tags: { create: [{ name: 'Specialty' }] }
+                }
+              ]
+            }
+          },
+          {
+            name: 'All-Day Breakfast',
+            sortOrder: 1,
+            items: {
+              create: [
+                {
+                  name: 'Avocado Toast',
+                  description: 'Smashed avocado on sourdough with poached egg.',
+                  price: 280.00,
+                  sortOrder: 0,
+                  tags: { create: [{ name: 'Vegan Option' }] }
+                },
+                {
+                  name: 'Fluffy Pancakes',
+                  description: 'Stacked with fresh berries and maple syrup.',
+                  price: 240.00,
+                  sortOrder: 1
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  });
+
   console.log('✅ Seeding completed successfully!');
 }
 

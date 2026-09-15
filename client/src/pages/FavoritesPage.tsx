@@ -83,8 +83,8 @@ export default function FavoritesPage() {
                 Keep track of all the cafes you want to visit and discover new favorites.
               </p>
             </div>
-            <Button as={Link} to="/login?redirect=/favorites" variant="primary" className="h-14 px-12 rounded-2xl">
-              Sign In
+            <Button asChild variant="primary" className="h-14 px-12 rounded-2xl">
+              <Link to="/login?redirect=/favorites">Sign In</Link>
             </Button>
           </div>
         </PageContainer>
@@ -210,8 +210,8 @@ export default function FavoritesPage() {
                       : "Start saving cafes you want to visit and they'll appear here."}
                   </p>
                 </div>
-                <Button as={Link} to="/explore" variant="primary" className="h-14 px-12 rounded-2xl">
-                  Explore Cafes
+                <Button asChild variant="primary" className="h-14 px-12 rounded-2xl">
+                  <Link to="/explore">Explore Cafes</Link>
                 </Button>
               </div>
             )}

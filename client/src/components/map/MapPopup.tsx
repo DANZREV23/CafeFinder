@@ -69,26 +69,30 @@ export const MapPopup: React.FC<MapPopupProps> = ({ cafe, onClose }) => {
 
         <div className="grid grid-cols-2 gap-2 pt-1">
           <Button 
-            as={Link} 
-            to={`/cafes/${cafe.slug}`}
+            asChild
             variant="outline" 
             size="sm"
             className="h-8 text-[10px] font-bold uppercase tracking-wider rounded-xl border-brand-border hover:bg-brand-background"
           >
-            <ExternalLink className="w-3 h-3 mr-1" />
-            View Detail
+            <Link to={`/cafes/${cafe.slug}`}>
+              <ExternalLink className="w-3 h-3 mr-1" />
+              View Detail
+            </Link>
           </Button>
           <Button 
-            as="a"
-            href={directionsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            asChild
             variant="primary" 
             size="sm"
             className="h-8 text-[10px] font-bold uppercase tracking-wider rounded-xl shadow-md"
           >
-            <Navigation className="w-3 h-3 mr-1" />
-            Directions
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Navigation className="w-3 h-3 mr-1" />
+              Directions
+            </a>
           </Button>
         </div>
       </div>

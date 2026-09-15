@@ -271,11 +271,11 @@ export default function CafeProfilePage() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button as={Link} to="/explore" variant="primary" className="h-12 px-8">
-                Explore Cafes
+              <Button asChild variant="primary" className="h-12 px-8">
+                <Link to="/explore">Explore Cafes</Link>
               </Button>
-              <Button as={Link} to="/" variant="outline" className="h-12 px-8">
-                Go Home
+              <Button asChild variant="outline" className="h-12 px-8">
+                <Link to="/">Go Home</Link>
               </Button>
             </div>
           </div>
@@ -357,19 +357,25 @@ export default function CafeProfilePage() {
                   <CafePrice priceRange={cafe.priceRange} className="text-sm font-bold text-brand-coffee" />
                   
                   {cafe.claimStatus === 'MANAGED' && (
-                    <Button as={Link} to={`/owner/cafes/${cafe.id}`} variant="outline" size="sm" className="rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-8 px-4">
-                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> You manage this cafe
+                    <Button asChild variant="outline" size="sm" className="rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-8 px-4">
+                      <Link to={`/owner/cafes/${cafe.id}`}>
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> You manage this cafe
+                      </Link>
                     </Button>
                   )}
                   {cafe.claimStatus === 'PENDING' && (
-                    <Button as={Link} to="/owner/claims" variant="outline" size="sm" className="rounded-full border-amber-200 text-amber-700 hover:bg-amber-50 h-8 px-4">
-                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim pending
+                    <Button asChild variant="outline" size="sm" className="rounded-full border-amber-200 text-amber-700 hover:bg-amber-50 h-8 px-4">
+                      <Link to="/owner/claims">
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim pending
+                      </Link>
                     </Button>
                   )}
                   {cafe.claimStatus === 'OWNED' && <span className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 text-xs font-bold">Owner claimed</span>}
                   {cafe.claimStatus === 'AVAILABLE' && (
-                    <Button as={Link} to={isAuthenticated ? `/cafes/${cafe.slug}/claim` : `/login?redirect=/cafes/${cafe.slug}/claim`} variant="outline" size="sm" className="rounded-full border-brand-coffee/20 text-brand-coffee hover:bg-brand-cream h-8 px-4">
-                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim this cafe
+                    <Button asChild variant="outline" size="sm" className="rounded-full border-brand-coffee/20 text-brand-coffee hover:bg-brand-cream h-8 px-4">
+                      <Link to={isAuthenticated ? `/cafes/${cafe.slug}/claim` : `/login?redirect=/cafes/${cafe.slug}/claim`}>
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim this cafe
+                      </Link>
                     </Button>
                   )}
                 </div>
@@ -535,14 +541,17 @@ export default function CafeProfilePage() {
                 <div className="space-y-4 pt-4 relative z-10">
                   {cafe.website && (
                     <Button 
-                      as="a" 
-                      href={cafe.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                      asChild
                       className="w-full h-14 bg-white text-brand-coffee-dark hover:bg-brand-accent-warm hover:text-white rounded-2xl gap-2 transition-all font-bold"
                     >
-                      Visit Website
-                      <ExternalLink className="w-4 h-4" />
+                      <a 
+                        href={cafe.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                      >
+                        Visit Website
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
                     </Button>
                   )}
                   <Button 
