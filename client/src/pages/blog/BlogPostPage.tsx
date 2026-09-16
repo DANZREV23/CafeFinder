@@ -121,7 +121,11 @@ const BlogPostPage: React.FC = () => {
               </div>
               
               <div className="markdown-body">
-                <ReactMarkdown>{post.content}</ReactMarkdown>
+                {/<\/?[a-z][\s\S]*>/i.test(post.content) ? (
+                  <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                ) : (
+                  <ReactMarkdown>{post.content}</ReactMarkdown>
+                )}
               </div>
             </article>
 

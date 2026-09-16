@@ -38,7 +38,7 @@ export const HeroSearch: React.FC = () => {
             <span>Discover Your Local Coffee Scene</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-brand-black mb-6 leading-tight">
+          <h1 className="text-5xl md:text-7xl font-display font-black tracking-[-0.06em] text-brand-black mb-6 leading-[0.9]">
             Find your next <br />
             <span className="text-brand-coffee">favorite cafe.</span>
           </h1>

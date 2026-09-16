@@ -1,11 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Eye, Layout, Type, Image, Search as SearchIcon, Globe } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Eye, Layout, Type, Image, Search as SearchIcon, Globe, Bold, Italic, List, ListOrdered, Heading, Link2 } from 'lucide-react';
 import { adminBlogService } from '../../services/adminBlogService';
 import { BlogPost, PostStatus } from '../../types';
 import { Button } from '../../components/ui/Button';
 
 const CATEGORIES = ['Coffee Culture', 'Brewing Guides', 'Cafe Reviews', 'Industry News', 'Lifestyle'];
+
+const RichTextEditor: React.FC<{ value: string; onChange: (value: string) => void; placeholder?: string }> = ({ value, onChange, placeholder }) => {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const execCommand = (command: string, value?: string) => {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+    document.execCommand(command, false, value);
+    onChange(editorRef.current.innerHTML);
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 bg-white p-3">
+        <button type="button" onClick={() => execCommand('bold')} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 transition hover:border-primary-200 hover:text-primary-600" aria-label="Bold">
+          <Bold className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => execCommand('italic')} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 transition hover:border-primary-200 hover:text-primary-600" aria-label="Italic">
+          <Italic className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => execCommand('formatBlock', 'h2')} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 transition hover:border-primary-200 hover:text-primary-600" aria-label="Heading">
+          <Heading className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => execCommand('insertUnorderedList')} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 transition hover:border-primary-200 hover:text-primary-600" aria-label="Bullet list">
+          <List className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => execCommand('insertOrderedList')} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 transition hover:border-primary-200 hover:text-primary-600" aria-label="Numbered list">
+          <ListOrdered className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={() => {
+          const url = window.prompt('Enter link URL', 'https://');
+          if (url) execCommand('createLink', url);
+        }} className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 transition hover:border-primary-200 hover:text-primary-600" aria-label="Insert link">
+          <Link2 className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onBlur={handleInput}
+        role="textbox"
+        aria-label={placeholder || 'Post content'}
+        className="min-h-[420px] max-h-[60vh] overflow-auto bg-white px-5 py-4 text-[15px] leading-7 text-neutral-700 outline-none focus:text-neutral-900"
+        style={{ whiteSpace: 'pre-wrap' }}
+      />
+    </div>
+  );
+};
 
 const AdminBlogPostEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -156,13 +219,11 @@ const AdminBlogPostEditPage: React.FC = () => {
 
               {/* Main Content */}
               <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm">
-                <label className="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-4">Content (Markdown)</label>
-                <textarea
+                <label className="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-4">Content</label>
+                <RichTextEditor
                   value={formData.content || ''}
-                  onChange={e => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Write your story here... Markdown is supported!"
-                  rows={20}
-                  className="w-full bg-neutral-50 border border-neutral-100 rounded-xl p-6 text-base font-mono focus:ring-2 focus:ring-primary-500 focus:outline-none resize-none"
+                  onChange={value => setFormData({ ...formData, content: value })}
+                  placeholder="Write your story here..."
                 />
               </div>
             </div>
