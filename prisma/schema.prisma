@@ -396,45 +396,60 @@ model CafeFavorite {
 }
 
 model BlogPost {
-  id          String     @id @default(cuid())
-  title       String
-  slug        String     @unique
-  excerpt     String?    @db.Text
-  content     String     @db.Text
-  coverImage  String?    @db.Text
-  authorId    String
-  status      PostStatus @default(DRAFT)
-  publishedAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id               String     @id @default(cuid())
+  title            String
+  slug             String     @unique
+  excerpt          String?    @db.Text
+  content          String     @db.Text
+  coverImage       String?    @db.Text
+  coverImageAlt    String?
+  category         String?    @db.VarChar(100)
+  metaTitle        String?    @db.VarChar(70)
+  metaDescription  String?    @db.VarChar(160)
+  canonicalUrl     String?
+  authorId         String
+  status           PostStatus @default(DRAFT)
+  publishedAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   author User @relation(fields: [authorId], references: [id])
 
   @@index([slug])
   @@index([status])
   @@index([publishedAt])
+  @@index([category])
   @@map("blog_posts")
 }
 
 model CuratedList {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  description String?  @db.Text
-  coverImage  String?  @db.Text
-  featured    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String      @id @default(cuid())
+  title           String
+  slug            String      @unique
+  description     String?     @db.Text
+  coverImage      String?     @db.Text
+  coverImageAlt   String?
+  featured        Boolean     @default(false)
+  status          PostStatus  @default(DRAFT)
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   cafes CuratedListCafe[]
 
+  @@index([slug])
+  @@index([status])
+  @@index([featured])
+  @@index([sortOrder])
   @@map("curated_lists")
 }
 
 model CuratedListCafe {
-  listId    String
-  cafeId    String
-  sortOrder Int    @default(0)
+  listId        String
+  cafeId        String
+  sortOrder     Int      @default(0)
+  editorialNote String?  @db.Text
+  createdAt     DateTime @default(now())
 
   list CuratedList @relation(fields: [listId], references: [id], onDelete: Cascade)
   cafe Cafe        @relation(fields: [cafeId], references: [id], onDelete: Cascade)

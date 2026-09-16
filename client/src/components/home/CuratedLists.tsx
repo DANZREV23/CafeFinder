@@ -16,8 +16,10 @@ export const CuratedLists: React.FC = () => {
   useEffect(() => {
     const fetchLists = async () => {
       try {
-        const response = await listService.getFeatured(3);
-        setLists(response.data);
+        const response = await listService.getAll({ featured: true, limit: 3 });
+        if (response.success) {
+          setLists(response.data.lists);
+        }
       } catch (err) {
         setError('Unable to load curated lists.');
       } finally {

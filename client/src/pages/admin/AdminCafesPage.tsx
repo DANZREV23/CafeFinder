@@ -228,7 +228,7 @@ export const AdminCafesPage: React.FC = () => {
                        </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <AdminStatusBadge type="cafe" status={cafe.status} size="sm" />
+                      <AdminStatusBadge type="cafe" status={cafe.status as any} size="sm" />
                     </td>
                     <td className="px-6 py-4 text-center">
                        <div className="flex items-center justify-center gap-2">
@@ -244,11 +244,11 @@ export const AdminCafesPage: React.FC = () => {
                           </button>
                           <button 
                             onClick={() => handleToggleFlag(cafe.id, 'featured', cafe.featured)}
-                            disabled={cafe.status !== 'PUBLISHED'}
+                            disabled={cafe.status !== 'PUBLISHED' as any}
                             className={clsx(
                               "p-1.5 rounded-lg transition-all",
                               cafe.featured ? "bg-amber-100 text-amber-600" : "bg-stone-100 text-stone-300 hover:text-stone-400",
-                              cafe.status !== 'PUBLISHED' && "opacity-20 cursor-not-allowed"
+                              cafe.status !== 'PUBLISHED' as any && "opacity-20 cursor-not-allowed"
                             )}
                             title={cafe.featured ? "Remove Featured" : "Mark Featured"}
                           >
@@ -256,11 +256,11 @@ export const AdminCafesPage: React.FC = () => {
                           </button>
                           <button 
                             onClick={() => handleToggleFlag(cafe.id, 'trending', cafe.trending)}
-                            disabled={cafe.status !== 'PUBLISHED'}
+                            disabled={cafe.status !== 'PUBLISHED' as any}
                             className={clsx(
                               "p-1.5 rounded-lg transition-all",
                               cafe.trending ? "bg-green-100 text-green-600" : "bg-stone-100 text-stone-300 hover:text-stone-400",
-                              cafe.status !== 'PUBLISHED' && "opacity-20 cursor-not-allowed"
+                              cafe.status !== 'PUBLISHED' as any && "opacity-20 cursor-not-allowed"
                             )}
                             title={cafe.trending ? "Remove Trending" : "Mark Trending"}
                           >

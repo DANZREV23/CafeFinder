@@ -39,6 +39,14 @@ import AdminOwnerClaimsPage from './pages/admin/AdminOwnerClaimsPage';
 import AdminOwnerClaimDetailsPage from './pages/admin/AdminOwnerClaimDetailsPage';
 import AdminChangeRequestsPage from './pages/admin/AdminChangeRequestsPage';
 import AdminChangeRequestDetailsPage from './pages/admin/AdminChangeRequestDetailsPage';
+import BlogListPage from './pages/blog/BlogListPage';
+import BlogPostPage from './pages/blog/BlogPostPage';
+import ListsPage from './pages/lists/ListsPage';
+import ListPage from './pages/lists/ListPage';
+import AdminBlogPage from './pages/admin/AdminBlogPage';
+import AdminBlogPostEditPage from './pages/admin/AdminBlogPostEditPage';
+import AdminListsPage from './pages/admin/AdminListsPage';
+import AdminListEditPage from './pages/admin/AdminListEditPage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleRoute from './components/auth/RoleRoute';
@@ -58,7 +66,15 @@ export default function App() {
             <Route path="/cafes/:slug/menu" element={<CafeMenuPage />} />
             <Route path="/cafes/:slug/claim" element={<ProtectedRoute><CafeClaimPage /></ProtectedRoute>} />
             <Route path="/about" element={<PlaceholderPage title="About Us" />} />
-            <Route path="/blog" element={<PlaceholderPage title="Coffee Journal" />} />
+            
+            {/* Blog Routes */}
+            <Route path="/blog" element={<BlogListPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
+            
+            {/* Curated Lists Routes */}
+            <Route path="/lists" element={<ListsPage />} />
+            <Route path="/lists/:slug" element={<ListPage />} />
+
             <Route path="/submit-cafe" element={
               <ProtectedRoute>
                 <SubmitCafePage />
@@ -132,6 +148,16 @@ export default function App() {
               <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                           <Route path="change-requests" element={<AdminChangeRequestsPage />} />
                           <Route path="change-requests/:id" element={<AdminChangeRequestDetailsPage />} />
+              
+              {/* Blog Management */}
+              <Route path="blog" element={<AdminBlogPage />} />
+              <Route path="blog/new" element={<AdminBlogPostEditPage />} />
+              <Route path="blog/:id/edit" element={<AdminBlogPostEditPage />} />
+              
+              {/* List Management */}
+              <Route path="lists" element={<AdminListsPage />} />
+              <Route path="lists/new" element={<AdminListEditPage />} />
+              <Route path="lists/:id/edit" element={<AdminListEditPage />} />
             </Route>
             
             {/* Fallback */}

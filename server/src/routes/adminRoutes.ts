@@ -3,11 +3,15 @@ import { AdminController } from '../controllers/adminController.js';
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
 import { ClaimController } from '../controllers/claimController.js';
 import { ChangeRequestController } from '../controllers/changeRequestController.js';
+import { BlogPostController } from '../controllers/blogController.js';
+import { CuratedListController } from '../controllers/listController.js';
 
 const router = Router();
 const adminController = new AdminController();
 const claimController = new ClaimController();
 const changeRequestController = new ChangeRequestController();
+const blogController = new BlogPostController();
+const listController = new CuratedListController();
 
 // All admin routes require authentication and ADMIN role
 router.use(requireAuth);
@@ -54,5 +58,25 @@ router.patch('/users/:id/status', adminController.updateUserStatus);
 
 // Activity Logs
 router.get('/activity-logs', adminController.getActivityLogs);
+
+// Blog Management
+router.get('/blog', blogController.getAdminPosts);
+router.post('/blog', blogController.create);
+router.patch('/blog/:id', blogController.update);
+router.delete('/blog/:id', blogController.delete);
+router.patch('/blog/:id/status', blogController.updateStatus);
+
+// Curated List Management
+router.get('/lists', listController.getAdminLists);
+router.get('/lists/:id', listController.getById);
+router.post('/lists', listController.create);
+router.patch('/lists/:id', listController.update);
+router.delete('/lists/:id', listController.delete);
+router.patch('/lists/:id/status', listController.updateStatus);
+
+// List Cafe Management
+router.post('/lists/:id/cafes', listController.addCafe);
+router.patch('/lists/:id/cafes/:cafeId', listController.updateCafe);
+router.delete('/lists/:id/cafes/:cafeId', listController.removeCafe);
 
 export default router;

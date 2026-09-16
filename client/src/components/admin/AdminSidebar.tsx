@@ -11,7 +11,8 @@ import {
   Settings,
   X,
   MapPin,
-  ChevronRight
+  ChevronRight,
+  LayoutGrid
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
@@ -55,7 +56,8 @@ const MENU_ITEMS = [
     label: 'Content', 
     type: 'group',
     items: [
-      { id: 'blog', label: 'Blog', icon: FileText, path: '/admin/blog', comingSoon: true },
+      { id: 'blog', label: 'Blog Articles', icon: FileText, path: '/admin/blog' },
+      { id: 'lists', label: 'Curated Lists', icon: LayoutGrid, path: '/admin/lists' },
     ]
   },
   { 

@@ -3,27 +3,51 @@ import { Prisma, PostStatus } from '@prisma/client';
 
 export interface BlogFilters {
   status?: PostStatus;
+  category?: string;
+  search?: string;
   limit?: number;
+  offset?: number;
+  excludeId?: string;
 }
 
 export class BlogPostRepository {
   async findAll(filters: BlogFilters = {}) {
-    const { status = PostStatus.PUBLISHED, limit = 3 } = filters;
-    const safeLimit = Math.max(limit, 1);
+    const { status, category, search, limit = 12, offset = 0, excludeId } = filters;
     
-    return prisma.blogPost.findMany({
-      where: { status },
-      include: {
-        author: {
-          select: {
-            name: true,
-            avatarUrl: true
+    const where: Prisma.BlogPostWhereInput = {};
+    
+    if (status) where.status = status;
+    if (category) where.category = category;
+    if (excludeId) where.id = { not: excludeId };
+    
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { excerpt: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    const [posts, total] = await Promise.all([
+      prisma.blogPost.findMany({
+        where,
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true
+            }
           }
-        }
-      },
-      take: safeLimit,
-      orderBy: { publishedAt: 'desc' }
-    });
+        },
+        take: limit,
+        skip: offset,
+        orderBy: { publishedAt: 'desc' }
+      }),
+      prisma.blogPost.count({ where })
+    ]);
+
+    return { posts, total };
   }
 
   async findBySlug(slug: string) {
@@ -32,11 +56,64 @@ export class BlogPostRepository {
       include: {
         author: {
           select: {
+            id: true,
             name: true,
             avatarUrl: true
           }
         }
       }
+    });
+  }
+
+  async findById(id: string) {
+    return prisma.blogPost.findUnique({
+      where: { id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true
+          }
+        }
+      }
+    });
+  }
+
+  async create(data: Prisma.BlogPostCreateInput) {
+    return prisma.blogPost.create({
+      data,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true
+          }
+        }
+      }
+    });
+  }
+
+  async update(id: string, data: Prisma.BlogPostUpdateInput) {
+    return prisma.blogPost.update({
+      where: { id },
+      data,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true
+          }
+        }
+      }
+    });
+  }
+
+  async delete(id: string) {
+    return prisma.blogPost.delete({
+      where: { id }
     });
   }
 }

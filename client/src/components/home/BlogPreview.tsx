@@ -16,8 +16,10 @@ export const BlogPreview: React.FC = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await blogService.getLatest(3);
-        setPosts(response.data);
+        const response = await blogService.getAll({ limit: 3 });
+        if (response.success) {
+          setPosts(response.data.posts);
+        }
       } catch (err) {
         setError('Unable to load blog posts.');
       } finally {

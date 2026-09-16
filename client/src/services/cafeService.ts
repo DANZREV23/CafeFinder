@@ -24,6 +24,10 @@ export const cafeService = {
     return fetchApi<ApiResponse<Cafe>>(`/cafes/${slug}`);
   },
 
+  search: async (q: string) => {
+    return fetchApi<ApiResponse<Cafe[]>>(`/cafes?search=${encodeURIComponent(q)}&limit=10`);
+  },
+
   getAmenities: async () => {
     return fetchApi<ApiResponse<any[]>>('/amenities');
   }

@@ -66,6 +66,21 @@ export class CafeService {
           role: true,
         },
       },
+      curatedList: {
+        where: {
+          list: { status: 'PUBLISHED' }
+        },
+        include: {
+          list: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              coverImage: true
+            }
+          }
+        }
+      }
     };
 
     if (currentUserId) {

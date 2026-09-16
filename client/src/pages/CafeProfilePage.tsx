@@ -568,6 +568,37 @@ export default function CafeProfilePage() {
                   </Button>
                 </div>
               </div>
+              
+              {/* Featured In Lists */}
+              {cafe.curatedLists && cafe.curatedLists.length > 0 && (
+                <div className="p-8 rounded-[40px] border border-brand-border bg-white shadow-sm space-y-6">
+                  <h3 className="text-xl font-serif font-bold text-brand-charcoal">Featured In</h3>
+                  <div className="space-y-4">
+                    {cafe.curatedLists.map(({ list }) => (
+                      <Link 
+                        key={list.id} 
+                        to={`/lists/${list.slug}`}
+                        className="flex items-center gap-4 group"
+                      >
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-brand-border group-hover:border-brand-coffee transition-colors">
+                          <img 
+                            src={list.coverImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=100&q=80'} 
+                            alt={list.title}
+                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-sm text-brand-charcoal group-hover:text-brand-coffee transition-colors leading-tight mb-1">
+                            {list.title}
+                          </h4>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-muted">View Collection</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Location Card */}
               <div className="p-8 rounded-[40px] border border-brand-border bg-white shadow-sm space-y-6">

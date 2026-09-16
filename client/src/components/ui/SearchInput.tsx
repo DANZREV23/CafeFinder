@@ -14,13 +14,13 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
 
     React.useEffect(() => {
       if (value !== undefined) {
-        setInputValue(value);
+        setInputValue(value === null ? "" : value);
       }
     }, [value]);
 
     React.useEffect(() => {
       if (defaultValue !== undefined) {
-        setInputValue(defaultValue);
+        setInputValue(defaultValue === null ? "" : defaultValue);
       }
     }, [defaultValue]);
 

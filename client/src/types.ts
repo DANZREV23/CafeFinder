@@ -1,8 +1,33 @@
 export interface Amenity {
   id: string;
   name: string;
+  label: string;
   slug: string;
   icon: string;
+}
+
+export type PostStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface ListResponse<T> {
+  success?: boolean;
+  data?: {
+    lists?: T[];
+    posts?: T[];
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+  lists?: T[];
+  posts?: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface CafePhoto {
@@ -10,6 +35,7 @@ export interface CafePhoto {
   url: string;
   isCover: boolean;
   altText?: string;
+  caption?: string | null;
 }
 
 export interface CafeHours {
@@ -32,13 +58,22 @@ export interface CafeReview {
   user: {
     id: string;
     name: string;
+    email?: string;
     avatarUrl?: string | null;
   };
+  reviewer?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+  };
+  cafe?: Cafe;
   coffeeRating?: number;
   ambianceRating?: number;
   serviceRating?: number;
   overallRating: number;
   comment?: string;
+  status?: ReviewStatus;
   createdAt: string;
   photos?: CafeReviewPhoto[];
 }
@@ -62,9 +97,10 @@ export interface Cafe {
   featured: boolean;
   trending: boolean;
   verified: boolean;
+  status?: CafeStatus;
   photos: CafePhoto[];
   hours?: CafeHours[];
-  amenities?: { amenity: Amenity }[];
+  amenities?: { amenity: Amenity; amenityId?: string }[];
   website?: string;
   phone?: string;
   email?: string;
@@ -72,8 +108,10 @@ export interface Cafe {
   facebook?: string;
   reviews?: CafeReview[];
   relatedCafes?: Cafe[];
+  curatedLists?: { list: CuratedList }[];
   isFavorite?: boolean;
   claimStatus?: 'AVAILABLE' | 'PENDING' | 'MANAGED' | 'OWNED';
+  coffeeType?: string;
 }
 
 export interface CuratedList {
@@ -82,7 +120,10 @@ export interface CuratedList {
   slug: string;
   description: string | null;
   coverImage: string | null;
+  coverImageAlt?: string | null;
   featured: boolean;
+  status?: PostStatus;
+  sortOrder?: number;
   cafes?: CuratedListCafe[];
   _count: {
     cafes: number;
@@ -93,6 +134,7 @@ export interface CuratedListCafe {
   listId: string;
   cafeId: string;
   sortOrder: number;
+  editorialNote?: string | null;
   cafe: Cafe;
 }
 
@@ -112,7 +154,14 @@ export interface BlogPost {
   excerpt: string | null;
   content: string;
   coverImage: string | null;
+  coverImageAlt?: string | null;
   publishedAt: string | null;
+  status: PostStatus;
+  category?: string | null;
+  readingTime?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  canonicalUrl?: string | null;
   author: {
     name: string;
     avatarUrl: string | null;

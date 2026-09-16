@@ -212,8 +212,8 @@ export const AdminReviewsPage: React.FC = () => {
                       <div className="flex items-center gap-2 text-sm">
                         <User className="w-4 h-4 text-stone-400" />
                         <div className="min-w-0">
-                          <p className="font-medium text-stone-900 truncate">{review.user?.name}</p>
-                          <p className="text-[10px] text-stone-500 truncate">{review.user?.email}</p>
+                          <p className="font-medium text-stone-900 truncate">{review.reviewer?.name || review.user?.name}</p>
+                          <p className="text-[10px] text-stone-500 truncate">{review.reviewer?.email || review.user?.email}</p>
                         </div>
                       </div>
                     </td>
@@ -228,7 +228,7 @@ export const AdminReviewsPage: React.FC = () => {
                       </p>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <AdminStatusBadge type="review" status={review.status} size="sm" />
+                      <AdminStatusBadge type="review" status={review.status as any} size="sm" />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

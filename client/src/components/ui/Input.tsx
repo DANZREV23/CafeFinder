@@ -25,6 +25,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           ref={ref}
           {...props}
+          value={props.value === null ? "" : props.value}
         />
         {error && (
           <p className="text-xs font-medium text-brand-error font-sans">

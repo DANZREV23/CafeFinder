@@ -112,7 +112,7 @@ export const AdminReviewDetailsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {review.status === 'PENDING' && (
+          {review.status === 'PENDING' as any && (
             <>
               <button 
                 onClick={() => handleStatusChange('reject')}
@@ -130,7 +130,7 @@ export const AdminReviewDetailsPage: React.FC = () => {
               </button>
             </>
           )}
-          {review.status === 'APPROVED' && (
+          {review.status === 'APPROVED' as any && (
             <button 
               onClick={() => handleStatusChange('hide')}
               disabled={submitting}
@@ -139,7 +139,7 @@ export const AdminReviewDetailsPage: React.FC = () => {
               <EyeOff className="w-4 h-4" /> Hide Review
             </button>
           )}
-          {(review.status === 'REJECTED' || review.status === 'HIDDEN') && (
+          {(review.status === 'REJECTED' as any || review.status === 'HIDDEN' as any) && (
             <button 
               onClick={() => handleStatusChange('restore')}
               disabled={submitting}
@@ -162,7 +162,7 @@ export const AdminReviewDetailsPage: React.FC = () => {
                   {review.cafe?.name}
                 </Link>
               </div>
-              <AdminStatusBadge type="review" status={review.status} size="sm" />
+              <AdminStatusBadge type="review" status={review.status as any} size="sm" />
             </div>
             
             <div className="p-8">

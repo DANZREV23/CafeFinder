@@ -1,12 +1,18 @@
 import { fetchApi } from './api';
-import { ApiResponse, BlogPost } from '../types';
+import { ApiResponse, BlogPost, ListResponse } from '../types';
 
 export const blogService = {
-  getLatest: async (limit = 3) => {
-    return fetchApi<ApiResponse<BlogPost[]>>(`/blog?limit=${limit}`);
+  getAll: async (params: { page?: number; limit?: number; search?: string; category?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append('page', params.page.toString());
+    if (params.limit) query.append('limit', params.limit.toString());
+    if (params.search) query.append('search', params.search);
+    if (params.category) query.append('category', params.category);
+    
+    return fetchApi<ListResponse<BlogPost>>(`/blog?${query.toString()}`);
   },
 
   getBySlug: async (slug: string) => {
-    return fetchApi<ApiResponse<BlogPost>>(`/blog/${slug}`);
+    return fetchApi<ApiResponse<{ post: BlogPost; relatedPosts: BlogPost[] }>>(`/blog/${slug}`);
   }
 };

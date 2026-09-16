@@ -109,18 +109,21 @@ export const CafeMap: React.FC<CafeMapProps> = ({
   if (loadError) {
     const isTimeout = loadError.message?.includes("timed out");
     const isMissingKey = loadError.message?.includes("Missing API Key");
+    const isBillingError = loadError.message?.includes("Billing") || loadError.message?.includes("Authentication");
 
     return (
       <div className={cn("flex flex-col items-center justify-center bg-brand-background border-2 border-dashed border-brand-border rounded-3xl p-12 text-center", className)}>
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
         <h3 className="text-xl font-serif font-bold text-brand-charcoal mb-2">
-          {isTimeout ? "Connection Timed Out" : isMissingKey ? "Configuration Required" : "Map Unavailable"}
+          {isTimeout ? "Connection Timed Out" : isMissingKey ? "Configuration Required" : isBillingError ? "Billing Required" : "Map Unavailable"}
         </h3>
         <p className="text-brand-muted max-w-xs mx-auto mb-4">
           {isTimeout 
             ? "The map is taking too long to load. Please check your internet connection or reload the page."
             : isMissingKey
             ? "The map provider is not correctly configured. Please check your API key settings."
+            : isBillingError
+            ? "Google Maps billing is not enabled for this project. Please enable billing in the Google Cloud Console."
             : "There was an error loading the map provider. Our team has been notified."}
         </p>
         {(isTimeout || !isMissingKey) && (
