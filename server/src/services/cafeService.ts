@@ -2,9 +2,11 @@ import { CafeRepository, CafeFilters } from '../repositories/cafeRepository.js';
 import { generateSlug } from '../utils/slug.js';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
+import { UserCafeViewRepository } from '../repositories/userCafeViewRepository.js';
 
 export class CafeService {
   private cafeRepository: CafeRepository;
+  private userCafeViewRepository = new UserCafeViewRepository();
 
   constructor() {
     this.cafeRepository = new CafeRepository();
@@ -97,6 +99,11 @@ export class CafeService {
 
     if (!cafe || cafe.status !== 'PUBLISHED') {
       return null;
+    }
+
+    // Record view if user is logged in
+    if (currentUserId) {
+      await this.userCafeViewRepository.upsert(currentUserId, cafe.id);
     }
 
     // Get related cafes (same city, excluding current)

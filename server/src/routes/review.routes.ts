@@ -12,6 +12,7 @@ router.get('/cafe/:cafeId/stats', reviewController.getCafeRatingStats);
 router.get('/cafe/:cafeId/my-review', optionalAuth, reviewController.getUserReviewForCafe);
 
 // Protected routes
+router.get('/me', requireAuth, reviewController.getMyReviews);
 router.post('/cafe/:cafeId', requireAuth, reviewController.create);
 router.patch('/:id', requireAuth, reviewController.update);
 router.delete('/:id', requireAuth, reviewController.delete);

@@ -28,6 +28,7 @@ import MySubmissionsPage from '@/pages/MySubmissionsPage';
 import SubmissionDetailsPage from '@/pages/SubmissionDetailsPage';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import DashboardPage from './pages/DashboardPage';
 import { AdminSubmissionsPage } from './pages/admin/AdminSubmissionsPage';
 import { AdminSubmissionDetailsPage } from './pages/admin/AdminSubmissionDetailsPage';
 import { AdminReviewsPage } from './pages/admin/AdminReviewsPage';
@@ -109,7 +110,7 @@ export default function App() {
             
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <PlaceholderPage title="User Dashboard" />
+                <DashboardPage />
               </ProtectedRoute>
             } />
             

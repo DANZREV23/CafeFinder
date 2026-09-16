@@ -81,6 +81,42 @@ export class ReviewController {
     }
   };
 
+  getMyReviews = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user!.id;
+      const parsedPage = req.query.page ? parseInt(req.query.page as string) : 1;
+      const page = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+      const parsedLimit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const limit = isNaN(parsedLimit) || parsedLimit < 1 ? 10 : Math.min(parsedLimit, 50);
+      const sort = (req.query.sort as string) || 'newest';
+
+      const filters: any = {
+        userId,
+        page,
+        limit,
+      };
+
+      if (sort === 'oldest') filters.orderBy = { createdAt: 'asc' };
+      if (sort === 'highest-rated') filters.orderBy = { overallRating: 'desc' };
+      if (sort === 'lowest-rated') filters.orderBy = { overallRating: 'asc' };
+
+      const result = await this.reviewService.getCafeReviews(undefined as any, filters);
+      
+      res.json({
+        success: true,
+        data: result.data.map(mapToReviewDto),
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   create = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { cafeId } = req.params;

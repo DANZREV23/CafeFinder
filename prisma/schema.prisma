@@ -96,6 +96,7 @@ model User {
   cafeSubmissions CafeSubmission[] @relation("CafeSubmitter")
   changeRequests  CafeChangeRequest[] @relation("ChangeRequestOwner")
   reviewedChangeRequests CafeChangeRequest[] @relation("ChangeRequestReviewer")
+  cafeViews       UserCafeView[]
 
   @@map("users")
 }
@@ -158,6 +159,7 @@ model Cafe {
   submission  CafeSubmission?  @relation("CafeCreatedFrom")
   changeRequests CafeChangeRequest[]
   menus          Menu[]
+  views          UserCafeView[]
 
   @@index([status])
   @@index([city])
@@ -599,4 +601,18 @@ model MenuItemOption {
 
   @@index([optionGroupId])
   @@map("menu_item_options")
+}
+
+model UserCafeView {
+  id        String   @id @default(cuid())
+  userId    String
+  cafeId    String
+  viewedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cafe Cafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cafeId])
+  @@index([userId, viewedAt])
+  @@map("user_cafe_views")
 }
