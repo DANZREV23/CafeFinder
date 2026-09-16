@@ -14,7 +14,8 @@ import {
   Award,
   Edit,
   Eye,
-  AlertCircle
+  AlertCircle,
+  Utensils
 } from 'lucide-react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
@@ -278,7 +279,14 @@ export const AdminCafesPage: React.FC = () => {
                             <Eye className="w-4 h-4" />
                           </Link>
                           <Link 
-                            to={`/admin/cafes/${cafe.id}/edit`}
+                            to={`/owner/cafes/${cafe.id}/menu`}
+                            className="p-2 text-stone-400 hover:text-brand-coffee hover:bg-stone-100 rounded-lg transition-all"
+                            title="Manage Menu"
+                          >
+                            <Utensils className="w-4 h-4" />
+                          </Link>
+                          <Link 
+                            to={`/owner/cafes/${cafe.id}/edit`}
                             className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
                             title="Edit Cafe"
                           >

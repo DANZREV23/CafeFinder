@@ -2,8 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { BlogPostService } from '../services/blogService.js';
 import { z } from 'zod';
 
+const emptyToUndefined = (val: any) => (val === '' ? undefined : val);
+
 const getBlogQuerySchema = z.object({
-  limit: z.string().optional().transform((v) => (v ? parseInt(v) : 3)),
+  limit: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : 3))),
 });
 
 export class BlogPostController {

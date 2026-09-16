@@ -2,8 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { TestimonialService } from '../services/testimonialService.js';
 import { z } from 'zod';
 
+const emptyToUndefined = (val: any) => (val === '' ? undefined : val);
+
 const getTestimonialsQuerySchema = z.object({
-  limit: z.string().optional().transform((v) => (v ? parseInt(v) : undefined)),
+  limit: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : undefined))),
 });
 
 export class TestimonialController {

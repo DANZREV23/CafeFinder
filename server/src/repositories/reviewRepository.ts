@@ -70,6 +70,13 @@ export class ReviewRepository {
       },
       include: {
         photos: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }
@@ -79,6 +86,13 @@ export class ReviewRepository {
       data,
       include: {
         photos: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }
@@ -89,6 +103,13 @@ export class ReviewRepository {
       data,
       include: {
         photos: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }

@@ -4,27 +4,29 @@ import { z } from 'zod';
 import { mapToPublicCafeProfile, mapToPublicCafeSummary } from '../dtos/cafeDto.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 
+const emptyToUndefined = (val: any) => (val === '' ? undefined : val);
+
 // Validation Schemas
 export const getCafesQuerySchema = z.object({
-  page: z.string().optional().transform((v) => {
+  page: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => {
     const parsed = v ? parseInt(v) : 1;
     return isNaN(parsed) || parsed < 1 ? 1 : parsed;
-  }),
-  limit: z.string().optional().transform((v) => {
+  })),
+  limit: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => {
     const parsed = v ? parseInt(v) : 12;
     return isNaN(parsed) || parsed < 1 ? 12 : Math.min(parsed, 50);
-  }),
-  search: z.string().optional(),
-  city: z.string().optional(),
-  priceRange: z.string().optional().transform((v) => {
+  })),
+  search: z.preprocess(emptyToUndefined, z.string().optional()),
+  city: z.preprocess(emptyToUndefined, z.string().optional()),
+  priceRange: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => {
     const parsed = v ? parseInt(v) : undefined;
     return parsed === undefined || isNaN(parsed) ? undefined : parsed;
-  }),
-  featured: z.string().optional().transform((v) => v === undefined ? undefined : v === 'true'),
-  trending: z.string().optional().transform((v) => v === undefined ? undefined : v === 'true'),
-  verified: z.string().optional().transform((v) => v === undefined ? undefined : v === 'true'),
-  amenities: z.string().optional().transform((v) => v ? v.split(',') : undefined),
-  sort: z.enum(['rating', 'latest', 'name', 'popular']).optional(),
+  })),
+  featured: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
+  trending: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
+  verified: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
+  amenities: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v ? v.split(',') : undefined)),
+  sort: z.preprocess(emptyToUndefined, z.enum(['rating', 'latest', 'name', 'popular']).optional()),
 });
 
 export class CafeController {

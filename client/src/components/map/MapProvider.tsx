@@ -64,27 +64,41 @@ export const MapProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isGoogleLoaded, setIsGoogleLoaded] = React.useState(false);
   const [googleError, setGoogleError] = React.useState<any>(null);
   const [isTimedOut, setIsTimedOut] = React.useState(false);
+  const [isAuthFailure, setIsAuthFailure] = React.useState(false);
+
+  // Global handler for Google Maps authentication failures (e.g., BillingNotEnabledMapError)
+  React.useEffect(() => {
+    (window as any).gm_authFailure = () => {
+      console.error("Google Maps authentication failure detected.");
+      setIsAuthFailure(true);
+    };
+    return () => {
+      (window as any).gm_authFailure = null;
+    };
+  }, []);
 
   // Mapbox doesn't need a loader like Google, but we can track its status
   const [isMapboxReady, setIsMapboxReady] = React.useState(config.provider === 'mapbox');
 
   // Timeout detection for initializing state - only starts when loadRequested is true
   React.useEffect(() => {
-    if (loadRequested && config.provider && !isGoogleLoaded && !googleError && !isMapboxReady) {
+    if (loadRequested && config.provider && !isGoogleLoaded && !googleError && !isMapboxReady && !isAuthFailure) {
       const timer = setTimeout(() => {
         setIsTimedOut(true);
       }, 10000); // 10 second timeout
       return () => clearTimeout(timer);
     }
-  }, [loadRequested, config.provider, isGoogleLoaded, googleError, isMapboxReady]);
+  }, [loadRequested, config.provider, isGoogleLoaded, googleError, isMapboxReady, isAuthFailure]);
 
   // If we have a provider but no API key, it's effectively an error or unconfigured state
   // We also check if load was actually requested
-  const isActuallyLoaded = loadRequested && (config.provider === 'google' 
+  const isActuallyLoaded = loadRequested && !isAuthFailure && (config.provider === 'google' 
     ? (isGoogleLoaded && !!config.apiKey) 
     : (isMapboxReady && !!config.apiKey));
 
-  const effectiveError = googleError || 
+  const effectiveError = isAuthFailure 
+    ? new Error("Google Maps Billing or Authentication Error. Please check your API key configuration.") 
+    : googleError || 
     (loadRequested && config.provider && !config.apiKey ? new Error("Missing API Key") : null) ||
     (isTimedOut && !isActuallyLoaded ? new Error("Map initialization timed out") : null);
 
