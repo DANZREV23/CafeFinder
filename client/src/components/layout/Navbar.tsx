@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Coffee, Search, User, LogOut, LayoutDashboard, Settings, Heart, ShieldCheck, ClipboardList, PlusCircle } from "lucide-react";
+import { Menu, X, Coffee, Search, User, LogOut, LayoutDashboard, Settings, Heart, ShieldCheck, ClipboardList, PlusCircle, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -126,6 +126,12 @@ export function Navbar() {
                             <Heart size={16} className="text-brand-muted" />
                             Saved Cafes
                           </Link>
+                          {(user?.role === "OWNER" || user?.role === "ADMIN") && (
+                            <Link to="/owner" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
+                              <BarChart3 size={16} className="text-brand-muted" />
+                              Owner Portal
+                            </Link>
+                          )}
                           {user?.role === "ADMIN" && (
                             <Link to="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-background transition-colors">
                               <ShieldCheck size={16} className="text-brand-muted" />

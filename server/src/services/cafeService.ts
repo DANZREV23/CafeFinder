@@ -142,6 +142,10 @@ export class CafeService {
     };
   }
 
+  async getCafeById(id: string) {
+    return this.cafeRepository.findById(id);
+  }
+
   async createCafe(data: Prisma.CafeCreateInput) {
     let slug = data.slug || generateSlug(data.name);
     

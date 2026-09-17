@@ -3,6 +3,7 @@ import OwnerCafeHoursPage from './pages/OwnerCafeHoursPage';
 import OwnerCafeAmenitiesPage from './pages/OwnerCafeAmenitiesPage';
 import OwnerCafePhotosPage from './pages/OwnerCafePhotosPage';
 import OwnerCafeReviewsPage from './pages/OwnerCafeReviewsPage';
+import OwnerCafeAnalyticsPage from './pages/OwnerCafeAnalyticsPage';
 import OwnerCafeMenuPage from './pages/OwnerCafeMenuPage';
 import OwnerChangeRequestsPage from './pages/OwnerChangeRequestsPage';
 import OwnerCafeLocationPage from './pages/OwnerCafeLocationPage';
@@ -128,6 +129,7 @@ export default function App() {
                         <Route path="/owner/cafes/:id/photos" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafePhotosPage /></RoleRoute>} />
                         <Route path="/owner/cafes/:id/menu" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeMenuPage /></RoleRoute>} />
                         <Route path="/owner/cafes/:id/reviews" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeReviewsPage /></RoleRoute>} />
+                        <Route path="/owner/cafes/:id/analytics" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeAnalyticsPage /></RoleRoute>} />
                         <Route path="/owner/cafes/:id/change-requests" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerChangeRequestsPage /></RoleRoute>} />
             <Route path="/owner/claims" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerClaimsPage /></RoleRoute>} />
             <Route path="/cafe-owner-claims/:id" element={<ProtectedRoute><OwnerClaimDetailsPage /></ProtectedRoute>} />

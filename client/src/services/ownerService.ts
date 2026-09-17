@@ -27,5 +27,9 @@ export interface OwnerCafeSummary {
 export const ownerService = {
   getDashboard: () => fetchApi<ApiResponse<OwnerDashboard>>('/owner/dashboard'),
   getOwnedCafes: (page = 1) => fetchApi<ApiResponse<OwnerCafeSummary[]>>(`/owner/cafes?page=${page}&limit=20`),
-  getOwnedCafe: (id: string) => fetchApi<ApiResponse<any>>(`/owner/cafes/${id}`)
+  getOwnedCafe: (id: string) => fetchApi<ApiResponse<any>>(`/owner/cafes/${id}`),
+  getAnalytics: (cafeId: string, params: { from: string; to: string; interval: 'day' | 'week' | 'month' }) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchApi<ApiResponse<any>>(`/owner/cafes/${cafeId}/analytics?${query}`);
+  }
 };

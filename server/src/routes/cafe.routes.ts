@@ -17,5 +17,6 @@ router.delete('/:id', requireAuth, cafeController.delete);
 router.post('/:cafeId/favorite', requireAuth, favoriteController.toggle);
 router.delete('/:cafeId/favorite', requireAuth, favoriteController.remove);
 router.get('/:cafeId/favorite', optionalAuth, favoriteController.getStatus);
+router.post('/:id/track/:eventType', optionalAuth, cafeController.trackInteraction);
 
 export default router;

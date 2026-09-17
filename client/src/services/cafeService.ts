@@ -30,5 +30,11 @@ export const cafeService = {
 
   getAmenities: async () => {
     return fetchApi<ApiResponse<any[]>>('/amenities');
+  },
+  
+  trackInteraction: async (id: string, eventType: string) => {
+    return fetchApi<ApiResponse<any>>(`/cafes/${id}/track/${eventType}`, {
+      method: 'POST'
+    });
   }
 };

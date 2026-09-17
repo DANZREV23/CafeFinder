@@ -97,6 +97,7 @@ model User {
   changeRequests  CafeChangeRequest[] @relation("ChangeRequestOwner")
   reviewedChangeRequests CafeChangeRequest[] @relation("ChangeRequestReviewer")
   cafeViews       UserCafeView[]
+  analyticsEvents CafeAnalyticsEvent[]
 
   @@map("users")
 }
@@ -160,6 +161,7 @@ model Cafe {
   changeRequests CafeChangeRequest[]
   menus          Menu[]
   views          UserCafeView[]
+  analytics      CafeAnalyticsEvent[]
 
   @@index([status])
   @@index([city])
@@ -601,6 +603,34 @@ model MenuItemOption {
 
   @@index([optionGroupId])
   @@map("menu_item_options")
+}
+
+enum CafeAnalyticsEventType {
+  PROFILE_VIEW
+  FAVORITE_ADDED
+  FAVORITE_REMOVED
+  DIRECTIONS_CLICK
+  WEBSITE_CLICK
+  PHONE_CLICK
+  INSTAGRAM_CLICK
+  FACEBOOK_CLICK
+}
+
+model CafeAnalyticsEvent {
+  id           String                 @id @default(cuid())
+  cafeId       String
+  userId       String?
+  eventType    CafeAnalyticsEventType
+  visitorHash  String?                @db.VarChar(64)
+  createdAt    DateTime               @default(now())
+
+  cafe Cafe  @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([cafeId, createdAt])
+  @@index([cafeId, eventType, createdAt])
+  @@index([visitorHash, cafeId, eventType, createdAt])
+  @@map("cafe_analytics_events")
 }
 
 model UserCafeView {

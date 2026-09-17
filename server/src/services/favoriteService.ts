@@ -1,10 +1,12 @@
 import { FavoriteRepository, FavoriteFilters } from '../repositories/favoriteRepository.js';
 import { CafeRepository } from '../repositories/cafeRepository.js';
 import { prisma } from '../config/database.js';
+import { AnalyticsService } from './analyticsService.js';
 
 export class FavoriteService {
   private favoriteRepository = new FavoriteRepository();
   private cafeRepository = new CafeRepository();
+  private analyticsService = new AnalyticsService();
 
   async toggleFavorite(userId: string, cafeId: string) {
     const cafe = await this.cafeRepository.findById(cafeId);
@@ -22,6 +24,13 @@ export class FavoriteService {
     if (existing) {
       await this.favoriteRepository.removeFavorite(userId, cafeId);
       
+      // Track analytics
+      this.analyticsService.trackEvent({
+        cafeId,
+        userId,
+        eventType: 'FAVORITE_REMOVED'
+      }).catch(err => console.error('Failed to track analytics:', err));
+
       // Log activity
       await prisma.activityLog.create({
         data: {
@@ -37,6 +46,13 @@ export class FavoriteService {
     } else {
       await this.favoriteRepository.addFavorite(userId, cafeId);
       
+      // Track analytics
+      this.analyticsService.trackEvent({
+        cafeId,
+        userId,
+        eventType: 'FAVORITE_ADDED'
+      }).catch(err => console.error('Failed to track analytics:', err));
+
       // Log activity
       await prisma.activityLog.create({
         data: {
@@ -83,6 +99,13 @@ export class FavoriteService {
 
     await this.favoriteRepository.addFavorite(userId, cafeId);
     
+    // Track analytics
+    this.analyticsService.trackEvent({
+      cafeId,
+      userId,
+      eventType: 'FAVORITE_ADDED'
+    }).catch(err => console.error('Failed to track analytics:', err));
+
     await prisma.activityLog.create({
       data: {
         userId,
@@ -99,6 +122,13 @@ export class FavoriteService {
   async removeFavorite(userId: string, cafeId: string) {
     await this.favoriteRepository.removeFavorite(userId, cafeId);
     
+    // Track analytics
+    this.analyticsService.trackEvent({
+      cafeId,
+      userId,
+      eventType: 'FAVORITE_REMOVED'
+    }).catch(err => console.error('Failed to track analytics:', err));
+
     await prisma.activityLog.create({
       data: {
         userId,

@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { CafeService } from '../services/cafeService.js';
+import { AnalyticsService } from '../services/analyticsService.js';
 import { z } from 'zod';
 import { mapToPublicCafeProfile, mapToPublicCafeSummary } from '../dtos/cafeDto.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
+import { CafeAnalyticsEventType } from '@prisma/client';
 
 const emptyToUndefined = (val: any) => (val === '' || val === null ? undefined : val);
 
@@ -31,9 +33,11 @@ export const getCafesQuerySchema = z.object({
 
 export class CafeController {
   private cafeService: CafeService;
+  private analyticsService: AnalyticsService;
 
   constructor() {
     this.cafeService = new CafeService();
+    this.analyticsService = new AnalyticsService();
   }
 
   getAll = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -66,6 +70,15 @@ export class CafeController {
         });
       }
 
+      // Track view asynchronously
+      this.analyticsService.trackEvent({
+        cafeId: cafe.id,
+        userId: req.user?.id,
+        eventType: 'PROFILE_VIEW',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      }).catch(err => console.error('Failed to track view:', err));
+
       res.json({
         success: true,
         data: mapToPublicCafeProfile(cafe)
@@ -95,5 +108,34 @@ export class CafeController {
       success: false,
       error: { message: 'Authentication required' }
     });
+  };
+
+  trackInteraction = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id, eventType } = req.params;
+      
+      const allowedEvents: CafeAnalyticsEventType[] = [
+        'DIRECTIONS_CLICK', 'WEBSITE_CLICK', 'PHONE_CLICK', 'INSTAGRAM_CLICK', 'FACEBOOK_CLICK'
+      ];
+
+      if (!allowedEvents.includes(eventType as CafeAnalyticsEventType)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Invalid interaction type' }
+        });
+      }
+
+      await this.analyticsService.trackEvent({
+        cafeId: id,
+        userId: req.user?.id,
+        eventType: eventType as CafeAnalyticsEventType,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
   };
 }

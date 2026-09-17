@@ -1,14 +1,18 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
 import { OwnerController } from '../controllers/ownerController.js';
+import { OwnerAnalyticsController } from '../controllers/ownerAnalyticsController.js';
 import { uploadOwnerPhoto } from '../middleware/uploadMiddleware.js';
 
 const router = Router();
 const controller = new OwnerController();
+const analyticsController = new OwnerAnalyticsController();
+
 router.use(requireAuth, requireRole('OWNER', 'ADMIN'));
 router.get('/dashboard', controller.getDashboard);
 router.get('/cafes', controller.getCafes);
 router.get('/cafes/:id', controller.getCafe);
+router.get('/cafes/:cafeId/analytics', analyticsController.getAnalytics);
 router.patch('/cafes/:id/business', controller.updateBusiness);
 router.put('/cafes/:id/hours', controller.updateHours);
 router.put('/cafes/:id/amenities', controller.updateAmenities);

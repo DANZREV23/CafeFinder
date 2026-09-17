@@ -501,7 +501,11 @@ export default function CafeProfilePage() {
                       </div>
                     </div>
                     {cafe.phone && (
-                      <a href={`tel:${cafe.phone}`} className="flex items-center gap-4 group">
+                      <a 
+                        href={`tel:${cafe.phone}`} 
+                        className="flex items-center gap-4 group"
+                        onClick={() => cafeService.trackInteraction(cafe.id, 'PHONE_CLICK')}
+                      >
                         <Phone className="w-5 h-5 text-brand-accent-warm shrink-0" />
                         <span className="text-sm font-medium group-hover:text-brand-accent-warm transition-colors">{cafe.phone}</span>
                       </a>
@@ -539,33 +543,35 @@ export default function CafeProfilePage() {
                 </div>
 
                 <div className="space-y-4 pt-4 relative z-10">
-                  {cafe.website && (
-                    <Button 
-                      asChild
-                      className="w-full h-14 bg-white text-brand-coffee-dark hover:bg-brand-accent-warm hover:text-white rounded-2xl gap-2 transition-all font-bold"
-                    >
-                      <a 
-                        href={cafe.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
+                    {cafe.website && (
+                      <Button 
+                        asChild
+                        className="w-full h-14 bg-white text-brand-coffee-dark hover:bg-brand-accent-warm hover:text-white rounded-2xl gap-2 transition-all font-bold"
+                        onClick={() => cafeService.trackInteraction(cafe.id, 'WEBSITE_CLICK')}
                       >
-                        Visit Website
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
+                        <a 
+                          href={cafe.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                        >
+                          Visit Website
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-14 border-white/20 text-white hover:bg-white/10 rounded-2xl gap-2"
+                      onClick={() => {
+                        cafeService.trackInteraction(cafe.id, 'DIRECTIONS_CLICK');
+                        if (cafe.latitude && cafe.longitude) {
+                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${cafe.latitude},${cafe.longitude}`, '_blank');
+                        }
+                      }}
+                    >
+                      <Navigation className="w-4 h-4" />
+                      Get Directions
                     </Button>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-14 border-white/20 text-white hover:bg-white/10 rounded-2xl gap-2"
-                    onClick={() => {
-                      if (cafe.latitude && cafe.longitude) {
-                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${cafe.latitude},${cafe.longitude}`, '_blank');
-                      }
-                    }}
-                  >
-                    <Navigation className="w-4 h-4" />
-                    Get Directions
-                  </Button>
                 </div>
               </div>
               
@@ -606,12 +612,26 @@ export default function CafeProfilePage() {
                     <h3 className="text-xl font-serif font-bold text-brand-charcoal">Location</h3>
                     <div className="flex gap-2">
                       {cafe.instagram && (
-                        <a href={cafe.instagram} target="_blank" rel="noopener noreferrer" className="p-2 bg-brand-cream rounded-full text-brand-coffee hover:bg-brand-coffee hover:text-white transition-all">
-                          <Instagram className="w-4 h-4" />
+                        <a 
+                          href={cafe.instagram} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="p-2 bg-brand-cream rounded-full text-brand-coffee hover:bg-brand-coffee hover:text-white transition-all"
+                          onClick={() => cafeService.trackInteraction(cafe.id, 'INSTAGRAM_CLICK')}
+                        >
+                          <div className="flex gap-2">
+                            <Instagram className="w-4 h-4" />
+                          </div>
                         </a>
                       )}
                       {cafe.facebook && (
-                        <a href={cafe.facebook} target="_blank" rel="noopener noreferrer" className="p-2 bg-brand-cream rounded-full text-brand-coffee hover:bg-brand-coffee hover:text-white transition-all">
+                        <a 
+                          href={cafe.facebook} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="p-2 bg-brand-cream rounded-full text-brand-coffee hover:bg-brand-coffee hover:text-white transition-all"
+                          onClick={() => cafeService.trackInteraction(cafe.id, 'FACEBOOK_CLICK')}
+                        >
                           <Facebook className="w-4 h-4" />
                         </a>
                       )}
