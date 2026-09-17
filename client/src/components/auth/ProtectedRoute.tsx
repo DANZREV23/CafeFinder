@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { SEO } from '../common/SEO';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,7 +23,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <SEO noindex={true} />
+      {children}
+    </>
+  );
 };
 
 export default ProtectedRoute;

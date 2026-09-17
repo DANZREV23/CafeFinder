@@ -5,6 +5,9 @@ import { ArrowLeft, Coffee, MapPin, Star, Share2, ChevronRight, Info } from 'luc
 import { listService } from '../../services/listService';
 import { CuratedList } from '../../types';
 import { MainLayout } from '../../components/layout/MainLayout';
+import { SEO } from '@/components/common/SEO';
+import { ShareButtons } from '@/components/common/ShareButtons';
+import { generateItemListJsonLd, generateBreadcrumbJsonLd } from '@/utils/seoUtils';
 
 const ListPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -24,7 +27,6 @@ const ListPage: React.FC = () => {
       const response = await listService.getBySlug(slug!);
       if (response.success) {
         setList(response.data);
-        document.title = `${response.data.title} | Curated List | CafeFinder`;
       } else {
         navigate('/lists');
       }
@@ -53,6 +55,19 @@ const ListPage: React.FC = () => {
 
   return (
     <MainLayout>
+      <SEO 
+        title={list.title}
+        description={list.description}
+        ogImage={list.coverImage}
+        jsonLd={[
+          generateItemListJsonLd(list),
+          generateBreadcrumbJsonLd([
+            { name: "Home", item: "/" },
+            { name: "Collections", item: "/lists" },
+            { name: list.title, item: `/lists/${list.slug}` }
+          ])
+        ]}
+      />
       <div className="min-h-screen bg-neutral-50/50 pb-20">
         {/* Hero Header */}
         <div className="relative h-[450px] w-full overflow-hidden">
@@ -182,14 +197,10 @@ const ListPage: React.FC = () => {
                 <p className="text-neutral-500 text-sm mb-6">
                   Loved this collection? Share it with your coffee-loving friends!
                 </p>
-                <div className="flex gap-3">
-                  <button className="flex-1 bg-neutral-900 text-white h-12 rounded-xl flex items-center justify-center hover:bg-neutral-800 transition-all">
-                    <Share2 className="w-5 h-5" />
-                  </button>
-                  <button className="flex-1 border border-neutral-200 text-neutral-600 h-12 rounded-xl flex items-center justify-center hover:bg-neutral-50 transition-all font-bold">
-                    Copy Link
-                  </button>
-                </div>
+                <ShareButtons 
+                  url={window.location.href}
+                  title={list.title}
+                />
               </div>
 
               <div className="bg-primary-600 p-8 rounded-2xl shadow-xl text-white relative overflow-hidden group">

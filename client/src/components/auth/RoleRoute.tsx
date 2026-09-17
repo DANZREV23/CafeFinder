@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Role } from '../../types';
+import { SEO } from '../common/SEO';
 
 interface RoleRouteProps {
   children: React.ReactNode;
@@ -41,7 +42,12 @@ const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRoles }) => {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <SEO noindex={true} />
+      {children}
+    </>
+  );
 };
 
 export default RoleRoute;

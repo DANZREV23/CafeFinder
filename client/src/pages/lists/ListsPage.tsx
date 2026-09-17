@@ -6,6 +6,7 @@ import { CuratedList, ListResponse } from '../../types';
 import { ListCard } from '../../components/lists/ListCard';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { MainLayout } from '../../components/layout/MainLayout';
+import { SEO } from '../../components/common/SEO';
 
 const ListsPage: React.FC = () => {
   const [lists, setLists] = useState<CuratedList[]>([]);
@@ -45,6 +46,10 @@ const ListsPage: React.FC = () => {
 
   return (
     <MainLayout>
+      <SEO 
+        title="Curated Collections — Hand-Picked Best Cafes"
+        description="Hand-picked selections of the finest cafes, workspace spots, and hidden gems in the city. Explore our themed collections for every mood."
+      />
       <div className="min-h-screen bg-neutral-50/50 pt-24 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}

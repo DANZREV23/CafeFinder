@@ -9,6 +9,7 @@ import OwnerChangeRequestsPage from './pages/OwnerChangeRequestsPage';
 import OwnerCafeLocationPage from './pages/OwnerCafeLocationPage';
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import HomePage from '@/pages/HomePage';
 import ExplorePage from '@/pages/ExplorePage';
 import CafeProfilePage from '@/pages/CafeProfilePage';
@@ -58,10 +59,11 @@ import { MapProvider } from './components/map/MapProvider';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <MapProvider>
-          <Routes>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <MapProvider>
+            <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/cafes/:slug" element={<CafeProfilePage />} />
@@ -169,5 +171,6 @@ export default function App() {
         </MapProvider>
       </AuthProvider>
     </BrowserRouter>
+    </HelmetProvider>
   );
 }

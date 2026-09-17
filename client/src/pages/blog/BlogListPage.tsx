@@ -6,6 +6,7 @@ import { BlogPost, ListResponse } from '../../types';
 import { BlogCard } from '../../components/blog/BlogCard';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { MainLayout } from '../../components/layout/MainLayout';
+import { SEO } from '../../components/common/SEO';
 
 const CATEGORIES = ['All', 'Coffee Culture', 'Brewing Guides', 'Cafe Reviews', 'Industry News', 'Lifestyle'];
 
@@ -49,6 +50,10 @@ const BlogListPage: React.FC = () => {
 
   return (
     <MainLayout>
+      <SEO 
+        title="The Cafe Journal — Coffee Culture & Brewing Guides"
+        description="Discover the best cafe experiences, brewing secrets, and coffee culture from around the world. Stay updated with the latest in the specialty coffee industry."
+      />
       <div className="min-h-screen bg-neutral-50/50 pt-24 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}

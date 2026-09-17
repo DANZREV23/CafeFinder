@@ -11,10 +11,15 @@ import { BlogPreview } from '../components/home/BlogPreview';
 import { OwnerCTA } from '../components/home/OwnerCTA';
 
 import { MainLayout } from '@/components/layout/MainLayout';
+import { SEO } from '@/components/common/SEO';
 
 const HomePage: React.FC = () => {
   return (
     <MainLayout>
+      <SEO 
+        title="Find Your Next Favorite Cafe"
+        description="Discover cafes by location, vibe, coffee type, Wi-Fi, amenities, reviews, and more. Your ultimate guide to the best coffee shops."
+      />
       <motion.main
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

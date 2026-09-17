@@ -25,6 +25,7 @@ import ownerRoutes from './routes/owner.routes.js';
 import menuRoutes from './routes/menu.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import recommendationRoutes from './routes/recommendation.routes.js';
+import seoRoutes from './routes/seo.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +69,9 @@ export async function createApp() {
   app.use('/api/menu', menuRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/recommendations', recommendationRoutes);
+
+  // SEO Routes (Robots and Sitemap)
+  app.use('/', seoRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {

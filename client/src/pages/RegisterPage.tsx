@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Coffee, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
+import { SEO } from '../components/common/SEO';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 
@@ -59,6 +60,7 @@ const RegisterPage: React.FC = () => {
 
   return (
     <MainLayout>
+      <SEO title="Join CafeFinder" noindex={true} />
       <div className="flex flex-col items-center justify-center min-h-[85vh] px-4 py-12">
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center mb-8">

@@ -28,6 +28,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FavoriteButton } from "@/components/cafe/FavoriteButton";
+import { ShareButtons } from "@/components/common/ShareButtons";
+import { SEO } from "@/components/common/SEO";
+import { generateCafeJsonLd, generateBreadcrumbJsonLd } from "@/utils/seoUtils";
 import { CafeGallery } from "@/components/cafe/CafeGallery";
 import { RelatedCafes } from "@/components/cafe/RelatedCafes";
 import { CafeMenuHighlights } from "@/components/cafe/CafeMenuHighlights";
@@ -113,8 +116,6 @@ export default function CafeProfilePage() {
       const response = await cafeService.getBySlug(slug);
       if (response.success) {
         setCafe(response.data);
-        // Update SEO Title
-        document.title = `${response.data.name} — CafeFinder`;
       } else {
         setError(response.error?.message || "Cafe not found");
       }
@@ -207,35 +208,6 @@ export default function CafeProfilePage() {
 
   const currentStatus = getStatus();
 
-  // JSON-LD Structured Data
-  const jsonLd = cafe ? {
-    "@context": "https://schema.org",
-    "@type": "CafeOrCoffeeShop",
-    "name": cafe.name,
-    "image": cafe.photos?.[0]?.url,
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": cafe.address,
-      "addressLocality": cafe.city,
-      "addressRegion": cafe.state,
-      "postalCode": cafe.postalCode,
-      "addressCountry": cafe.country || "PH"
-    },
-    "geo": cafe.latitude && cafe.longitude ? {
-      "@type": "GeoCoordinates",
-      "latitude": cafe.latitude,
-      "longitude": cafe.longitude
-    } : undefined,
-    "url": window.location.href,
-    "telephone": cafe.phone,
-    "priceRange": "$".repeat(cafe.priceRange || 1),
-    "aggregateRating": cafe.reviewCount > 0 ? {
-      "@type": "AggregateRating",
-      "ratingValue": cafe.ratingAverage,
-      "reviewCount": cafe.reviewCount
-    } : undefined
-  } : null;
-
   if (loading) {
     return (
       <MainLayout>
@@ -257,6 +229,10 @@ export default function CafeProfilePage() {
   if (error || !cafe) {
     return (
       <MainLayout>
+        <SEO 
+          title="Cafe not found"
+          noindex={true}
+        />
         <PageContainer className="py-24 text-center">
           <div className="max-w-md mx-auto space-y-8">
             <div className="w-24 h-24 bg-brand-cream rounded-full flex items-center justify-center mx-auto">
@@ -284,18 +260,23 @@ export default function CafeProfilePage() {
     );
   }
 
-  const breadcrumbs = [
-    { label: "Home", href: "/" },
-    { label: "Explore", href: "/explore" },
-    { label: cafe.name, href: `/cafes/${cafe.slug}` },
-  ];
-
   return (
     <MainLayout>
-      {jsonLd && (
-        <script type="application/ld+json">
-          {JSON.stringify(jsonLd)}
-        </script>
+      {cafe && (
+        <SEO 
+          title={cafe.name}
+          description={cafe.shortDescription || `${cafe.name} in ${cafe.city}, ${cafe.state}. Discover ratings, reviews, menu, and more.`}
+          ogImage={cafe.photos?.[0]?.url}
+          ogType="place"
+          jsonLd={[
+            generateCafeJsonLd(cafe),
+            generateBreadcrumbJsonLd([
+              { name: "Home", item: "/" },
+              { name: "Explore", item: "/explore" },
+              { name: cafe.name, item: `/cafes/${cafe.slug}` }
+            ])
+          ]}
+        />
       )}
       <div className="bg-brand-background">
         {/* Navigation & Actions Bar */}
@@ -317,10 +298,10 @@ export default function CafeProfilePage() {
                 variant="outline"
                 className="h-9 px-4 rounded-xl border-brand-border hover:bg-rose-50 hover:border-rose-200"
               />
-              <Button variant="outline" size="sm" className="h-9 gap-2">
-                <Share2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
+              <ShareButtons 
+                url={window.location.href}
+                title={cafe.name}
+              />
             </div>
           </PageContainer>
         </div>

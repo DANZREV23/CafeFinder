@@ -8,6 +8,9 @@ import { format } from 'date-fns';
 import { BlogCard } from '../../components/blog/BlogCard';
 import ReactMarkdown from 'react-markdown';
 import { MainLayout } from '../../components/layout/MainLayout';
+import { SEO } from '@/components/common/SEO';
+import { ShareButtons } from '@/components/common/ShareButtons';
+import { generateBlogArticleJsonLd, generateBreadcrumbJsonLd } from '@/utils/seoUtils';
 
 const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -29,9 +32,6 @@ const BlogPostPage: React.FC = () => {
       if (response.success) {
         setPost(response.data.post);
         setRelatedPosts(response.data.relatedPosts);
-        
-        // SEO: Update document title and meta tags if needed
-        document.title = `${response.data.post.metaTitle || response.data.post.title} | CafeFinder`;
       } else {
         navigate('/blog');
       }
@@ -57,6 +57,20 @@ const BlogPostPage: React.FC = () => {
 
   return (
     <MainLayout>
+      <SEO 
+        title={post.metaTitle || post.title}
+        description={post.metaDescription || post.excerpt}
+        ogImage={post.coverImage}
+        ogType="article"
+        jsonLd={[
+          generateBlogArticleJsonLd(post),
+          generateBreadcrumbJsonLd([
+            { name: "Home", item: "/" },
+            { name: "Blog", item: "/blog" },
+            { name: post.title, item: `/blog/${post.slug}` }
+          ])
+        ]}
+      />
       <div className="min-h-screen bg-white">
         {/* Hero Section */}
         <div className="relative h-[60vh] min-h-[400px] w-full overflow-hidden">
@@ -134,15 +148,11 @@ const BlogPostPage: React.FC = () => {
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 rotate-90 mb-8 whitespace-nowrap">
                 Share Article
               </div>
-              <button className="w-12 h-12 rounded-full border border-neutral-100 flex items-center justify-center hover:bg-primary-50 hover:border-primary-100 text-neutral-600 hover:text-primary-600 transition-all">
-                <Facebook className="w-5 h-5" />
-              </button>
-              <button className="w-12 h-12 rounded-full border border-neutral-100 flex items-center justify-center hover:bg-primary-50 hover:border-primary-100 text-neutral-600 hover:text-primary-600 transition-all">
-                <Twitter className="w-5 h-5" />
-              </button>
-              <button className="w-12 h-12 rounded-full border border-neutral-100 flex items-center justify-center hover:bg-primary-50 hover:border-primary-100 text-neutral-600 hover:text-primary-600 transition-all">
-                <LinkIcon className="w-5 h-5" />
-              </button>
+              <ShareButtons 
+                url={window.location.href}
+                title={post.title}
+                className="flex-col"
+              />
             </aside>
           </div>
 
@@ -162,10 +172,10 @@ const BlogPostPage: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 bg-neutral-900 text-white px-6 py-3 rounded-full font-bold hover:bg-neutral-800 transition-all">
-                <Share2 className="w-4 h-4" />
-                Share this story
-              </button>
+              <ShareButtons 
+                url={window.location.href}
+                title={post.title}
+              />
             </div>
           </div>
         </div>

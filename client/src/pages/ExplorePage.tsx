@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { MapProvider } from "@/components/map/MapProvider";
 import { CafeMap } from "@/components/map/CafeMap";
 import { Map, List } from "lucide-react";
+import { SEO } from "@/components/common/SEO";
 
 export default function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,6 +47,8 @@ export default function ExplorePage() {
   const trending = searchParams.get("trending") === "true";
   const verified = searchParams.get("verified") === "true";
   const amenities = searchParams.get("amenities") ? searchParams.get("amenities")!.split(",") : [];
+
+  const hasFilters = search || city || priceRange || featured || trending || verified || amenities.length > 0;
 
   const filters = {
     city,
@@ -136,6 +139,11 @@ export default function ExplorePage() {
 
   return (
     <MainLayout showFooter={false}>
+      <SEO 
+        title="Explore Best Cafes"
+        description="Search and filter through the best cafes. Find the perfect spot for work, meetings, or a relaxing afternoon."
+        noindex={!!hasFilters}
+      />
       <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-brand-background">
         {/* Header Area */}
           <header className="bg-white border-b border-brand-border px-6 py-4 z-20">
