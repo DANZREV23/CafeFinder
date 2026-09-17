@@ -234,7 +234,7 @@ export class CafeRepository {
   }
 
   async delete(id: string) {
-    return prisma.cafe.delete({
+    return prisma.cafe.deleteMany({
       where: { id },
     });
   }

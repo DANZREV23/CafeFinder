@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { PostStatus } from '@prisma/client';
 
-const emptyToUndefined = (val: any) => (val === '' ? undefined : val);
+const emptyToUndefined = (val: any) => (val === '' || val === null ? undefined : val);
 
 const getListsQuerySchema = z.object({
-  featured: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === 'true')),
+  featured: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
   limit: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : 12))),
   page: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : 1))),
   search: z.preprocess(emptyToUndefined, z.string().optional()),
@@ -17,10 +17,11 @@ const getListsQuerySchema = z.object({
 const curatedListSchema = z.object({
   title: z.string().min(2).max(200),
   description: z.preprocess(emptyToUndefined, z.string().max(1000).optional()),
-  coverImage: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  coverImage: z.preprocess(emptyToUndefined, z.string().optional()),
   coverImageAlt: z.preprocess(emptyToUndefined, z.string().optional()),
   featured: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
+  status: z.preprocess(emptyToUndefined, z.nativeEnum(PostStatus).optional()),
 });
 
 const listCafeSchema = z.object({

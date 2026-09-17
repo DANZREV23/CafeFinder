@@ -18,12 +18,12 @@ const blogPostSchema = z.object({
   title: z.string().min(2).max(200),
   excerpt: z.preprocess(emptyToUndefined, z.string().max(500).optional()),
   content: z.string().min(10),
-  coverImage: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  coverImage: z.preprocess(emptyToUndefined, z.string().optional()),
   coverImageAlt: z.preprocess(emptyToUndefined, z.string().optional()),
   category: z.preprocess(emptyToUndefined, z.string().max(100).optional()),
   metaTitle: z.preprocess(emptyToUndefined, z.string().max(70).optional()),
   metaDescription: z.preprocess(emptyToUndefined, z.string().max(160).optional()),
-  canonicalUrl: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  canonicalUrl: z.preprocess(emptyToUndefined, z.string().optional()),
 });
 
 export class BlogPostController {
@@ -114,6 +114,27 @@ export class BlogPostController {
             totalPages: Math.ceil(total / limit)
           }
         }
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const post = await this.blogService.getPostById(id);
+      
+      if (!post) {
+        return res.status(404).json({
+          success: false,
+          error: { message: 'Blog post not found' }
+        });
+      }
+
+      res.json({
+        success: true,
+        data: post
       });
     } catch (error) {
       next(error);

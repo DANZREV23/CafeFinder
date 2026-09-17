@@ -112,7 +112,7 @@ export class BlogPostRepository {
   }
 
   async delete(id: string) {
-    return prisma.blogPost.delete({
+    return prisma.blogPost.deleteMany({
       where: { id }
     });
   }

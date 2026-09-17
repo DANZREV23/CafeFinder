@@ -61,6 +61,7 @@ router.get('/activity-logs', adminController.getActivityLogs);
 
 // Blog Management
 router.get('/blog', blogController.getAdminPosts);
+router.get('/blog/:id', blogController.getById);
 router.post('/blog', blogController.create);
 router.patch('/blog/:id', blogController.update);
 router.delete('/blog/:id', blogController.delete);

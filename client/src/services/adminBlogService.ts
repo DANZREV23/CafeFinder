@@ -13,6 +13,10 @@ export const adminBlogService = {
     return fetchApi<ListResponse<BlogPost>>(`/admin/blog?${query.toString()}`);
   },
 
+  getById: async (id: string) => {
+    return fetchApi<ApiResponse<BlogPost>>(`/admin/blog/${id}`);
+  },
+
   create: async (data: Partial<BlogPost>) => {
     return fetchApi<ApiResponse<BlogPost>>('/admin/blog', {
       method: 'POST',

@@ -115,7 +115,7 @@ export class ReviewRepository {
   }
 
   async delete(id: string) {
-    return prisma.cafeReview.delete({
+    return prisma.cafeReview.deleteMany({
       where: { id },
     });
   }
@@ -190,7 +190,7 @@ export class ReviewRepository {
   }
 
   async deletePhoto(photoId: string) {
-    return prisma.cafeReviewPhoto.delete({
+    return prisma.cafeReviewPhoto.deleteMany({
       where: { id: photoId },
     });
   }

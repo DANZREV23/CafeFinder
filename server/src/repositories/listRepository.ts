@@ -110,7 +110,7 @@ export class CuratedListRepository {
   }
 
   async delete(id: string) {
-    return prisma.curatedList.delete({
+    return prisma.curatedList.deleteMany({
       where: { id }
     });
   }
@@ -127,12 +127,10 @@ export class CuratedListRepository {
   }
 
   async removeCafe(listId: string, cafeId: string) {
-    return prisma.curatedListCafe.delete({
+    return prisma.curatedListCafe.deleteMany({
       where: {
-        listId_cafeId: {
-          listId,
-          cafeId
-        }
+        listId,
+        cafeId
       }
     });
   }

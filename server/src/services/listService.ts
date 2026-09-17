@@ -46,7 +46,7 @@ export class CuratedListService {
       coverImage: data.coverImage,
       coverImageAlt: data.coverImageAlt,
       featured: data.featured || false,
-      status: PostStatus.DRAFT,
+      status: data.status || PostStatus.DRAFT,
       sortOrder: data.sortOrder || 0
     });
   }
@@ -59,13 +59,24 @@ export class CuratedListService {
       coverImageAlt: data.coverImageAlt,
       featured: data.featured,
       sortOrder: data.sortOrder,
+      status: data.status,
       updatedAt: new Date()
     };
 
     if (data.title) {
       const list = await this.listRepository.findById(id);
       if (list && list.status === PostStatus.DRAFT) {
-        updateData.slug = generateSlug(data.title);
+        const slug = generateSlug(data.title);
+        let finalSlug = slug;
+        let count = 1;
+        
+        // Find a unique slug that isn't the current one (though it usually won't be since title changed)
+        while (true) {
+          const existing = await this.listRepository.findBySlug(finalSlug, false);
+          if (!existing || existing.id === id) break;
+          finalSlug = `${slug}-${++count}`;
+        }
+        updateData.slug = finalSlug;
       }
     }
 

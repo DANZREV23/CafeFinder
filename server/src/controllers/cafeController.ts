@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { mapToPublicCafeProfile, mapToPublicCafeSummary } from '../dtos/cafeDto.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 
-const emptyToUndefined = (val: any) => (val === '' ? undefined : val);
+const emptyToUndefined = (val: any) => (val === '' || val === null ? undefined : val);
 
 // Validation Schemas
 export const getCafesQuerySchema = z.object({

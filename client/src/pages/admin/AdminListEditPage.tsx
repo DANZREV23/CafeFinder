@@ -48,16 +48,28 @@ const AdminListEditPage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!formData.title) {
+      alert('Title is required');
+      return;
+    }
+
     setSaving(true);
     try {
       if (isEdit) {
-        await adminListService.update(id!, formData);
+        const response = await adminListService.update(id!, formData);
+        if (!response.success) {
+          throw new Error(response.error?.message || 'Failed to update collection');
+        }
       } else {
-        await adminListService.create(formData);
+        const response = await adminListService.create(formData);
+        if (!response.success) {
+          throw new Error(response.error?.message || 'Failed to create collection');
+        }
       }
       navigate('/admin/lists');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save collection:', error);
+      alert(error.message || 'An unexpected error occurred while saving.');
     } finally {
       setSaving(false);
     }

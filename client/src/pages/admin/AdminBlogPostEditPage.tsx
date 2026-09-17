@@ -99,11 +99,9 @@ const AdminBlogPostEditPage: React.FC = () => {
 
   const loadPost = async () => {
     try {
-      const response = await adminBlogService.getAll(); // Actually need a getById
-      // For now, let's assume we fetch all and find one, or update service
-      const post = response.data.posts.find(p => p.id === id);
-      if (post) {
-        setFormData(post);
+      const response = await adminBlogService.getById(id!);
+      if (response.success) {
+        setFormData(response.data);
       }
     } catch (error) {
       console.error('Failed to load post:', error);

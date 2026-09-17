@@ -1,5 +1,5 @@
 import * as React from "react";
-import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
+import { APIProvider, Map, AdvancedMarker, InfoWindow, useMap as useGoogleMapInstance } from "@vis.gl/react-google-maps";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Cafe } from "@/types";
@@ -58,40 +58,27 @@ const mapStyles = [
   }
 ];
 
-export const CafeMap: React.FC<CafeMapProps> = ({
-  cafes,
-  selectedCafeId,
-  onCafeSelect,
-  center,
-  zoom,
-  className
-}) => {
-  // Trigger dynamic map script loading only when this component is mounted
-  useMapLoad();
+const MapHandler: React.FC<{ 
+  validCafes: Cafe[]; 
+  selectedCafeId?: string | null;
+  onInfoWindowCafeChange: (cafe: Cafe | null) => void;
+}> = ({ validCafes, selectedCafeId, onInfoWindowCafeChange }) => {
+  const map = useGoogleMapInstance();
 
-  const { isLoaded, loadError, provider } = useMap();
-  const [map, setMap] = React.useState<any>(null);
-  const [infoWindowCafe, setInfoWindowCafe] = React.useState<Cafe | null>(null);
-
-  // Filter cafes with valid coordinates
-  const validCafes = cafes.filter(c => c.latitude && c.longitude);
-
-  // Sync info window with selectedCafeId prop
+  // Sync info window and pan to selected cafe
   React.useEffect(() => {
-    if (selectedCafeId) {
+    if (selectedCafeId && map) {
       const cafe = validCafes.find(c => c.id === selectedCafeId);
       if (cafe) {
-        setInfoWindowCafe(cafe);
-        if (map && provider === 'google') {
-          map.panTo({ lat: Number(cafe.latitude), lng: Number(cafe.longitude) });
-        }
+        onInfoWindowCafeChange(cafe);
+        map.panTo({ lat: Number(cafe.latitude), lng: Number(cafe.longitude) });
       }
     }
-  }, [selectedCafeId, validCafes, map, provider]);
+  }, [selectedCafeId, validCafes, map, onInfoWindowCafeChange]);
 
   // Fit bounds when cafes change
   React.useEffect(() => {
-    if (map && validCafes.length > 0 && provider === 'google') {
+    if (map && validCafes.length > 0) {
       const bounds = new window.google.maps.LatLngBounds();
       validCafes.forEach(cafe => {
         bounds.extend({ lat: Number(cafe.latitude), lng: Number(cafe.longitude) });
@@ -104,7 +91,29 @@ export const CafeMap: React.FC<CafeMapProps> = ({
         map.fitBounds(bounds);
       }
     }
-  }, [validCafes.length, map, provider]);
+  }, [validCafes, map]);
+
+  return null;
+};
+
+export const CafeMap: React.FC<CafeMapProps> = ({
+  cafes,
+  selectedCafeId,
+  onCafeSelect,
+  center,
+  zoom,
+  className
+}) => {
+  // Trigger dynamic map script loading only when this component is mounted
+  useMapLoad();
+
+  const { isLoaded, loadError, provider, apiKey } = useMap();
+  const [infoWindowCafe, setInfoWindowCafe] = React.useState<Cafe | null>(null);
+
+  // Filter cafes with valid coordinates
+  const validCafes = React.useMemo(() => 
+    cafes.filter(c => c.latitude !== null && c.longitude !== null),
+  [cafes]);
 
   if (loadError) {
     const isTimeout = loadError.message?.includes("timed out");
@@ -147,17 +156,16 @@ export const CafeMap: React.FC<CafeMapProps> = ({
     );
   }
 
-  if (!provider) {
+  if (!provider || !apiKey) {
     return (
       <div className={cn("flex flex-col items-center justify-center bg-brand-cream/30 border-2 border-dashed border-brand-border rounded-[40px] p-12 text-center", className)}>
         <Coffee className="w-16 h-16 text-brand-muted mb-6" />
         <h3 className="text-2xl font-serif font-bold text-brand-charcoal mb-3">Map Discovery Disabled</h3>
-        <p className="text-brand-muted max-w-sm mx-auto mb-8">Configure MAP_PROVIDER and MAP_API_KEY in your environment to enable interactive location discovery.</p>
+        <p className="text-brand-muted max-w-sm mx-auto mb-8">Configure VITE_GOOGLE_MAPS_API_KEY in your environment to enable interactive location discovery.</p>
         <div className="bg-white p-6 rounded-2xl border border-brand-border text-left space-y-3">
           <p className="text-xs font-bold uppercase tracking-widest text-brand-coffee">Required Setup:</p>
           <code className="block p-3 bg-brand-background rounded-lg text-xs font-mono text-brand-charcoal">
-            VITE_MAP_PROVIDER=google<br/>
-            VITE_MAP_API_KEY=your_api_key
+            VITE_GOOGLE_MAPS_API_KEY=your_api_key
           </code>
         </div>
       </div>
@@ -166,64 +174,65 @@ export const CafeMap: React.FC<CafeMapProps> = ({
 
   if (provider === 'google') {
     return (
-      <GoogleMap
-        mapContainerClassName={cn("w-full h-full rounded-3xl overflow-hidden shadow-inner border border-brand-border", className)}
-        center={center || DEFAULT_CENTER}
-        zoom={zoom || DEFAULT_ZOOM}
-        onLoad={setMap}
-        options={{
-          styles: mapStyles,
-          disableDefaultUI: false,
-          clickableIcons: false,
-          zoomControl: true,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        }}
-        onClick={() => onCafeSelect?.(null)}
-      >
-        {validCafes.map(cafe => (
-          <Marker
-            key={cafe.id}
-            position={{ lat: Number(cafe.latitude), lng: Number(cafe.longitude) }}
-            onClick={() => {
-              onCafeSelect?.(cafe.id);
-              setInfoWindowCafe(cafe);
-            }}
-            icon={{
-              url: selectedCafeId === cafe.id 
-                ? "https://maps.google.com/mapfiles/ms/icons/green-dot.png" 
-                : "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-            }}
-          />
-        ))}
-
-        {infoWindowCafe && (
-          <InfoWindow
-            position={{ lat: Number(infoWindowCafe.latitude), lng: Number(infoWindowCafe.longitude) }}
-            onCloseClick={() => {
-              setInfoWindowCafe(null);
-              onCafeSelect?.(null);
-            }}
-            options={{
-              pixelOffset: new window.google.maps.Size(0, -30)
-            }}
+      <APIProvider apiKey={apiKey}>
+        <div className={cn("w-full h-full relative rounded-3xl overflow-hidden shadow-inner border border-brand-border", className)}>
+          <Map
+            mapId="DEMO_MAP_ID"
+            defaultCenter={center || DEFAULT_CENTER}
+            defaultZoom={zoom || DEFAULT_ZOOM}
+            styles={mapStyles}
+            disableDefaultUI={false}
+            clickableIcons={false}
+            zoomControl={true}
+            mapTypeControl={false}
+            streetViewControl={false}
+            fullscreenControl={false}
+            onClick={() => onCafeSelect?.(null)}
+            {...({ internalUsageAttributionIds: ["gmp_mcp_codeassist_v1_aistudio"] } as any)}
           >
-            <MapPopup 
-              cafe={infoWindowCafe} 
-              onClose={() => {
-                setInfoWindowCafe(null);
-                onCafeSelect?.(null);
-              }} 
+            <MapHandler 
+              validCafes={validCafes} 
+              selectedCafeId={selectedCafeId}
+              onInfoWindowCafeChange={setInfoWindowCafe}
             />
-          </InfoWindow>
-        )}
-      </GoogleMap>
+
+            {validCafes.map(cafe => (
+              <AdvancedMarker
+                key={cafe.id}
+                position={{ lat: Number(cafe.latitude), lng: Number(cafe.longitude) }}
+                onClick={() => {
+                  onCafeSelect?.(cafe.id);
+                  setInfoWindowCafe(cafe);
+                }}
+                title={cafe.name}
+              />
+            ))}
+
+            {infoWindowCafe && (
+              <InfoWindow
+                position={{ lat: Number(infoWindowCafe.latitude), lng: Number(infoWindowCafe.longitude) }}
+                onCloseClick={() => {
+                  setInfoWindowCafe(null);
+                  onCafeSelect?.(null);
+                }}
+                pixelOffset={[0, -30]}
+              >
+                <MapPopup 
+                  cafe={infoWindowCafe} 
+                  onClose={() => {
+                    setInfoWindowCafe(null);
+                    onCafeSelect?.(null);
+                  }} 
+                />
+              </InfoWindow>
+            )}
+          </Map>
+        </div>
+      </APIProvider>
     );
   }
 
   if (provider === 'mapbox') {
-     // Mapbox implementation (Basic placeholder since instructions focus on generic interface)
      return (
        <div className={cn("flex flex-col items-center justify-center bg-brand-background rounded-3xl p-12 text-center border border-brand-border", className)}>
          <AlertCircle className="w-12 h-12 text-brand-coffee mb-4" />
