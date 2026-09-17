@@ -26,6 +26,8 @@ import { ownerService } from "@/services/ownerService";
 import { format, subDays, startOfDay, endOfDay, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 
+import { MainLayout } from "@/components/layout/MainLayout";
+
 export default function OwnerCafeAnalyticsPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,18 +70,21 @@ export default function OwnerCafeAnalyticsPage() {
 
   if (error) {
     return (
-      <PageContainer className="py-12">
-        <div className="bg-rose-50 border border-rose-100 p-8 rounded-3xl text-center space-y-4">
-          <Info className="w-12 h-12 text-rose-500 mx-auto" />
-          <h2 className="text-xl font-serif font-bold text-rose-900">{error}</h2>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
-        </div>
-      </PageContainer>
+      <MainLayout>
+        <PageContainer className="py-12">
+          <div className="bg-rose-50 border border-rose-100 p-8 rounded-3xl text-center space-y-4">
+            <Info className="w-12 h-12 text-rose-500 mx-auto" />
+            <h2 className="text-xl font-serif font-bold text-rose-900">{error}</h2>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        </PageContainer>
+      </MainLayout>
     );
   }
 
   return (
-    <PageContainer className="py-12 space-y-12">
+    <MainLayout>
+      <PageContainer className="py-12 space-y-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-4">
@@ -287,5 +292,6 @@ export default function OwnerCafeAnalyticsPage() {
         </Button>
       </div>
     </PageContainer>
+    </MainLayout>
   );
 }
