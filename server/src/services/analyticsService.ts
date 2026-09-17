@@ -79,7 +79,7 @@ export class AnalyticsService {
 
     // Map favorites series to match format
     const formattedFavSeries = favSeries.map((f: any) => ({
-      date: f.date.toISOString(),
+      date: f.date instanceof Date ? f.date.toISOString() : new Date(f.date).toISOString(),
       value: Number(f.value)
     }));
 

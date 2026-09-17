@@ -61,18 +61,18 @@ export class AnalyticsRepository {
     // Attempting raw query for Postgres (since schema says postgresql)
     const intervalSql = interval === 'day' ? 'day' : interval === 'week' ? 'week' : 'month';
     
-    const results = await prisma.$queryRaw<any[]>`
+    const results = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
-        DATE_TRUNC(${intervalSql}, "createdAt") as date,
+        DATE_TRUNC('${intervalSql}', "createdAt") as date,
         COUNT(*)::int as value
       FROM "cafe_analytics_events"
-      WHERE "cafeId" = ${cafeId} AND "eventType" = ${eventType}::"CafeAnalyticsEventType" AND "createdAt" >= ${from} AND "createdAt" <= ${to}
+      WHERE "cafeId" = $1 AND "eventType" = $2::"CafeAnalyticsEventType" AND "createdAt" >= $3 AND "createdAt" <= $4
       GROUP BY date
       ORDER BY date ASC
-    `;
+    `, cafeId, eventType, from, to);
 
     return results.map(r => ({
-      date: r.date.toISOString(),
+      date: r.date instanceof Date ? r.date.toISOString() : new Date(r.date).toISOString(),
       value: r.value
     }));
   }
@@ -145,14 +145,14 @@ export class AnalyticsRepository {
     // Similar to views, group favorites by date
     const intervalSql = interval === 'day' ? 'day' : interval === 'week' ? 'week' : 'month';
     
-    return prisma.$queryRaw<any[]>`
+    return prisma.$queryRawUnsafe<any[]>(`
       SELECT 
-        DATE_TRUNC(${intervalSql}, "createdAt") as date,
+        DATE_TRUNC('${intervalSql}', "createdAt") as date,
         COUNT(*)::int as value
       FROM "cafe_favorites"
-      WHERE "cafeId" = ${cafeId} AND "createdAt" >= ${from} AND "createdAt" <= ${to}
+      WHERE "cafeId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3
       GROUP BY date
       ORDER BY date ASC
-    `;
+    `, cafeId, from, to);
   }
 }
