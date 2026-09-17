@@ -123,7 +123,7 @@ const ListPage: React.FC = () => {
 
                       <div className="flex-1 p-8 flex flex-col">
                         <div className="flex justify-between items-start mb-2">
-                          <Link to={`/cafe/${item.cafe.slug}`}>
+                          <Link to={`/cafes/${item.cafe.slug}`}>
                             <h3 className="text-2xl font-black text-neutral-900 hover:text-primary-600 transition-colors">
                               {item.cafe.name}
                             </h3>
@@ -157,7 +157,7 @@ const ListPage: React.FC = () => {
                             ))}
                           </div>
                           <Link
-                            to={`/cafe/${item.cafe.slug}`}
+                            to={`/cafes/${item.cafe.slug}`}
                             className="flex items-center gap-1.5 text-primary-600 font-bold text-sm hover:gap-2.5 transition-all"
                           >
                             View Details
