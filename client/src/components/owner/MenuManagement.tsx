@@ -173,7 +173,7 @@ export default function MenuManagement({ cafeId }: MenuManagementProps) {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-brand-charcoal">{item.name}</span>
-                            <span className="text-sm text-brand-coffee font-bold">${item.price.toFixed(2)}</span>
+                            <span className="text-sm text-brand-coffee font-bold">₱{item.price.toFixed(2)}</span>
                           </div>
                           {item.description && <p className="text-xs text-brand-muted mt-1 line-clamp-1">{item.description}</p>}
                         </div>

@@ -159,7 +159,7 @@ const MenuItemCard: React.FC<{ item: MenuItem }> = ({ item }) => {
         <div className="flex-1 p-5">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-bold text-lg group-hover:text-primary transition-colors">{item.name}</h3>
-            <span className="font-semibold text-lg">${item.price.toFixed(2)}</span>
+            <span className="font-semibold text-lg">₱{item.price.toFixed(2)}</span>
           </div>
           
           <p className="text-muted-foreground text-sm line-clamp-2 mb-4 h-10">
@@ -206,7 +206,7 @@ const MenuItemCard: React.FC<{ item: MenuItem }> = ({ item }) => {
                           <div key={opt.id} className="flex justify-between items-center py-1 border-b border-border/50 last:border-0">
                             <span className={opt.isAvailable ? '' : 'text-muted-foreground line-through'}>{opt.name}</span>
                             {opt.priceModifier > 0 && (
-                              <span className="text-muted-foreground">+$ {opt.priceModifier.toFixed(2)}</span>
+                              <span className="text-muted-foreground">+₱ {opt.priceModifier.toFixed(2)}</span>
                             )}
                           </div>
                         ))}

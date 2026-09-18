@@ -312,7 +312,7 @@ export const AdminSubmissionDetailsPage: React.FC = () => {
                                 i < (submission.priceRange || 0) ? "text-amber-600" : "text-stone-200"
                               )}
                             >
-                              $
+                              ₱
                             </span>
                           ))}
                         </div>
