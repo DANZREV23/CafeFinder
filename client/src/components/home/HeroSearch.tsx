@@ -88,7 +88,7 @@ export const HeroSearch: React.FC = () => {
               onClick={() => handleSearch()}
               className="bg-brand-coffee text-white hover:bg-brand-coffee/90 rounded-full px-8 h-12 md:h-14 text-lg font-bold shadow-lg shadow-brand-coffee/20 group transition-all shrink-0 mr-1"
             >
-              <span className="hidden md:inline">Find Coffee</span>
+              <span className="hidden md:inline">Find Cafe</span>
               <span className="md:hidden">Search</span>
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
