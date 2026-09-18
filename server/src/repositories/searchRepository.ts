@@ -15,8 +15,8 @@ export class SearchRepository {
       where: {
         status: CafeStatus.PUBLISHED,
         OR: [
-          { name: { contains: query } },
-          { shortDescription: { contains: query } }
+          { name: { contains: query, mode: 'insensitive' } },
+          { shortDescription: { contains: query, mode: 'insensitive' } }
         ]
       },
       select: {
@@ -46,7 +46,7 @@ export class SearchRepository {
     const cities = await prisma.cafe.findMany({
       where: {
         status: CafeStatus.PUBLISHED,
-        city: { contains: query }
+        city: { contains: query, mode: 'insensitive' }
       },
       select: {
         city: true,
@@ -68,8 +68,8 @@ export class SearchRepository {
       where: {
         active: true,
         OR: [
-          { name: { contains: query } },
-          { description: { contains: query } }
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } }
         ]
       },
       select: {

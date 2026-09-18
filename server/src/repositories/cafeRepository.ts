@@ -44,20 +44,25 @@ export class CafeRepository {
     };
 
     if (normalizedSearch) {
-      where.OR = [
-        { name: { contains: normalizedSearch } },
-        { shortDescription: { contains: normalizedSearch } },
-        { description: { contains: normalizedSearch } },
-        { city: { contains: normalizedSearch } },
-        { address: { contains: normalizedSearch } },
+      where.AND = [
+        ...(where.AND as any[] || []),
         {
-          amenities: {
-            some: {
-              amenity: {
-                name: { contains: normalizedSearch }
+          OR: [
+            { name: { contains: normalizedSearch, mode: 'insensitive' } },
+            { shortDescription: { contains: normalizedSearch, mode: 'insensitive' } },
+            { description: { contains: normalizedSearch, mode: 'insensitive' } },
+            { city: { contains: normalizedSearch, mode: 'insensitive' } },
+            { address: { contains: normalizedSearch, mode: 'insensitive' } },
+            {
+              amenities: {
+                some: {
+                  amenity: {
+                    name: { contains: normalizedSearch, mode: 'insensitive' }
+                  }
+                }
               }
             }
-          }
+          ]
         }
       ];
     }
