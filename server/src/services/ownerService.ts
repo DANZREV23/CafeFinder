@@ -60,6 +60,11 @@ export class OwnerService {
     const updated = await prisma.cafe.update({ where: { id: cafe.id }, data: {
       shortDescription: data.shortDescription as string,
       description: data.description as string,
+      address: data.address as string | undefined,
+      city: data.city as string | undefined,
+      state: data.state as string | null | undefined,
+      country: data.country as string | undefined,
+      postalCode: data.postalCode as string | null | undefined,
       phone: data.phone as string | null,
       email: data.email as string | null,
       website: data.website as string | null,

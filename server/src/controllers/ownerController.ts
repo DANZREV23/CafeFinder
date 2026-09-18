@@ -9,6 +9,11 @@ const emptyToNull = (val: any) => (val === '' ? null : val);
 const businessSchema = z.object({
   shortDescription: z.string().trim().min(10).max(300),
   description: z.string().trim().min(20).max(5000),
+  address: z.string().trim().min(5).max(255).optional(),
+  city: z.string().trim().min(2).max(100).optional(),
+  state: z.preprocess(emptyToNull, z.string().trim().max(100).nullable().optional()),
+  country: z.string().trim().min(2).max(100).optional(),
+  postalCode: z.preprocess(emptyToNull, z.string().trim().max(20).nullable().optional()),
   phone: z.preprocess(emptyToNull, z.string().trim().max(40).nullable().optional()),
   email: z.preprocess(emptyToNull, z.string().trim().email().max(255).nullable().optional()),
   website: z.preprocess(emptyToNull, z.string().trim().url().max(500).nullable().optional()),
