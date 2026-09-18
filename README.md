@@ -4,36 +4,37 @@ CafeFinder Davao is a full-stack cafe discovery and ownership platform for Davao
 
 ## Recent Updates (September 2026)
 
-- **Database Restoration**: Restored the primary database to **PostgreSQL** for maximum reliability and compatibility.
-- **Search Optimization**: Leveraged optimized PostgreSQL indexes and Prisma's `fullTextSearch` capabilities.
-- **Improved Connection Handling**: Enhanced the database configuration logic to automatically construct connection strings for PostgreSQL, including support for standard and Unix socket environments.
-- **UI Refinement**: Updated the hero section with a new, engaging call-to-action: *"Your next favorite local coffee scene is just a click away!"*
-- **Typography Update**: Implemented a globally consistent **rounded typography** theme using Quicksand and Bree Serif.
+- **Search Precision**: Implemented **case-insensitive search** across the entire application, ensuring cafes are discoverable regardless of casing in the database or user query.
+- **Enhanced Connection Resilience**: Added automatic **database connection retries** and exponential backoff middleware to handle transient PostgreSQL blips (e.g., E57P01 termination errors).
+- **Network Flexibility**: Optimized CORS and Cookie configurations to support access via **Local LAN and Tailscale IPs**, ensuring sessions remain active across different network environments.
+- **UI & Layout Improvements**: 
+  - Updated the primary call-to-action to **"Find Cafe"** for better clarity.
+  - Fully integrated the **Submit a Cafe** form with the standard top bar and footer layout.
+- **Platform Stability**: Guaranteed that only `PUBLISHED` cafes appear in public search and explore views through refined repository filtering.
 
 ## Current Features
 
 ### Discovery and Public Directory
 
 - Browse published cafes from the home and Explore pages.
-- Search by cafe name, description, city, and address.
-- Filter by city, price range, amenities, rating, verified status, featured status, and trending status.
-- Sort by latest, name, rating, and popularity.
-- View cafes on the configured Google Maps interface.
-- Open detailed cafe profiles with photos, hours, amenities, contact information, social links, directions, related cafes, and public reviews.
-- Use responsive layouts on desktop, tablet, and mobile screens.
+- **Smart Search**: Real-time search suggestions and case-insensitive searching by cafe name, description, city, and address.
+- **Advanced Filtering**: Filter by city, price range, amenities, rating, verified status, featured status, and trending status.
+- **Sorting**: Order results by latest, name, rating, and popularity.
+- **Map Integration**: Visual discovery on the configured Google Maps interface.
+- **Rich Profiles**: Detailed cafe views including cover photos, business hours, amenities, contact info, social links, directions, and community reviews.
+- **AI Recommendations**: Smart cafe suggestions based on user interests and current cafe attributes.
+- **SEO Ready**: Automated sitemap and robots.txt generation for optimized search engine indexing.
 
 ### Accounts and Authentication
 
 - Register and sign in with email and password.
-- Use database-backed sessions stored in the `Session` model.
-- Authenticate with an HTTP-only cookie. The browser does not use localStorage for authentication tokens.
-- Sessions persist across refreshes and navigation.
-- Roles:
-  - `USER`: normal authenticated user.
-  - `OWNER`: user with at least one administrator-approved cafe claim.
-  - `ADMIN`: platform administrator.
-- Role and status changes are server-controlled.
-- Logout invalidates the current session.
+- **Persistent Sessions**: Database-backed sessions stored in the `Session` model.
+- **Network-Adaptive Security**: Intelligent cookie handling (Secure/SameSite) that automatically adapts between local HTTP (LAN/Tailscale) and production HTTPS environments.
+- **Role-Based Access Control (RBAC)**:
+  - `USER`: Standard authenticated user.
+  - `OWNER`: Verified cafe managers with access to the Owner Workspace.
+  - `ADMIN`: Platform administrators with full moderation capabilities.
+- **Audit Logging**: Every sensitive action is recorded in a tamper-evident Activity Log.
 
 ### Reviews and Favorites
 
@@ -197,81 +198,43 @@ npm install
 
 ### 2. Configure environment variables
 
-Create a root `.env` file. A minimal local configuration is:
+Create a root `.env` file. The application is designed to be accessible via local network IPs and Tailscale.
 
 ```env
 # Database configuration
+DATABASE_URL="postgresql://user:password@localhost:5432/cafefinder"
 PRISMA_DATABASE_URL="postgresql://user:password@localhost:5432/cafefinder"
-DB_USERNAME="postgres"
-DB_PASSWORD="your-password"
-DB_HOST="localhost"
-DB_NAME="cafefinder"
-DB_PORT="5432"
+
+# Application URL (for CORS and Auth)
+CLIENT_URL="http://localhost:3000"
 
 # Maps configuration
 VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
-VITE_MAP_PROVIDER="google"
-VITE_MAP_API_KEY="your-google-maps-api-key"
-GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
-MAP_PROVIDER="google"
-MAP_API_KEY="your-google-maps-api-key"
 ```
 
-The server constructs the final Prisma connection string automatically from these variables. Ensure your database user has sufficient privileges for creating indexes.
+### 3. Initialize Database
 
-Do not commit real passwords, private keys, or production credentials.
-
-### 3. Apply the database schema
-
-For a new or existing development database, use migrations:
+The application uses Prisma with built-in connection retries.
 
 ```bash
+# Apply migrations
 npx prisma migrate dev
-```
 
-The current repository includes migrations for the owner claim and cafe change-request workflows.
-
-To regenerate Prisma Client without changing the database:
-
-```bash
+# Generate Prisma Client
 npm run db:generate
-```
 
-Do not use `prisma db push` for production schema changes. The `npm run db:push` script remains available for disposable local experiments only.
-
-### 4. Seed development data
-
-```bash
+# Seed initial data (Includes demo Admin and Owner accounts)
 npm run db:seed
 ```
 
-The seed recreates development data, including:
-
-- Demo users.
-- Amenities.
-- Published cafes.
-- Cafe photos and hours.
-- Reviews.
-- Approved, pending, and rejected owner-claim scenarios.
-- Testimonials, blog posts, and curated lists.
-
-The seed deletes existing development records before recreating them. Do not run it against a database containing data you need to keep.
-
-### 5. Start the development server
+### 4. Start Development
 
 ```bash
 npm run dev
 ```
 
-Open:
+The app will be available at `http://localhost:3000`. If you are using **Tailscale** or a local IP, the authentication system will automatically adjust its security policy to allow sessions over your local network.
 
-```text
-http://localhost:3000
-```
-
-The Express server hosts the Vite development middleware and API from the same port.
-
-If you see `EADDRINUSE` for port `3000`, an existing development server is already running. Use that server or stop the existing Node process before starting another one. Do not start multiple copies of the app on the same port.
 
 ## Demo Accounts
 
