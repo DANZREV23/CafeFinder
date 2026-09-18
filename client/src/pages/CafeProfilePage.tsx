@@ -368,8 +368,8 @@ export default function CafeProfilePage() {
                   <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
                     <CafeRating rating={cafe.ratingAverage} reviewCount={cafe.reviewCount} className="scale-125 origin-left" />
                     <div className="flex items-center gap-2 text-brand-muted font-medium">
-                      <MapPin className="w-5 h-5 text-brand-coffee" />
-                      <span>{cafe.city}, {cafe.state}</span>
+                      <MapPin className="w-5 h-5 text-brand-coffee shrink-0" />
+                      <span>{cafe.address}, {cafe.city}, {cafe.state} {cafe.postalCode}</span>
                     </div>
                     {currentStatus && (
                       <div className={cn("flex items-center gap-2 font-bold text-sm uppercase tracking-widest", currentStatus.color)}>
@@ -545,9 +545,8 @@ export default function CafeProfilePage() {
                       className="w-full h-14 border-white/20 text-white hover:bg-white/10 rounded-2xl gap-2"
                       onClick={() => {
                         cafeService.trackInteraction(cafe.id, 'DIRECTIONS_CLICK');
-                        if (cafe.latitude && cafe.longitude) {
-                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${cafe.latitude},${cafe.longitude}`, '_blank');
-                        }
+                        const fullAddress = `${cafe.address}, ${cafe.city}, ${cafe.state} ${cafe.postalCode || ''}`.trim();
+                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`, '_blank');
                       }}
                     >
                       <Navigation className="w-4 h-4" />
