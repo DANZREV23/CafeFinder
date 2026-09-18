@@ -4,11 +4,11 @@ CafeFinder Davao is a full-stack cafe discovery and ownership platform for Davao
 
 ## Recent Updates (September 2026)
 
-- **Database Migration**: Successfully migrated the entire platform from PostgreSQL to **MariaDB**.
-- **Search Optimization**: Implemented native MariaDB `@@fulltext` indexes for improved search performance across cafes and amenities.
-- **Improved Connection Handling**: Enhanced the database configuration logic to automatically construct connection strings from individual host/user/password variables.
+- **Database Restoration**: Restored the primary database to **PostgreSQL** for maximum reliability and compatibility.
+- **Search Optimization**: Leveraged optimized PostgreSQL indexes and Prisma's `fullTextSearch` capabilities.
+- **Improved Connection Handling**: Enhanced the database configuration logic to automatically construct connection strings for PostgreSQL, including support for standard and Unix socket environments.
 - **UI Refinement**: Updated the hero section with a new, engaging call-to-action: *"Your next favorite local coffee scene is just a click away!"*
-- **Full-Stack Performance**: Optimized raw SQL analytics queries for MariaDB compatibility using `DATE_FORMAT`.
+- **Typography Update**: Implemented a globally consistent **rounded typography** theme using Quicksand and Bree Serif.
 
 ## Current Features
 
@@ -160,7 +160,7 @@ Every admin API is protected by both authentication and the `ADMIN` role.
 - Express.
 - TypeScript.
 - Prisma ORM.
-- MariaDB / MySQL through the Prisma datasource configuration.
+- PostgreSQL through the Prisma datasource configuration.
 - Zod request validation.
 - HTTP-only cookie sessions.
 - Multer for controlled image uploads.
@@ -181,11 +181,11 @@ Install these before setup:
 
 - Node.js 22 or newer.
 - npm.
-- MariaDB (10.4+) or MySQL (8.0+) instance.
+- PostgreSQL (14+) instance.
 - A Google Maps API key for map features.
 - Git, if cloning the repository.
 
-The repository uses MariaDB/MySQL through `PRISMA_DATABASE_URL`. The application is optimized for MariaDB with full-text search capabilities.
+The repository uses PostgreSQL through `PRISMA_DATABASE_URL`. The application is optimized for PostgreSQL with robust search capabilities.
 
 ## Installation
 
@@ -201,12 +201,12 @@ Create a root `.env` file. A minimal local configuration is:
 
 ```env
 # Database configuration
-PRISMA_DATABASE_URL="mysql://user:password@host:3306/dbname"
-DB_USERNAME="your-db-user"
-DB_PASSWORD="your-db-password"
-DB_HOST="your-db-host"
-DB_NAME="your-db-name"
-DB_PORT="3306"
+PRISMA_DATABASE_URL="postgresql://user:password@localhost:5432/cafefinder"
+DB_USERNAME="postgres"
+DB_PASSWORD="your-password"
+DB_HOST="localhost"
+DB_NAME="cafefinder"
+DB_PORT="5432"
 
 # Maps configuration
 VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"

@@ -8,8 +8,8 @@ const getDatabaseUrl = () => {
     return envUrl;
   }
 
-  const sqlUser = process.env.SQL_USER || process.env.SQL_ADMIN_USER;
-  const sqlPass = process.env.SQL_PASSWORD || process.env.SQL_ADMIN_PASSWORD;
+  const sqlUser = process.env.SQL_ADMIN_USER || process.env.SQL_USER;
+  const sqlPass = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD;
   const sqlHost = process.env.SQL_HOST;
   const sqlDb = process.env.SQL_DB_NAME || process.env.DB_NAME;
 
@@ -18,23 +18,24 @@ const getDatabaseUrl = () => {
   const dbUser = process.env.DB_USERNAME || process.env.DB_USER;
   const dbPass = process.env.DB_PASSWORD;
 
-  if (dbHost && dbUser && dbPass) {
-    const port = process.env.DB_PORT || '3306';
-    const db = process.env.DB_NAME || 'cafefinder';
-    return `mysql://${dbUser}:${encodeURIComponent(dbPass)}@${dbHost}:${port}/${db}`;
+  if (sqlUser && sqlPass && sqlHost && sqlDb) {
+    // Correct format for Prisma with Cloud SQL Unix sockets
+    return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}`;
   }
 
-  if (sqlUser && sqlPass && sqlHost && sqlDb) {
-    return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connection_limit=5&pool_timeout=30&connect_timeout=30&socket_timeout=30`;
+  if (dbHost && dbUser && dbPass) {
+    const port = process.env.DB_PORT || '5432';
+    const db = process.env.DB_NAME || 'cafefinder';
+    return `postgresql://${dbUser}:${encodeURIComponent(dbPass)}@${dbHost}:${port}/${db}`;
   }
 
   // Final fallback
   if (dbHost) {
-    const user = dbUser || 'root';
+    const user = dbUser || 'postgres';
     const pass = dbPass || '';
-    const port = process.env.DB_PORT || '3306';
+    const port = process.env.DB_PORT || '5432';
     const db = process.env.DB_NAME || 'cafefinder';
-    return `mysql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}`;
+    return `postgresql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}`;
   }
 
   return undefined;

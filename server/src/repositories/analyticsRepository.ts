@@ -53,20 +53,20 @@ export class AnalyticsRepository {
   }
 
   async getTimeSeries(cafeId: string, eventType: CafeAnalyticsEventType, from: Date, to: Date, interval: 'day' | 'week' | 'month') {
-    // MySQL/MariaDB compatible date grouping
-    let dateFormat = '%Y-%m-%d'; // default for day
-    if (interval === 'week') dateFormat = '%Y-%u';
-    if (interval === 'month') dateFormat = '%Y-%m';
+    // PostgreSQL compatible date grouping
+    let dateFormat = 'YYYY-MM-DD'; // default for day
+    if (interval === 'week') dateFormat = 'IYYY-IW';
+    if (interval === 'month') dateFormat = 'YYYY-MM';
     
     const results = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
-        DATE_FORMAT(createdAt, '${dateFormat}') as dateStr,
-        MIN(createdAt) as date,
+        TO_CHAR("createdAt", '${dateFormat}') as "dateStr",
+        MIN("createdAt") as date,
         COUNT(*) as value
       FROM cafe_analytics_events
-      WHERE cafeId = ? AND eventType = ? AND createdAt >= ? AND createdAt <= ?
-      GROUP BY dateStr
-      ORDER BY dateStr ASC
+      WHERE "cafeId" = $1 AND "eventType" = $2::"CafeAnalyticsEventType" AND "createdAt" >= $3 AND "createdAt" <= $4
+      GROUP BY "dateStr"
+      ORDER BY "dateStr" ASC
     `, cafeId, eventType, from, to);
 
     return results.map(r => ({
@@ -140,20 +140,20 @@ export class AnalyticsRepository {
   }
 
   async getHistoricalFavoritesCount(cafeId: string, from: Date, to: Date, interval: 'day' | 'week' | 'month') {
-    // MySQL/MariaDB compatible date grouping
-    let dateFormat = '%Y-%m-%d';
-    if (interval === 'week') dateFormat = '%Y-%u';
-    if (interval === 'month') dateFormat = '%Y-%m';
+    // PostgreSQL compatible date grouping
+    let dateFormat = 'YYYY-MM-DD';
+    if (interval === 'week') dateFormat = 'IYYY-IW';
+    if (interval === 'month') dateFormat = 'YYYY-MM';
     
     return prisma.$queryRawUnsafe<any[]>(`
       SELECT 
-        DATE_FORMAT(createdAt, '${dateFormat}') as dateStr,
-        MIN(createdAt) as date,
+        TO_CHAR("createdAt", '${dateFormat}') as "dateStr",
+        MIN("createdAt") as date,
         COUNT(*) as value
       FROM cafe_favorites
-      WHERE cafeId = ? AND createdAt >= ? AND createdAt <= ?
-      GROUP BY dateStr
-      ORDER BY dateStr ASC
+      WHERE "cafeId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3
+      GROUP BY "dateStr"
+      ORDER BY "dateStr" ASC
     `, cafeId, from, to);
   }
 }
