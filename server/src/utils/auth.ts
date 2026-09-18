@@ -3,16 +3,22 @@ import crypto from 'crypto';
 
 export const COOKIE_NAME = 'cafefinder_session';
 
-export const getCookieOptions = (): CookieOptions => ({
-  httpOnly: true,
-  // In many dev environments (like AI Studio preview), the app is accessed via HTTPS
-  // but the internal server runs on HTTP. trust-proxy handles this.
-  // We should allow secure cookies if we are on HTTPS.
-  secure: true, 
-  sameSite: 'none', // Required for many iframe scenarios
-  path: '/',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-});
+export const getCookieOptions = (): CookieOptions => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const isAistudio = process.env.APPLICATION_ID !== undefined; // Detect if running in AI Studio
+
+  return {
+    httpOnly: true,
+    // Enable secure cookies only in production OR when explicitly using HTTPS.
+    // For local IP or tailscale (usually HTTP), this must be false.
+    secure: isProd || isAistudio, 
+    // sameSite 'none' requires 'secure: true'. 
+    // For local HTTP, 'lax' is better.
+    sameSite: (isProd || isAistudio) ? 'none' : 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  };
+};
 
 export const hashToken = (token: string): string => {
   return crypto.createHash('sha256').update(token).digest('hex');

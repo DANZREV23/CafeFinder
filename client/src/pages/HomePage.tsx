@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { HeroSearch } from '../components/home/HeroSearch';
-import { QuickDiscovery } from '../components/home/QuickDiscovery';
 import { TrendingCafes } from '../components/home/TrendingCafes';
 import { CuratedLists } from '../components/home/CuratedLists';
 import { VibeExplorer } from '../components/home/VibeExplorer';
@@ -27,8 +26,6 @@ const HomePage: React.FC = () => {
         className="flex flex-col w-full"
       >
         <HeroSearch />
-        
-        <QuickDiscovery />
         
         <TrendingCafes />
         

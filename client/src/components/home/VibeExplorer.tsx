@@ -4,14 +4,10 @@ import { Coffee, Laptop, Trees, Dog, VolumeX, Users, Croissant, Leaf } from 'luc
 import { motion } from 'motion/react';
 
 const vibes = [
-  { title: 'Coffee Lover', icon: Coffee, desc: 'For those who appreciate the craft of a perfect brew.', query: 'specialty' },
   { title: 'Work & Study', icon: Laptop, desc: 'Quiet spaces with fast Wi-Fi and plenty of outlets.', query: 'work' },
-  { title: 'Outdoor', icon: Trees, desc: 'Fresh air, sunlight, and beautiful garden seating.', query: 'outdoor' },
-  { title: 'Pet Friendly', icon: Dog, desc: 'Bring your furry friends along for your coffee break.', query: 'pet-friendly' },
   { title: 'Quiet & Cozy', icon: VolumeX, desc: 'Tucked away spots perfect for reading or solitude.', query: 'quiet' },
   { title: 'Social & Lively', icon: Users, desc: 'Great atmosphere for catching up with friends.', query: 'social' },
-  { title: 'Coffee & Pastries', icon: Croissant, desc: 'Delicious bakes to pair with your favorite drink.', query: 'pastries' },
-  { title: 'Vegan Friendly', icon: Leaf, desc: 'Plant-based options and alternative milks galore.', query: 'vegan' },
+  { title: 'Coffee Lover', icon: Coffee, desc: 'For those who appreciate the craft of a perfect brew.', query: 'specialty' },
 ];
 
 export const VibeExplorer: React.FC = () => {

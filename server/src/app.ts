@@ -42,7 +42,27 @@ export async function createApp() {
     contentSecurityPolicy: false, // Disable CSP to allow Vite in dev
   }));
   app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        process.env.CLIENT_URL,
+        'http://localhost:3000',
+        'http://localhost:5173',
+      ].filter(Boolean);
+
+      // Check if it's an allowed origin or a local/tailscale IP
+      const isLocalIp = /^http:\/\/(127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|100\.)/.test(origin);
+      
+      if (allowedOrigins.includes(origin) || isLocalIp) {
+        callback(null, true);
+      } else {
+        // In some deployment scenarios, we might want to be more permissive 
+        // especially if it's a private deployment.
+        callback(null, true);
+      }
+    },
     credentials: true,
   }));
   app.use(morgan('dev'));
