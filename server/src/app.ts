@@ -75,16 +75,47 @@ export async function createApp() {
   // SEO Routes (Robots and Sitemap)
   app.use('/', seoRoutes);
 
+  // Diagnostic route
+  app.get('/api/debug-routes', (req, res) => {
+    const routes: string[] = [];
+    app._router.stack.forEach((middleware: any) => {
+      if (middleware.route) {
+        routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
+      } else if (middleware.name === 'router') {
+        middleware.handle.stack.forEach((handler: any) => {
+          if (handler.route) {
+            const path = handler.route.path;
+            routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${middleware.regexp.toString()} ${path}`);
+          }
+        });
+      }
+    });
+    res.json({ success: true, routes });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
+    console.log('[Server]: Running in development mode with Vite middleware');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    // In production, server.cjs is located inside the dist folder
+    const distPath = path.resolve(__dirname);
+    console.log(`[Server]: Running in production mode. Serving static files from: ${distPath}`);
+    
     app.use(express.static(distPath));
+    
+    // API 404 handler - if a request starts with /api but didn't match any routes
+    app.use('/api', (req, res) => {
+      res.status(404).json({
+        success: false,
+        error: { message: `API endpoint not found: ${req.method} ${req.originalUrl}` }
+      });
+    });
+
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
