@@ -52,15 +52,74 @@ if (databaseUrl) {
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
+const createPrismaClient = (url: string | undefined) => {
+  const client = new PrismaClient({
     datasources: {
       db: {
-        url: databaseUrl,
+        url,
       },
     },
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 
+  // Middleware for automatic query retries on connection issues
+  client.$use(async (params, next) => {
+    let retries = 0;
+    const maxRetries = 3;
+    const delay = 1000; // 1 second
+
+    while (retries < maxRetries) {
+      try {
+        return await next(params);
+      } catch (error: any) {
+        // Retry on common transient connection errors
+        // E57P01 is "terminating connection due to administrator command"
+        // P2024 is Prisma's "Connection timed out"
+        const isTransientError = 
+          error.message?.includes('E57P01') || 
+          error.code === 'P2024' || 
+          error.message?.includes('connection');
+
+        if (isTransientError && retries < maxRetries - 1) {
+          retries++;
+          const waitTime = delay * Math.pow(2, retries - 1);
+          console.warn(`[Prisma]: Transient error detected. Retrying in ${waitTime}ms... (${retries}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        throw error;
+      }
+    }
+    return next(params);
+  });
+
+  return client;
+};
+
+export const prisma =
+  globalForPrisma.prisma || createPrismaClient(databaseUrl);
+
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+/**
+ * Helper to ensure database connection with retries.
+ * Useful at startup to wait for the database to be ready.
+ */
+export const connectWithRetry = async (retries = 5, delay = 2000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await prisma.$connect();
+      console.log('[Database]: Successfully connected to database.');
+      return true;
+    } catch (error) {
+      const isLastRetry = i === retries - 1;
+      console.error(`[Database]: Connection attempt ${i + 1}/${retries} failed.`);
+      
+      if (isLastRetry) throw error;
+      
+      console.log(`[Database]: Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  return false;
+};

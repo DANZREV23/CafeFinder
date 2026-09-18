@@ -19,6 +19,8 @@ import { cafeSubmissionService, CreateSubmissionData } from '../services/cafeSub
 import { cafeService } from '../services/cafeService';
 import { Amenity } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { SEO } from '@/components/common/SEO';
 
 const STEPS = [
   { id: 'basic', title: 'Basic Info', icon: Coffee },
@@ -430,101 +432,107 @@ export default function SubmitCafePage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 pt-24 pb-12">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
-          {/* Header */}
-          <div className="px-8 py-6 border-b border-neutral-100 bg-neutral-50/50">
-            <h1 className="text-2xl font-bold text-neutral-900">Submit a Cafe</h1>
-            <p className="text-neutral-500 text-sm mt-1">Share your favorite coffee spot with the Davao community.</p>
-          </div>
+    <MainLayout>
+      <SEO 
+        title="Submit a Cafe"
+        description="Share your favorite coffee spot with the Davao community. Help others discover great cafes."
+      />
+      <div className="min-h-screen bg-neutral-50 pt-24 pb-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-neutral-100 bg-neutral-50/50">
+              <h1 className="text-2xl font-bold text-neutral-900">Submit a Cafe</h1>
+              <p className="text-neutral-500 text-sm mt-1">Share your favorite coffee spot with the Davao community.</p>
+            </div>
 
-          {/* Stepper */}
-          <div className="px-8 pt-8">
-            <div className="flex items-center justify-between relative">
-              {/* Progress Line */}
-              <div className="absolute top-5 left-0 right-0 h-0.5 bg-neutral-100 -z-0">
-                <motion.div 
-                  className="h-full bg-amber-500" 
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
-                />
-              </div>
-
-              {STEPS.map((step, index) => (
-                <div key={step.id} className="relative z-10 flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border-2 ${
-                    index <= currentStep 
-                      ? 'bg-amber-500 border-amber-500 text-white' 
-                      : 'bg-white border-neutral-200 text-neutral-400'
-                  }`}>
-                    {index < currentStep ? <Check className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider mt-2 ${
-                    index <= currentStep ? 'text-neutral-900' : 'text-neutral-400'
-                  } hidden sm:block`}>
-                    {step.title}
-                  </span>
+            {/* Stepper */}
+            <div className="px-8 pt-8">
+              <div className="flex items-center justify-between relative">
+                {/* Progress Line */}
+                <div className="absolute top-5 left-0 right-0 h-0.5 bg-neutral-100 -z-0">
+                  <motion.div 
+                    className="h-full bg-amber-500" 
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
+                  />
                 </div>
-              ))}
+
+                {STEPS.map((step, index) => (
+                  <div key={step.id} className="relative z-10 flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border-2 ${
+                      index <= currentStep 
+                        ? 'bg-amber-500 border-amber-500 text-white' 
+                        : 'bg-white border-neutral-200 text-neutral-400'
+                    }`}>
+                      {index < currentStep ? <Check className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider mt-2 ${
+                      index <= currentStep ? 'text-neutral-900' : 'text-neutral-400'
+                    } hidden sm:block`}>
+                      {step.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Form Area */}
+            <div className="p-8">
+              <AnimatePresence mode="wait">
+                {renderStepContent()}
+              </AnimatePresence>
+
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-700"
+                >
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span className="text-sm">{error}</span>
+                </motion.div>
+              )}
+
+              {/* Actions */}
+              <div className="mt-12 flex items-center justify-between gap-4 border-t border-neutral-100 pt-8">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={currentStep === 0 || loading}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Back
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-200 transition-all disabled:opacity-70"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      {currentStep === STEPS.length - 1 ? 'Submit for Review' : 'Next Step'}
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Form Area */}
-          <div className="p-8">
-            <AnimatePresence mode="wait">
-              {renderStepContent()}
-            </AnimatePresence>
-
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-700"
-              >
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <span className="text-sm">{error}</span>
-              </motion.div>
-            )}
-
-            {/* Actions */}
-            <div className="mt-12 flex items-center justify-between gap-4 border-t border-neutral-100 pt-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={currentStep === 0 || loading}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 transition-all"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Back
-              </button>
-
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={loading}
-                className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-200 transition-all disabled:opacity-70"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    {currentStep === STEPS.length - 1 ? 'Submit for Review' : 'Next Step'}
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          
+          <p className="text-center text-neutral-400 text-xs mt-8">
+            By submitting, you agree to our community guidelines and terms of service.
+          </p>
         </div>
-        
-        <p className="text-center text-neutral-400 text-xs mt-8">
-          By submitting, you agree to our community guidelines and terms of service.
-        </p>
       </div>
-    </div>
+    </MainLayout>
   );
 }

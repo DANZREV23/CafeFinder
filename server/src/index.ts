@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Initialize prisma config (this will set process.env.PRISMA_DATABASE_URL if needed)
-import { prisma } from './config/database.js';
+import { prisma, connectWithRetry } from './config/database.js';
 import { createApp } from './app.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -11,6 +11,10 @@ const ENV = process.env.NODE_ENV || 'development';
 async function startServer() {
   try {
     console.log(`[Server]: Starting in ${ENV} mode...`);
+    
+    // Ensure DB connection before starting the app
+    await connectWithRetry();
+    
     const app = await createApp();
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`[Server]: CafeFinder API is running on http://localhost:${PORT}`);
