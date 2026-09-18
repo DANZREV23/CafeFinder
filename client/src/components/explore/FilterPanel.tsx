@@ -98,7 +98,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   : "bg-white text-brand-muted border-brand-border hover:border-brand-coffee hover:text-brand-coffee"
               }`}
             >
-              {"$".repeat(price)}
+              {"₱".repeat(price)}
             </button>
           ))}
         </div>

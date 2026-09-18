@@ -214,7 +214,8 @@ export default function SubmitCafePage() {
                         : 'bg-white text-neutral-600 border-neutral-200 hover:border-amber-200'
                     }`}
                   >
-                    {'$'.repeat(price)}
+                    {/* Replacing dollar with peso symbol */}
+                    {'₱'.repeat(price)}
                   </button>
                 ))}
               </div>
@@ -390,7 +391,7 @@ export default function SubmitCafePage() {
                   <p className="text-neutral-500 text-sm">{formData.address}, {formData.city}</p>
                 </div>
                 <div className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded">
-                  {'$'.repeat(formData.priceRange || 2)}
+                  {'₱'.repeat(formData.priceRange || 2)}
                 </div>
               </div>
               

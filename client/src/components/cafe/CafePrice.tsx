@@ -10,9 +10,9 @@ export function CafePrice({ priceRange, className }: CafePriceProps) {
   
   return (
     <div className={cn("text-xs font-medium text-brand-muted", className)}>
-      {"$".repeat(Math.max(1, Math.min(4, range)))}
+      {"₱".repeat(Math.max(1, Math.min(4, range)))}
       <span className="opacity-30">
-        {"$".repeat(4 - Math.max(1, Math.min(4, range)))}
+        {"₱".repeat(4 - Math.max(1, Math.min(4, range)))}
       </span>
     </div>
   );

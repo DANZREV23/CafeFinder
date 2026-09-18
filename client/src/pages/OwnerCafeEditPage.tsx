@@ -200,7 +200,7 @@ export default function OwnerCafeEditPage() {
                     className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none"
                   >
                     {[1, 2, 3, 4].map(value => (
-                      <option key={value} value={value}>{'$'.repeat(value)}</option>
+                      <option key={value} value={value}>{'₱'.repeat(value)}</option>
                     ))}
                   </select>
                 </label>

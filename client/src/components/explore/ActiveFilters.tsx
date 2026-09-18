@@ -45,7 +45,7 @@ export const ActiveFilters: React.FC<ActiveFiltersProps> = ({
       )}
       
       {priceRange && (
-        <FilterChip label={`Price: ${"$".repeat(priceRange)}`} onRemove={() => onRemove("priceRange")} />
+        <FilterChip label={`Price: ${"₱".repeat(priceRange)}`} onRemove={() => onRemove("priceRange")} />
       )}
       
       {verified && (
