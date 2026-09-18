@@ -13,6 +13,7 @@ const ListPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [list, setList] = useState<CuratedList | null>(null);
+  const [otherLists, setOtherLists] = useState<CuratedList[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +28,11 @@ const ListPage: React.FC = () => {
       const response = await listService.getBySlug(slug!);
       if (response.success) {
         setList(response.data);
+        // Fetch other lists for the "Discover More" section
+        const othersResponse = await listService.getAll({ limit: 4 });
+        if (othersResponse.success) {
+          setOtherLists(othersResponse.data.lists.filter((l: CuratedList) => l.slug !== slug));
+        }
       } else {
         navigate('/lists');
       }
@@ -203,22 +209,102 @@ const ListPage: React.FC = () => {
                 />
               </div>
 
-              <div className="bg-primary-600 p-8 rounded-2xl shadow-xl text-white relative overflow-hidden group">
-                <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-                <h4 className="text-xl font-bold mb-3 relative z-10">Discover More</h4>
-                <p className="text-white/80 text-sm mb-6 relative z-10 leading-relaxed">
-                  Check out our other hand-picked collections for your next coffee adventure.
-                </p>
+              {otherLists.length > 0 && (
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-100">
+                  <h4 className="text-lg font-black text-neutral-900 mb-6 flex items-center gap-2">
+                    <Coffee className="w-5 h-5 text-primary-600" />
+                    Discover More
+                  </h4>
+                  <div className="space-y-6">
+                    {otherLists.slice(0, 3).map((other) => (
+                      <Link 
+                        key={other.id} 
+                        to={`/lists/${other.slug}`}
+                        className="group flex gap-4 items-center"
+                      >
+                        <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-neutral-100">
+                          <img 
+                            src={other.coverImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&q=80'} 
+                            alt={other.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-neutral-900 line-clamp-2 text-sm leading-snug group-hover:text-primary-600 transition-colors">
+                            {other.title}
+                          </h5>
+                          <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mt-1">
+                            {other._count?.cafes || 0} Spots
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link
+                    to="/lists"
+                    className="mt-8 flex items-center justify-center gap-2 text-neutral-500 hover:text-primary-600 font-bold text-sm transition-colors py-3 border-t border-neutral-50"
+                  >
+                    View All Collections
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
+            </aside>
+          </div>
+
+          {/* Bottom Discover More Section */}
+          {otherLists.length > 0 && (
+            <div className="mt-20 pt-20 border-t border-neutral-100">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                <div>
+                  <h2 className="text-3xl font-black text-neutral-900 mb-4">Discover More Collections</h2>
+                  <p className="text-neutral-500 font-medium max-w-2xl">
+                    Explore our other hand-picked guides to find your next favorite coffee spot across Mindanao and beyond.
+                  </p>
+                </div>
                 <Link
                   to="/lists"
-                  className="inline-flex items-center gap-2 bg-white text-primary-600 px-6 py-3 rounded-xl font-bold hover:bg-neutral-50 transition-all relative z-10"
+                  className="inline-flex items-center gap-2 text-primary-600 font-black uppercase tracking-widest text-sm hover:gap-3 transition-all"
                 >
-                  Browse All
+                  Browse All Collections
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </div>
-            </aside>
-          </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {otherLists.slice(0, 3).map((other, idx) => (
+                  <motion.div
+                    key={other.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * idx }}
+                    className="group"
+                  >
+                    <Link to={`/lists/${other.slug}`} className="block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-neutral-100 h-full">
+                      <div className="aspect-[16/9] overflow-hidden relative">
+                        <img
+                          src={other.coverImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'}
+                          alt={other.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-black text-neutral-900 uppercase tracking-widest shadow-sm">
+                          {other._count?.cafes || 0} Spots
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <h3 className="text-xl font-black text-neutral-900 mb-2 group-hover:text-primary-600 transition-colors">
+                          {other.title}
+                        </h3>
+                        <p className="text-neutral-500 text-sm line-clamp-2 leading-relaxed">
+                          {other.description}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>
