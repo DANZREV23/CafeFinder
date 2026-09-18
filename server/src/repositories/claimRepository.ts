@@ -16,10 +16,10 @@ export class ClaimRepository {
     const where: Prisma.CafeOwnerClaimWhereInput = {
       ...(status && { status }),
       ...(search && { OR: [
-        { cafe: { name: { contains: search, mode: 'insensitive' } } },
-        { user: { name: { contains: search, mode: 'insensitive' } } },
-        { user: { email: { contains: search, mode: 'insensitive' } } },
-        { businessName: { contains: search, mode: 'insensitive' } }
+        { cafe: { name: { contains: search } } },
+        { user: { name: { contains: search } } },
+        { user: { email: { contains: search } } },
+        { businessName: { contains: search } }
       ] })
     };
     const safePage = Math.max(page, 1);

@@ -2,6 +2,14 @@
 
 CafeFinder Davao is a full-stack cafe discovery and ownership platform for Davao City. Visitors can explore published cafes, search and filter listings, view maps and profiles, save favorites, and read reviews. Authenticated users can submit cafes and reviews, while approved cafe owners receive a secure management workspace.
 
+## Recent Updates (September 2026)
+
+- **Database Migration**: Successfully migrated the entire platform from PostgreSQL to **MariaDB**.
+- **Search Optimization**: Implemented native MariaDB `@@fulltext` indexes for improved search performance across cafes and amenities.
+- **Improved Connection Handling**: Enhanced the database configuration logic to automatically construct connection strings from individual host/user/password variables.
+- **UI Refinement**: Updated the hero section with a new, engaging call-to-action: *"Your next favorite local coffee scene is just a click away!"*
+- **Full-Stack Performance**: Optimized raw SQL analytics queries for MariaDB compatibility using `DATE_FORMAT`.
+
 ## Current Features
 
 ### Discovery and Public Directory
@@ -152,7 +160,7 @@ Every admin API is protected by both authentication and the `ADMIN` role.
 - Express.
 - TypeScript.
 - Prisma ORM.
-- PostgreSQL through the existing Prisma datasource configuration.
+- MariaDB / MySQL through the Prisma datasource configuration.
 - Zod request validation.
 - HTTP-only cookie sessions.
 - Multer for controlled image uploads.
@@ -171,13 +179,13 @@ Every admin API is protected by both authentication and the `ADMIN` role.
 
 Install these before setup:
 
-- Node.js 20 or newer.
+- Node.js 22 or newer.
 - npm.
-- PostgreSQL running locally or a reachable PostgreSQL instance.
-- A Google Maps API key if map features are required.
+- MariaDB (10.4+) or MySQL (8.0+) instance.
+- A Google Maps API key for map features.
 - Git, if cloning the repository.
 
-The repository currently uses PostgreSQL through `PRISMA_DATABASE_URL`. The application code still includes `mysql2` as a dependency for compatibility with older project infrastructure, but the active Prisma schema datasource is PostgreSQL. Configure the database URL to match the datasource in `prisma/schema.prisma`.
+The repository uses MariaDB/MySQL through `PRISMA_DATABASE_URL`. The application is optimized for MariaDB with full-text search capabilities.
 
 ## Installation
 
@@ -192,7 +200,15 @@ npm install
 Create a root `.env` file. A minimal local configuration is:
 
 ```env
-PRISMA_DATABASE_URL="postgresql://postgres:password@localhost:5432/cafefinder"
+# Database configuration
+PRISMA_DATABASE_URL="mysql://user:password@host:3306/dbname"
+DB_USERNAME="your-db-user"
+DB_PASSWORD="your-db-password"
+DB_HOST="your-db-host"
+DB_NAME="your-db-name"
+DB_PORT="3306"
+
+# Maps configuration
 VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
 VITE_MAP_PROVIDER="google"
 VITE_MAP_API_KEY="your-google-maps-api-key"
@@ -201,11 +217,9 @@ MAP_PROVIDER="google"
 MAP_API_KEY="your-google-maps-api-key"
 ```
 
-The current server builds its Prisma connection from `PRISMA_DATABASE_URL`. Keep the database name, host, port, username, and password consistent with your local PostgreSQL installation.
+The server constructs the final Prisma connection string automatically from these variables. Ensure your database user has sufficient privileges for creating indexes.
 
 Do not commit real passwords, private keys, or production credentials.
-
-Firebase variables may exist in older environment files, but the current CafeFinder login and session workflow uses the Express/Prisma session system. Firebase is not required for email/password authentication.
 
 ### 3. Apply the database schema
 

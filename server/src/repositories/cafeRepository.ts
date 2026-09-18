@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { Prisma } from '@prisma/client';
+import { normalizeSearchQuery } from '../utils/searchUtils.js';
 
 export interface CafeFilters {
   page?: number;
@@ -36,23 +37,24 @@ export class CafeRepository {
     const safePage = Math.max(page, 1);
     const safeLimit = Math.max(limit, 1);
     const skip = (safePage - 1) * safeLimit;
+    const normalizedSearch = search ? normalizeSearchQuery(search) : undefined;
 
     const where: Prisma.CafeWhereInput = {
       status: status as any,
     };
 
-    if (search) {
+    if (normalizedSearch) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { shortDescription: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { city: { contains: search, mode: 'insensitive' } },
-        { address: { contains: search, mode: 'insensitive' } },
+        { name: { contains: normalizedSearch } },
+        { shortDescription: { contains: normalizedSearch } },
+        { description: { contains: normalizedSearch } },
+        { city: { contains: normalizedSearch } },
+        { address: { contains: normalizedSearch } },
         {
           amenities: {
             some: {
               amenity: {
-                name: { contains: search, mode: 'insensitive' }
+                name: { contains: normalizedSearch }
               }
             }
           }

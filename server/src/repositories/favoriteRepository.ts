@@ -81,11 +81,11 @@ export class FavoriteRepository {
 
       if (search) {
         cafeWhere.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { shortDescription: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-          { city: { contains: search, mode: 'insensitive' } },
-          { address: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search } },
+          { shortDescription: { contains: search } },
+          { description: { contains: search } },
+          { city: { contains: search } },
+          { address: { contains: search } },
         ];
       }
 

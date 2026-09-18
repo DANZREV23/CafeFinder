@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -25,6 +25,7 @@ import { SEO } from "@/components/common/SEO";
 
 export default function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [cafes, setCafes] = React.useState<Cafe[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -155,6 +156,20 @@ export default function ExplorePage() {
                   onSearch={(val) => handleFilterChange("search", val)}
                   onClear={() => handleRemoveFilter("search")}
                   className="w-full"
+                  onSuggestionSelect={(s) => {
+                    if (s.type === 'cafe' && s.slug) {
+                      navigate(`/cafes/${s.slug}`);
+                    } else if (s.type === 'city') {
+                      handleFilterChange("city", s.label);
+                      handleRemoveFilter("search");
+                    } else if (s.type === 'amenity' && s.slug) {
+                      // Append amenity if not already present
+                      if (!amenities.includes(s.slug)) {
+                        handleFilterChange("amenities", [...amenities, s.slug].join(","));
+                      }
+                      handleRemoveFilter("search");
+                    }
+                  }}
                 />
               </div>
               <div className="flex items-center gap-3 w-full md:w-auto">

@@ -68,10 +68,10 @@ export class AdminService {
       ...(status && status !== 'ALL' && { status: status as CafeSubmissionStatus }),
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { city: { contains: search, mode: 'insensitive' } },
-          { submittedBy: { name: { contains: search, mode: 'insensitive' } } },
-          { submittedBy: { email: { contains: search, mode: 'insensitive' } } },
+          { name: { contains: search } },
+          { city: { contains: search } },
+          { submittedBy: { name: { contains: search } } },
+          { submittedBy: { email: { contains: search } } },
         ]
       })
     };
@@ -146,9 +146,9 @@ export class AdminService {
       // Check for duplicates
       const existingCafe = await tx.cafe.findFirst({
         where: {
-          name: { equals: submission.name, mode: 'insensitive' },
-          address: { equals: submission.address, mode: 'insensitive' },
-          city: { equals: submission.city, mode: 'insensitive' },
+          name: { equals: submission.name },
+          address: { equals: submission.address },
+          city: { equals: submission.city },
           status: 'PUBLISHED'
         }
       });
@@ -300,10 +300,10 @@ export class AdminService {
       ...(status && status !== 'ALL' && { status: status as ReviewStatus }),
       ...(search && {
         OR: [
-          { comment: { contains: search, mode: 'insensitive' } },
-          { cafe: { name: { contains: search, mode: 'insensitive' } } },
-          { user: { name: { contains: search, mode: 'insensitive' } } },
-          { user: { email: { contains: search, mode: 'insensitive' } } },
+          { comment: { contains: search } },
+          { cafe: { name: { contains: search } } },
+          { user: { name: { contains: search } } },
+          { user: { email: { contains: search } } },
         ]
       })
     };
@@ -387,12 +387,12 @@ export class AdminService {
       ...(verified !== undefined && { verified: verified === 'true' }),
       ...(featured !== undefined && { featured: featured === 'true' }),
       ...(trending !== undefined && { trending: trending === 'true' }),
-      ...(city && { city: { equals: city, mode: 'insensitive' } }),
+      ...(city && { city: { equals: city } }),
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { city: { contains: search, mode: 'insensitive' } },
-          { address: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search } },
+          { city: { contains: search } },
+          { address: { contains: search } },
         ]
       })
     };
@@ -476,8 +476,8 @@ export class AdminService {
       ...(status && { status: status as UserStatus }),
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search } },
+          { email: { contains: search } },
         ]
       })
     };

@@ -53,27 +53,25 @@ export class AnalyticsRepository {
   }
 
   async getTimeSeries(cafeId: string, eventType: CafeAnalyticsEventType, from: Date, to: Date, interval: 'day' | 'week' | 'month') {
-    // Note: Prisma doesn't support sophisticated date grouping directly in groupBy for all databases uniformly.
-    // For SQLite/Postgres/MySQL, we might need raw queries or manual grouping if the dataset is small.
-    // Since I can't know the exact SQL dialect quirks for grouping without trial, I'll fetch and group in service for now
-    // OR use raw query if I'm sure about Postgres (which it seems to be).
-    
-    // Attempting raw query for Postgres (since schema says postgresql)
-    const intervalSql = interval === 'day' ? 'day' : interval === 'week' ? 'week' : 'month';
+    // MySQL/MariaDB compatible date grouping
+    let dateFormat = '%Y-%m-%d'; // default for day
+    if (interval === 'week') dateFormat = '%Y-%u';
+    if (interval === 'month') dateFormat = '%Y-%m';
     
     const results = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
-        DATE_TRUNC('${intervalSql}', "createdAt") as date,
-        COUNT(*)::int as value
-      FROM "cafe_analytics_events"
-      WHERE "cafeId" = $1 AND "eventType" = $2::"CafeAnalyticsEventType" AND "createdAt" >= $3 AND "createdAt" <= $4
-      GROUP BY date
-      ORDER BY date ASC
+        DATE_FORMAT(createdAt, '${dateFormat}') as dateStr,
+        MIN(createdAt) as date,
+        COUNT(*) as value
+      FROM cafe_analytics_events
+      WHERE cafeId = ? AND eventType = ? AND createdAt >= ? AND createdAt <= ?
+      GROUP BY dateStr
+      ORDER BY dateStr ASC
     `, cafeId, eventType, from, to);
 
     return results.map(r => ({
       date: r.date instanceof Date ? r.date.toISOString() : new Date(r.date).toISOString(),
-      value: r.value
+      value: Number(r.value)
     }));
   }
 
@@ -142,17 +140,20 @@ export class AnalyticsRepository {
   }
 
   async getHistoricalFavoritesCount(cafeId: string, from: Date, to: Date, interval: 'day' | 'week' | 'month') {
-    // Similar to views, group favorites by date
-    const intervalSql = interval === 'day' ? 'day' : interval === 'week' ? 'week' : 'month';
+    // MySQL/MariaDB compatible date grouping
+    let dateFormat = '%Y-%m-%d';
+    if (interval === 'week') dateFormat = '%Y-%u';
+    if (interval === 'month') dateFormat = '%Y-%m';
     
     return prisma.$queryRawUnsafe<any[]>(`
       SELECT 
-        DATE_TRUNC('${intervalSql}', "createdAt") as date,
-        COUNT(*)::int as value
-      FROM "cafe_favorites"
-      WHERE "cafeId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3
-      GROUP BY date
-      ORDER BY date ASC
+        DATE_FORMAT(createdAt, '${dateFormat}') as dateStr,
+        MIN(createdAt) as date,
+        COUNT(*) as value
+      FROM cafe_favorites
+      WHERE cafeId = ? AND createdAt >= ? AND createdAt <= ?
+      GROUP BY dateStr
+      ORDER BY dateStr ASC
     `, cafeId, from, to);
   }
 }

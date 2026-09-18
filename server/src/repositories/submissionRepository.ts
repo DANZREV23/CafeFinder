@@ -76,9 +76,9 @@ export class SubmissionRepository {
     // Check existing cafes
     const existingCafe = await prisma.cafe.findFirst({
       where: {
-        name: { contains: normalizedName, mode: 'insensitive' },
-        city: { contains: normalizedCity, mode: 'insensitive' },
-        address: { contains: normalizedAddress, mode: 'insensitive' }
+        name: { contains: normalizedName },
+        city: { contains: normalizedCity },
+        address: { contains: normalizedAddress }
       }
     });
 
@@ -87,9 +87,9 @@ export class SubmissionRepository {
     // Check pending submissions
     const existingSubmission = await prisma.cafeSubmission.findFirst({
       where: {
-        name: { contains: normalizedName, mode: 'insensitive' },
-        city: { contains: normalizedCity, mode: 'insensitive' },
-        address: { contains: normalizedAddress, mode: 'insensitive' },
+        name: { contains: normalizedName },
+        city: { contains: normalizedCity },
+        address: { contains: normalizedAddress },
         status: CafeSubmissionStatus.PENDING
       }
     });
@@ -107,9 +107,9 @@ export class SubmissionRepository {
     return prisma.cafeSubmission.findFirst({
       where: {
         submittedById: userId,
-        name: { equals: normalizedName, mode: 'insensitive' },
-        city: { equals: normalizedCity, mode: 'insensitive' },
-        address: { equals: normalizedAddress, mode: 'insensitive' },
+        name: { equals: normalizedName },
+        city: { equals: normalizedCity },
+        address: { equals: normalizedAddress },
         status: CafeSubmissionStatus.PENDING
       }
     });

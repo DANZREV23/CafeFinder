@@ -9,7 +9,7 @@ export class ChangeRequestService {
 
   async list(filters: { status?: CafeChangeRequestStatus; type?: CafeChangeRequestType; search?: string; page: number; limit: number }) {
     const { status, type, search, page, limit } = filters;
-    const where: Prisma.CafeChangeRequestWhereInput = { ...(status && { status }), ...(type && { type }), ...(search && { OR: [{ cafe: { name: { contains: search, mode: 'insensitive' } } }, { requestedBy: { name: { contains: search, mode: 'insensitive' } } }, { requestedBy: { email: { contains: search, mode: 'insensitive' } } }] }) };
+    const where: Prisma.CafeChangeRequestWhereInput = { ...(status && { status }), ...(type && { type }), ...(search && { OR: [{ cafe: { name: { contains: search } } }, { requestedBy: { name: { contains: search } } }, { requestedBy: { email: { contains: search } } }] }) };
     const [requests, total] = await Promise.all([
       prisma.cafeChangeRequest.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit, include: { cafe: { select: { id: true, name: true, slug: true } }, requestedBy: { select: { id: true, name: true, email: true } } } }),
       prisma.cafeChangeRequest.count({ where })

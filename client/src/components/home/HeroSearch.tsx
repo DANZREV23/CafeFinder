@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Coffee, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { SearchInput } from '../ui/SearchInput';
 
 export const HeroSearch: React.FC = () => {
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('');
   const navigate = useNavigate();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (location) params.append('city', location);
@@ -35,7 +35,7 @@ export const HeroSearch: React.FC = () => {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-coffee/10 text-brand-coffee text-sm font-bold rounded-full uppercase tracking-wider mb-6">
             <Coffee size={16} />
-            <span>Discover Your Local Coffee Scene</span>
+            <span>Your next favorite local coffee scene is just a click away!</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-display font-black tracking-[-0.06em] text-brand-black mb-6 leading-[0.9]">
@@ -54,40 +54,45 @@ export const HeroSearch: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="w-full max-w-4xl mx-auto"
         >
-          <form 
-            onSubmit={handleSearch}
-            className="bg-white p-2 md:p-3 rounded-2xl md:rounded-full shadow-2xl shadow-brand-coffee/10 border border-brand-border/50 flex flex-col md:flex-row gap-2"
-          >
-            <div className="flex-1 relative flex items-center px-4 border-b md:border-b-0 md:border-r border-brand-border/50 pb-2 md:pb-0">
-              <Search className="text-brand-muted shrink-0 mr-3" size={20} />
-              <input
-                type="text"
+          <div className="bg-white p-2 md:p-3 rounded-2xl md:rounded-full shadow-2xl shadow-brand-coffee/10 border border-brand-border/50 flex flex-col md:flex-row gap-2 items-center">
+            <div className="flex-1 w-full border-b md:border-b-0 md:border-r border-brand-border/50 pb-2 md:pb-0">
+              <SearchInput
                 placeholder="Search cafes, coffee, vibes..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full py-3 bg-transparent border-none focus:ring-0 text-brand-black placeholder:text-brand-muted text-lg"
+                onSearch={() => handleSearch()}
+                className="border-none shadow-none focus:ring-0 h-14"
+                suggestionType="all"
               />
             </div>
             
-            <div className="flex-1 relative flex items-center px-4 pb-2 md:pb-0">
-              <MapPin className="text-brand-muted shrink-0 mr-3" size={20} />
-              <input
-                type="text"
+            <div className="flex-1 w-full pb-2 md:pb-0">
+              <SearchInput
                 placeholder="Search by city or neighborhood"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full py-3 bg-transparent border-none focus:ring-0 text-brand-black placeholder:text-brand-muted text-lg"
+                onSearch={() => handleSearch()}
+                className="border-none shadow-none focus:ring-0 h-14"
+                suggestionType="city"
+                onSuggestionSelect={(s) => {
+                  setLocation(s.label);
+                  // Optionally trigger search immediately
+                  const params = new URLSearchParams();
+                  if (search) params.append('search', search);
+                  params.append('city', s.label);
+                  navigate(`/explore?${params.toString()}`);
+                }}
               />
             </div>
             
             <Button 
-              type="submit"
-              className="bg-brand-coffee text-white hover:bg-brand-coffee/90 rounded-xl md:rounded-full px-8 py-4 h-auto text-lg font-bold shadow-lg shadow-brand-coffee/20 group transition-all"
+              onClick={() => handleSearch()}
+              className="bg-brand-coffee text-white hover:bg-brand-coffee/90 rounded-xl md:rounded-full px-8 py-4 h-14 text-lg font-bold shadow-lg shadow-brand-coffee/20 group transition-all shrink-0"
             >
               Search
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
-          </form>
+          </div>
           
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
             <p className="text-sm font-bold text-brand-muted uppercase tracking-wider">Popular Searches:</p>

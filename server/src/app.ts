@@ -26,6 +26,7 @@ import menuRoutes from './routes/menu.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import recommendationRoutes from './routes/recommendation.routes.js';
 import seoRoutes from './routes/seo.routes.js';
+import searchRoutes from './routes/search.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,7 @@ export async function createApp() {
   app.use('/api/menu', menuRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/recommendations', recommendationRoutes);
+  app.use('/api/search', searchRoutes);
 
   // SEO Routes (Robots and Sitemap)
   app.use('/', seoRoutes);

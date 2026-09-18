@@ -33,7 +33,7 @@ export class ActivityLogRepository {
 
     const where: Prisma.ActivityLogWhereInput = {
       ...(userId && { userId }),
-      ...(action && { action: { contains: action, mode: 'insensitive' as Prisma.QueryMode } }),
+      ...(action && { action: { contains: action } }),
       ...(entityType && { entityType }),
       ...(entityId && { entityId }),
       ...((from || to) && {
@@ -44,10 +44,10 @@ export class ActivityLogRepository {
       }),
       ...(search && {
         OR: [
-          { action: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-          { description: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-          { user: { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } } },
-          { user: { email: { contains: search, mode: 'insensitive' as Prisma.QueryMode } } },
+          { action: { contains: search } },
+          { description: { contains: search } },
+          { user: { name: { contains: search } } },
+          { user: { email: { contains: search } } },
         ],
       }),
     };

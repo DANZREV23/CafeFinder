@@ -2,10 +2,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextIndex", "fullTextSearch"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("PRISMA_DATABASE_URL")
 }
 
@@ -170,6 +171,7 @@ model Cafe {
   @@index([ratingAverage])
   @@index([createdAt])
   @@index([ownerId])
+  @@fulltext([name, shortDescription, description, city, address])
   @@map("cafes")
 }
 
