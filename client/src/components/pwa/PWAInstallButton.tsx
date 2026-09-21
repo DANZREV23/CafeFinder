@@ -4,7 +4,7 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface PWAInstallButtonProps {
-  variant?: 'primary' | 'outline' | 'ghost' | 'link';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
   className?: string;
   showIcon?: boolean;
 }

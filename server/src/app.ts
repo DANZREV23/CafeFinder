@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -118,9 +119,27 @@ export async function createApp() {
     console.log('[Server]: Running in development mode with Vite middleware');
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: 'spa',
+      appType: 'custom',
     });
     app.use(vite.middlewares);
+
+    // Explicitly handle SPA fallback in development
+    app.use('*', async (req, res, next) => {
+      // Don't handle API routes here (they are handled above)
+      if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads')) {
+        return next();
+      }
+
+      const url = req.originalUrl;
+      try {
+        let template = fs.readFileSync(path.resolve(process.cwd(), 'client/index.html'), 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     // In production, server.cjs is located inside the dist folder
     const distPath = path.resolve(__dirname);

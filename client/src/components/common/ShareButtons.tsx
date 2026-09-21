@@ -47,7 +47,25 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // Fallback for non-secure contexts or iframes
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          const successful = document.execCommand('copy');
+          if (!successful) throw new Error('Copy failed');
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
