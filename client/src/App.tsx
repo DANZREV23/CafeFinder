@@ -55,6 +55,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleRoute from './components/auth/RoleRoute';
 import { MainLayout } from './components/layout/MainLayout';
+import { Toaster } from 'react-hot-toast';
 
 import { MapProvider } from './components/map/MapProvider';
 
@@ -64,6 +65,7 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <MapProvider>
+            <Toaster position="top-center" />
             <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/explore" element={<ExplorePage />} />
