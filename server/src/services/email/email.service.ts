@@ -19,7 +19,8 @@ export class EmailService {
     this.fromName = process.env.EMAIL_FROM_NAME || 'CafeFinder';
     this.fromAddress = process.env.EMAIL_FROM_ADDRESS || 'noreply@cafefinder.com';
     this.replyTo = process.env.EMAIL_REPLY_TO;
-    this.baseUrl = process.env.EMAIL_BASE_URL || process.env.APP_URL || 'http://localhost:3000';
+    const PORT = process.env.PORT || 3000;
+    this.baseUrl = process.env.EMAIL_BASE_URL || process.env.APP_URL || `http://localhost:${PORT}`;
 
     const providerType = process.env.EMAIL_PROVIDER || 'console';
     

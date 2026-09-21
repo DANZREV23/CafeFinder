@@ -3,7 +3,8 @@ import { prisma } from '../config/database.js';
 
 const router = Router();
 
-const APP_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const PORT = process.env.PORT || 3000;
+const APP_URL = process.env.CLIENT_URL || `http://localhost:${PORT}`;
 
 router.get('/robots.txt', (req, res) => {
   const robots = `User-agent: *

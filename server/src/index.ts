@@ -6,7 +6,7 @@ import { prisma, connectWithRetry } from './config/database.js';
 import { createApp } from './app.js';
 import { schedulerService } from './services/schedulerService.js';
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const ENV = process.env.NODE_ENV || 'development';
 
 async function startServer() {

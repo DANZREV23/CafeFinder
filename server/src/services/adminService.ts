@@ -469,7 +469,7 @@ export class AdminService {
           emailService.queueEmail('CAFE_PUBLISHED' as any, owner.email, {
             name: owner.name,
             cafeName: cafe.name,
-            cafeUrl: `${process.env.APP_URL || 'http://localhost:3000'}/cafes/${cafe.slug}`,
+            cafeUrl: `${process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`}/cafes/${cafe.slug}`,
           }, owner.id).catch(err => console.error('[AdminService]: Failed to send cafe published email:', err));
         } else if (status === 'SUSPENDED') {
           emailService.queueEmail('CAFE_SUSPENDED' as any, owner.email, {

@@ -57,9 +57,10 @@ export async function createApp() {
       // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
       
+      const PORT = process.env.PORT || 3000;
       const allowedOrigins = [
         process.env.CLIENT_URL,
-        'http://localhost:3000',
+        `http://localhost:${PORT}`,
         'http://localhost:5173',
       ].filter(Boolean);
 

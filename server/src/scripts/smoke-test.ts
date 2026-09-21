@@ -2,7 +2,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const BASE_URL = process.env.APP_URL || 'http://localhost:3000';
+const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 
 async function runSmokeTest() {
   console.log(`[SmokeTest]: Starting tests on ${BASE_URL}`);
