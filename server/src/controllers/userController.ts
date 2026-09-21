@@ -3,6 +3,8 @@ import { UserService } from '../services/userService.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { z } from 'zod';
 
+import { userDataExportService } from '../services/userDataExportService.js';
+
 const userService = new UserService();
 
 const updateProfileSchema = z.object({
@@ -56,6 +58,32 @@ export class UserController {
         success: true,
         data: { user, avatarUrl },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async exportUserData(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: { message: 'Not authenticated' } });
+      }
+
+      const data = await userDataExportService.exportUserData(req.user.id);
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deactivateAccount(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: { message: 'Not authenticated' } });
+      }
+
+      await userService.updateStatus(req.user.id, 'INACTIVE');
+      res.json({ success: true, message: 'Account deactivated' });
     } catch (error) {
       next(error);
     }

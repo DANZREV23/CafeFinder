@@ -61,6 +61,7 @@ const AdminCafesPage = lazy(() => import('./pages/admin/AdminCafesPage').then(m 
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
 const AdminActivityLogPage = lazy(() => import('./pages/admin/AdminActivityLogPage').then(m => ({ default: m.AdminActivityLogPage })));
 const AdminSystemPage = lazy(() => import('./pages/admin/AdminSystemPage').then(m => ({ default: m.AdminSystemPage })));
+const AdminDataIntegrityPage = lazy(() => import('./pages/admin/DataIntegrity').then(m => ({ default: m.DataIntegrity })));
 const AdminOwnerClaimsPage = lazy(() => import('./pages/admin/AdminOwnerClaimsPage'));
 const AdminOwnerClaimDetailsPage = lazy(() => import('./pages/admin/AdminOwnerClaimDetailsPage'));
 const AdminChangeRequestsPage = lazy(() => import('./pages/admin/AdminChangeRequestsPage'));
@@ -167,6 +168,7 @@ export default function App() {
                   <Route path="users" element={<AdminUsersPage />} />
                   <Route path="activity" element={<AdminActivityLogPage />} />
                   <Route path="system" element={<AdminSystemPage />} />
+                  <Route path="system/integrity" element={<AdminDataIntegrityPage />} />
                   <Route path="claims" element={<AdminOwnerClaimsPage />} />
                   <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                   <Route path="change-requests" element={<AdminChangeRequestsPage />} />

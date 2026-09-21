@@ -66,7 +66,8 @@ const MENU_ITEMS = [
     label: 'System', 
     type: 'group',
     items: [
-      { id: 'status', label: 'System Status', icon: Activity, path: '/admin/system' },
+      { id: 'status', label: 'System Status', icon: Activity, path: '/admin/system', end: true },
+      { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
       { id: 'activity', label: 'Activity Logs', icon: History, path: '/admin/activity' },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', comingSoon: true },
     ]
@@ -105,7 +106,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                       <li key={item.id}>
                         <NavLink
                           to={item.comingSoon ? '#' : item.path}
-                          end={item.path === '/admin'}
+                          end={item.end || item.path === '/admin'}
                           onClick={item.comingSoon ? (e) => e.preventDefault() : onClose}
                           className={({ isActive }) => clsx(
                             "flex items-center justify-between px-3 py-2 rounded-lg transition-all group",

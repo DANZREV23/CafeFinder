@@ -66,6 +66,11 @@ router.post('/system/maintenance', adminController.toggleMaintenanceMode);
 router.post('/system/metrics/reset', adminController.resetMetrics);
 router.post('/system/backup', adminController.runBackup);
 router.post('/system/cleanup', adminController.runCleanup);
+router.get('/system/data-integrity', adminController.getDataIntegrityReport);
+router.post('/system/cafes/:id/recalculate-ratings', adminController.recalculateCafeRatings);
+router.post('/system/reviews/repair-orphans', adminController.repairOrphanedReviews);
+router.post('/system/media/cleanup', adminController.cleanupMedia);
+router.get('/system/cafes/duplicates', adminController.findDuplicateCafes);
 
 // Blog Management
 router.get('/blog', blogController.getAdminPosts);

@@ -3,6 +3,8 @@ import { AuthRequest } from '../middleware/authMiddleware.js';
 import { AdminService } from '../services/adminService.js';
 import { ActivityLogService } from '../services/activityLogService.js';
 import { CafeService } from '../services/cafeService.js';
+import { dataIntegrityService } from '../services/dataIntegrityService.js';
+import { cafeDuplicateService } from '../services/cafeDuplicateService.js';
 import { CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
 
 export class AdminController {
@@ -330,6 +332,77 @@ export class AdminController {
       // Run in background
       cleanupService.runAll().catch(err => console.error('Background cleanup failed:', err));
       res.json({ success: true, message: 'Cleanup process started in background' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  // --- Data Integrity & Maintenance ---
+
+  getDataIntegrityReport = async (req: AuthRequest, res: Response) => {
+    try {
+      const report = await dataIntegrityService.getIntegrityReport();
+      res.json({ success: true, data: report });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  recalculateCafeRatings = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      if (id === 'all') {
+        const count = await dataIntegrityService.recalculateAllCafeRatings();
+        return res.json({ success: true, data: { fixedCount: count } });
+      }
+      const result = await dataIntegrityService.recalculateCafeRatings(id);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  cleanupMedia = async (req: AuthRequest, res: Response) => {
+    try {
+      const { type } = req.query as any;
+      let count = 0;
+      if (type === 'missing') {
+        count = await dataIntegrityService.cleanupMissingMedia();
+      } else if (type === 'orphaned') {
+        count = await dataIntegrityService.cleanupOrphanedFiles();
+      } else {
+        return res.status(400).json({ success: false, error: { message: 'Invalid cleanup type' } });
+      }
+      res.json({ success: true, data: { removedCount: count } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  repairOrphanedReviews = async (req: AuthRequest, res: Response) => {
+    try {
+      const count = await dataIntegrityService.repairOrphanedReviews();
+      res.json({ success: true, data: { repairedCount: count } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  findDuplicateCafes = async (req: AuthRequest, res: Response) => {
+    try {
+      const { name, city, address } = req.query as any;
+      
+      if (!name && !city && !address) {
+        // System-wide scan
+        const duplicates = await cafeDuplicateService.findAllDuplicates();
+        return res.json({ success: true, data: duplicates });
+      }
+
+      if (!name || !city || !address) {
+        return res.status(400).json({ success: false, error: { message: 'Missing required query parameters for specific search' } });
+      }
+      const matches = await cafeDuplicateService.findDuplicates({ name, city, address });
+      res.json({ success: true, data: matches });
     } catch (error: any) {
       res.status(500).json({ success: false, error: { message: error.message } });
     }

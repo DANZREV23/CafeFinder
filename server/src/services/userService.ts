@@ -37,4 +37,8 @@ export class UserService {
       avatarUrl: user.avatarUrl,
     };
   }
+
+  async updateStatus(userId: string, status: any) {
+    return this.userRepository.update(userId, { status });
+  }
 }

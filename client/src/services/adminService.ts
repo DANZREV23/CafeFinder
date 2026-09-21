@@ -188,5 +188,61 @@ export const adminService = {
     if (params.limit) query.append('limit', params.limit.toString());
 
     return fetchApi<ApiResponse<ActivityLog[]>>(`/admin/activity-logs?${query.toString()}`);
+  },
+
+  // System
+  async getSystemStatus(): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>('/admin/system/status');
+  },
+
+  async toggleMaintenanceMode(enabled: boolean): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>('/admin/system/maintenance', {
+      method: 'POST',
+      body: JSON.stringify({ enabled })
+    });
+  },
+
+  async runBackup(): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>('/admin/system/backup', {
+      method: 'POST'
+    });
+  },
+
+  async runCleanup(): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>('/admin/system/cleanup', {
+      method: 'POST'
+    });
+  },
+
+  async getDataIntegrityReport(): Promise<any> {
+    const response = await fetchApi<ApiResponse<any>>('/admin/system/data-integrity');
+    return response.data;
+  },
+
+  async recalculateCafeRatings(id: string): Promise<any> {
+    const response = await fetchApi<ApiResponse<any>>(`/admin/system/cafes/${id}/recalculate-ratings`, {
+      method: 'POST'
+    });
+    return response.data;
+  },
+
+  async repairOrphanedReviews(): Promise<any> {
+    const response = await fetchApi<ApiResponse<any>>('/admin/system/reviews/repair-orphans', {
+      method: 'POST'
+    });
+    return response.data;
+  },
+
+  async cleanupMedia(type: 'missing' | 'orphaned'): Promise<any> {
+    const response = await fetchApi<ApiResponse<any>>(`/admin/system/media/cleanup?type=${type}`, {
+      method: 'POST'
+    });
+    return response.data;
+  },
+
+  async findDuplicateCafes(params?: { name: string; city: string; address: string }): Promise<any> {
+    const query = params ? new URLSearchParams(params).toString() : '';
+    const response = await fetchApi<ApiResponse<any>>(`/admin/system/cafes/duplicates${query ? `?${query}` : ''}`);
+    return response.data;
   }
 };

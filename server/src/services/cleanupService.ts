@@ -15,9 +15,43 @@ export class CleanupService {
       this.cleanupEmailJobs(),
       this.cleanupLogs(),
       this.cleanupActivityLogs(),
+      this.cleanupAnalytics(),
     ]);
     
     logger.info('System cleanup jobs completed.');
+  }
+
+  /**
+   * Helper for batched deletion to prevent long locks
+   */
+  private async batchedDelete(model: string, where: any, batchSize: number = 500) {
+    let totalDeleted = 0;
+    let deletedInBatch = batchSize;
+
+    while (deletedInBatch === batchSize) {
+      // @ts-ignore - dynamic model access
+      const idsToDelete = await prisma[model].findMany({
+        where,
+        select: { id: true },
+        take: batchSize,
+      });
+
+      if (idsToDelete.length === 0) break;
+
+      const ids = idsToDelete.map((item: any) => item.id);
+      // @ts-ignore
+      const result = await prisma[model].deleteMany({
+        where: { id: { in: ids } },
+      });
+
+      deletedInBatch = result.count;
+      totalDeleted += deletedInBatch;
+      
+      // Yield to event loop
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    return totalDeleted;
   }
 
   async cleanupSessions() {
@@ -29,7 +63,9 @@ export class CleanupService {
           },
         },
       });
-      logger.info(`Cleaned up ${result.count} expired sessions.`);
+      if (result.count > 0) {
+        logger.info(`Cleaned up ${result.count} expired sessions.`);
+      }
     } catch (err) {
       logger.error('Failed to cleanup sessions', err);
     }
@@ -37,19 +73,18 @@ export class CleanupService {
 
   async cleanupNotifications() {
     try {
-      // Cleanup notifications older than 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const retentionDays = parseInt(process.env.NOTIFICATION_RETENTION_DAYS || '30');
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - retentionDays);
       
-      const result = await prisma.notification.deleteMany({
-        where: {
-          createdAt: {
-            lt: thirtyDaysAgo,
-          },
-          isRead: true, // Only cleanup read notifications
-        },
+      const count = await this.batchedDelete('notification', {
+        createdAt: { lt: cutoff },
+        isRead: true,
       });
-      logger.info(`Cleaned up ${result.count} old notifications.`);
+      
+      if (count > 0) {
+        logger.info(`Cleaned up ${count} old notifications.`);
+      }
     } catch (err) {
       logger.error('Failed to cleanup notifications', err);
     }
@@ -112,23 +147,37 @@ export class CleanupService {
 
   async cleanupActivityLogs() {
     try {
-      // Cleanup activity logs older than 90 days
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const retentionDays = parseInt(process.env.ACTIVITY_LOG_RETENTION_DAYS || '90');
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - retentionDays);
       
-      const result = await prisma.activityLog.deleteMany({
-        where: {
-          createdAt: {
-            lt: ninetyDaysAgo,
-          },
-        },
+      const count = await this.batchedDelete('activityLog', {
+        createdAt: { lt: cutoff },
       });
       
-      if (result.count > 0) {
-        logger.info(`Cleaned up ${result.count} old activity logs.`);
+      if (count > 0) {
+        logger.info(`Cleaned up ${count} old activity logs.`);
       }
     } catch (err) {
       logger.error('Failed to cleanup activity logs', err);
+    }
+  }
+
+  async cleanupAnalytics() {
+    try {
+      const retentionDays = parseInt(process.env.ANALYTICS_RETENTION_DAYS || '180');
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - retentionDays);
+      
+      const count = await this.batchedDelete('cafeAnalyticsEvent', {
+        createdAt: { lt: cutoff },
+      });
+      
+      if (count > 0) {
+        logger.info(`Cleaned up ${count} old analytics events.`);
+      }
+    } catch (err) {
+      logger.error('Failed to cleanup analytics', err);
     }
   }
 }

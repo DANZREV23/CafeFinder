@@ -16,5 +16,7 @@ router.get('/me/dashboard', requireAuth, dashboardController.getDashboardData);
 // Profile routes
 router.patch('/profile', requireAuth, userController.updateProfile);
 router.post('/profile/avatar', requireAuth, uploadAvatar.single('avatar'), userController.uploadAvatar);
+router.get('/me/export', requireAuth, userController.exportUserData);
+router.post('/me/deactivate', requireAuth, userController.deactivateAccount);
 
 export default router;
