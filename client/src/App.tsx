@@ -38,6 +38,7 @@ const OwnerCafeReviewsPage = lazy(() => import('./pages/OwnerCafeReviewsPage'));
 const OwnerCafeAnalyticsPage = lazy(() => import('./pages/OwnerCafeAnalyticsPage'));
 const OwnerCafeMenuPage = lazy(() => import('./pages/OwnerCafeMenuPage'));
 const OwnerChangeRequestsPage = lazy(() => import('./pages/OwnerChangeRequestsPage'));
+const OwnerCafeChangeRequestFormPage = lazy(() => import('./pages/OwnerCafeChangeRequestFormPage'));
 const OwnerClaimsPage = lazy(() => import('./pages/OwnerClaimsPage'));
 const OwnerClaimDetailsPage = lazy(() => import('./pages/OwnerClaimDetailsPage'));
 const SubmitCafePage = lazy(() => import('./pages/SubmitCafePage'));
@@ -151,6 +152,7 @@ export default function App() {
                 <Route path="/owner/cafes/:id/reviews" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeReviewsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/analytics" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeAnalyticsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/change-requests" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerChangeRequestsPage /></RoleRoute>} />
+                <Route path="/owner/cafes/:id/change-requests/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeChangeRequestFormPage /></RoleRoute>} />
                 <Route path="/owner/claims" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerClaimsPage /></RoleRoute>} />
                 <Route path="/cafe-owner-claims/:id" element={<ProtectedRoute><OwnerClaimDetailsPage /></ProtectedRoute>} />
                 

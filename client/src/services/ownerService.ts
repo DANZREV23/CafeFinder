@@ -31,5 +31,15 @@ export const ownerService = {
   getAnalytics: (cafeId: string, params: { from: string; to: string; interval: 'day' | 'week' | 'month' }) => {
     const query = new URLSearchParams(params).toString();
     return fetchApi<ApiResponse<any>>(`/owner/cafes/${cafeId}/analytics?${query}`);
-  }
+  },
+  getChangeRequests: (cafeId: string) => fetchApi<ApiResponse<any[]>>(`/owner/cafes/${cafeId}/change-requests`),
+  createChangeRequest: (cafeId: string, data: { type: string; payload: any; reason?: string }) => 
+    fetchApi<ApiResponse<any>>(`/owner/cafes/${cafeId}/change-requests`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  cancelChangeRequest: (requestId: string) => 
+    fetchApi<ApiResponse<any>>(`/owner/change-requests/${requestId}/cancel`, {
+      method: 'POST'
+    })
 };

@@ -18,6 +18,62 @@ export class ChangeRequestService {
     return { data: requests, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
+  async create(data: { cafeId: string; userId: string; type: CafeChangeRequestType; payload: any; reason: string }) {
+    const cafe = await prisma.cafe.findUnique({ where: { id: data.cafeId } });
+    if (!cafe) throw fail('Cafe not found', 404);
+    if (cafe.ownerId !== data.userId) throw fail('Unauthorized: Only the owner can request changes for this cafe', 403);
+
+    // Check for existing pending request of same type
+    const existing = await prisma.cafeChangeRequest.findFirst({
+      where: {
+        cafeId: data.cafeId,
+        type: data.type,
+        status: CafeChangeRequestStatus.PENDING
+      }
+    });
+    if (existing) throw fail(`There is already a pending ${data.type} change request for this cafe`, 409);
+
+    const request = await prisma.cafeChangeRequest.create({
+      data: {
+        cafeId: data.cafeId,
+        requestedById: data.userId,
+        type: data.type,
+        payload: data.payload,
+        reason: data.reason,
+        status: CafeChangeRequestStatus.PENDING
+      },
+      include: {
+        cafe: { select: { name: true } }
+      }
+    });
+
+    await this.activityLogs.logAction({
+      userId: data.userId,
+      action: 'CAFE_CHANGE_REQUEST_CREATED',
+      entityType: 'CafeChangeRequest',
+      entityId: request.id,
+      description: `Requested ${data.type} changes for ${request.cafe.name}`
+    });
+
+    return request;
+  }
+
+  async listForOwner(userId: string, filters: { page: number; limit: number }) {
+    const { page, limit } = filters;
+    const where: Prisma.CafeChangeRequestWhereInput = { requestedById: userId };
+    const [requests, total] = await Promise.all([
+      prisma.cafeChangeRequest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { cafe: { select: { name: true, slug: true } } }
+      }),
+      prisma.cafeChangeRequest.count({ where })
+    ]);
+    return { data: requests, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
   async get(id: string) {
     const request = await prisma.cafeChangeRequest.findUnique({ where: { id }, include: { cafe: true, requestedBy: { select: { id: true, name: true, email: true } } } });
     if (!request) throw fail('Change request not found', 404);
