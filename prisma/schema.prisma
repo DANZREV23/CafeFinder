@@ -100,6 +100,7 @@ model User {
   reviewedChangeRequests CafeChangeRequest[] @relation("ChangeRequestReviewer")
   cafeViews       UserCafeView[]
   analyticsEvents CafeAnalyticsEvent[]
+  emailJobs       EmailJob[]
 
   @@map("users")
 }
@@ -647,4 +648,37 @@ model UserCafeView {
   @@unique([userId, cafeId])
   @@index([userId, viewedAt])
   @@map("user_cafe_views")
+}
+
+enum EmailJobStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model EmailJob {
+  id                String         @id @default(cuid())
+  userId            String?
+  toAddress         String
+  template          String
+  subject           String
+  payload           Json
+  status            EmailJobStatus @default(PENDING)
+  attempts          Int            @default(0)
+  availableAt       DateTime       @default(now())
+  sentAt            DateTime?
+  lastError         String?        @db.Text
+  providerMessageId String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([availableAt])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("email_jobs")
 }

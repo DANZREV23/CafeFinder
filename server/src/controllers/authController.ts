@@ -3,6 +3,7 @@ import { AuthService } from '../services/authService.js';
 import { COOKIE_NAME, getCookieOptions } from '../utils/auth.js';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/authMiddleware.js';
+import { emailService } from '../services/email/email.service.js';
 
 const authService = new AuthService();
 
@@ -25,6 +26,13 @@ export class AuthController {
 
       res.cookie(COOKIE_NAME, token, getCookieOptions());
       
+      // Send welcome email (non-blocking)
+      emailService.sendWelcomeEmail({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      }).catch(err => console.error('[AuthController]: Failed to send welcome email:', err));
+
       res.status(201).json({
         success: true,
         data: { user },

@@ -1,6 +1,7 @@
 import { CafeChangeRequestStatus, CafeChangeRequestType, Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { ActivityLogService } from './activityLogService.js';
+import { emailService } from './email/email.service.js';
 
 const fail = (message: string, status = 400) => Object.assign(new Error(message), { status });
 
@@ -41,6 +42,17 @@ export class ChangeRequestService {
       const updated = await tx.cafeChangeRequest.update({ where: { id, status: CafeChangeRequestStatus.PENDING }, data: { status: CafeChangeRequestStatus.APPROVED, reviewedById: adminId, reviewedAt: now }, include: { cafe: { select: { id: true, name: true, slug: true } } } });
       await tx.activityLog.create({ data: { userId: adminId, action: 'ADMIN_APPROVED_CAFE_CHANGE_REQUEST', entityType: 'CafeChangeRequest', entityId: id, description: `Approved ${request.type} change request for ${request.cafe.name}` } });
       await tx.notification.create({ data: { userId: request.requestedById, title: 'Your cafe changes were approved.', message: `Changes for ${request.cafe.name} were approved.`, type: 'CAFE_CHANGE_REQUEST_APPROVED' } });
+      
+      // Send email (non-blocking)
+      const user = await tx.user.findUnique({ where: { id: request.requestedById } });
+      if (user) {
+        emailService.sendChangeRequestApprovedEmail(
+          { id: user.id, name: user.name, email: user.email },
+          request.cafe.name,
+          request.type
+        ).catch(err => console.error('[ChangeRequestService]: Failed to send change request approval email:', err));
+      }
+
       return updated;
     });
   }
@@ -53,6 +65,18 @@ export class ChangeRequestService {
       const value = await tx.cafeChangeRequest.update({ where: { id, status: CafeChangeRequestStatus.PENDING }, data: { status: CafeChangeRequestStatus.REJECTED, adminNotes: reason, reviewedById: adminId, reviewedAt: new Date() }, include: { cafe: { select: { id: true, name: true, slug: true } } } });
       await tx.activityLog.create({ data: { userId: adminId, action: 'ADMIN_REJECTED_CAFE_CHANGE_REQUEST', entityType: 'CafeChangeRequest', entityId: id, description: `Rejected change request for ${request.cafe.name}` } });
       await tx.notification.create({ data: { userId: request.requestedById, title: 'Your cafe change request was rejected.', message: `Changes for ${request.cafe.name} were rejected: ${reason}`, type: 'CAFE_CHANGE_REQUEST_REJECTED' } });
+      
+      // Send email (non-blocking)
+      const user = await tx.user.findUnique({ where: { id: request.requestedById } });
+      if (user) {
+        emailService.sendChangeRequestRejectedEmail(
+          { id: user.id, name: user.name, email: user.email },
+          request.cafe.name,
+          request.type,
+          reason
+        ).catch(err => console.error('[ChangeRequestService]: Failed to send change request rejection email:', err));
+      }
+
       return value;
     });
     return updated;

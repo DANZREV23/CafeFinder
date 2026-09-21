@@ -3,6 +3,7 @@ import { CafeStatus, ClaimStatus, Role, UserStatus } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { ClaimRepository } from '../repositories/claimRepository.js';
 import { ActivityLogService } from './activityLogService.js';
+import { emailService } from './email/email.service.js';
 
 const claimInclude = {
   cafe: { include: { photos: { where: { isCover: true }, take: 1 } } },
@@ -81,6 +82,13 @@ export class ClaimService {
       if (claim.user.role === Role.USER) await tx.user.update({ where: { id: claim.userId }, data: { role: Role.OWNER } });
       await tx.activityLog.create({ data: { userId: adminId, action: 'ADMIN_APPROVED_OWNER_CLAIM', entityType: 'CafeOwnerClaim', entityId: id, description: `Approved claim ${id} for cafe ${claim.cafeId} and claimant ${claim.userId}` } });
       await tx.notification.create({ data: { userId: claim.userId, title: 'Owner claim approved', message: `Your claim for ${claim.cafe.name} has been approved.`, type: 'OWNER_CLAIM_APPROVED' } });
+      
+      // Send email (non-blocking)
+      emailService.sendOwnerClaimApprovedEmail(
+        { id: claim.user.id, name: claim.user.name, email: claim.user.email },
+        claim.cafe.name
+      ).catch(err => console.error('[ClaimService]: Failed to send claim approval email:', err));
+
       return updated;
     });
     return this.mapToDto(result);
@@ -94,6 +102,17 @@ export class ClaimService {
       const value = await tx.cafeOwnerClaim.update({ where: { id, status: ClaimStatus.PENDING }, data: { status: ClaimStatus.REJECTED, rejectionReason: reason, reviewedById: adminId, reviewedAt: new Date() }, include: claimInclude });
       await tx.activityLog.create({ data: { userId: adminId, action: 'ADMIN_REJECTED_OWNER_CLAIM', entityType: 'CafeOwnerClaim', entityId: id, description: `Rejected claim ${id} for cafe ${claim.cafeId}` } });
       await tx.notification.create({ data: { userId: claim.userId, title: 'Owner claim rejected', message: `Your claim for ${claim.cafe.name} was rejected: ${reason}`, type: 'OWNER_CLAIM_REJECTED' } });
+      
+      // Send email (non-blocking)
+      const user = await tx.user.findUnique({ where: { id: claim.userId } });
+      if (user) {
+        emailService.sendOwnerClaimRejectedEmail(
+          { id: user.id, name: user.name, email: user.email },
+          claim.cafe.name,
+          reason
+        ).catch(err => console.error('[ClaimService]: Failed to send claim rejection email:', err));
+      }
+
       return value;
     });
     return this.mapToDto(updated);

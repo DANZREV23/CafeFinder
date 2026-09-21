@@ -1,6 +1,8 @@
 import { ReviewRepository, ReviewFilters } from '../repositories/reviewRepository.js';
 import { CafeRepository } from '../repositories/cafeRepository.js';
 import { ReviewStatus, Prisma } from '@prisma/client';
+import { emailService } from './email/email.service.js';
+import { prisma } from '../config/database.js';
 
 export class ReviewService {
   private reviewRepository: ReviewRepository;
@@ -111,6 +113,29 @@ export class ReviewService {
     
     // Recalculate aggregates
     await this.recalculateCafeRatings(review.cafeId);
+
+    // Send notification email (non-blocking)
+    const user = await prisma.user.findUnique({ where: { id: review.userId } });
+    const cafe = await prisma.cafe.findUnique({ where: { id: review.cafeId } });
+    
+    if (user && cafe) {
+      if (status === 'APPROVED') {
+        emailService.sendReviewApprovedEmail(
+          { id: user.id, name: user.name, email: user.email },
+          { name: cafe.name, slug: cafe.slug }
+        ).catch(err => console.error('[ReviewService]: Failed to send review approved email:', err));
+      } else if (status === 'REJECTED') {
+        emailService.sendReviewRejectedEmail(
+          { id: user.id, name: user.name, email: user.email },
+          cafe.name
+        ).catch(err => console.error('[ReviewService]: Failed to send review rejected email:', err));
+      } else if (status === 'HIDDEN') {
+        emailService.queueEmail('REVIEW_HIDDEN' as any, user.email, {
+          name: user.name,
+          cafeName: cafe.name,
+        }, user.id).catch(err => console.error('[ReviewService]: Failed to send review hidden email:', err));
+      }
+    }
 
     return updated;
   }

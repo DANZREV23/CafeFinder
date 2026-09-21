@@ -133,10 +133,12 @@ export async function createApp() {
 
       const url = req.originalUrl;
       try {
+        console.log(`[Vite]: Transforming HTML for ${url}`);
         let template = fs.readFileSync(path.resolve(process.cwd(), 'client/index.html'), 'utf-8');
         template = await vite.transformIndexHtml(url, template);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
+        console.error(`[Vite]: Error transforming HTML for ${url}:`, e);
         vite.ssrFixStacktrace(e as Error);
         next(e);
       }

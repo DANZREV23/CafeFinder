@@ -14,6 +14,7 @@ import { UserRepository } from '../repositories/userRepository.js';
 import { ReviewService } from './reviewService.js';
 import { ActivityLogService } from './activityLogService.js';
 import { generateSlug } from '../utils/slug.js';
+import { emailService } from './email/email.service.js';
 
 export class AdminService {
   private cafeRepository: CafeRepository;
@@ -227,6 +228,15 @@ export class AdminService {
         }
       });
 
+      // Send email (after transaction or non-blocking)
+      const submitter = await tx.user.findUnique({ where: { id: submission.submittedById } });
+      if (submitter) {
+        emailService.sendCafeSubmissionApprovedEmail(
+          { id: submitter.id, name: submitter.name, email: submitter.email },
+          { name: cafe.name, slug: cafe.slug }
+        ).catch(err => console.error('[AdminService]: Failed to send submission approval email:', err));
+      }
+
       return cafe;
     });
   }
@@ -258,6 +268,16 @@ export class AdminService {
       entityId: submissionId,
       description: `Rejected submission: ${submission.name}. Reason: ${reason}`
     });
+
+    // Send rejection email
+    const submitter = await prisma.user.findUnique({ where: { id: submission.submittedById } });
+    if (submitter) {
+      emailService.sendCafeSubmissionRejectedEmail(
+        { id: submitter.id, name: submitter.name, email: submitter.email },
+        submission.name,
+        reason
+      ).catch(err => console.error('[AdminService]: Failed to send submission rejection email:', err));
+    }
 
     return updated;
   }
@@ -436,6 +456,26 @@ export class AdminService {
       entityId: cafeId,
       description: `Updated cafe status to ${status}`
     });
+
+    // Send status change email to owner if exists
+    if (cafe.ownerId) {
+      const owner = await prisma.user.findUnique({ where: { id: cafe.ownerId } });
+      if (owner) {
+        if (status === 'PUBLISHED') {
+          emailService.queueEmail('CAFE_PUBLISHED' as any, owner.email, {
+            name: owner.name,
+            cafeName: cafe.name,
+            cafeUrl: `${process.env.APP_URL || 'http://localhost:3000'}/cafes/${cafe.slug}`,
+          }, owner.id).catch(err => console.error('[AdminService]: Failed to send cafe published email:', err));
+        } else if (status === 'SUSPENDED') {
+          emailService.queueEmail('CAFE_SUSPENDED' as any, owner.email, {
+            name: owner.name,
+            cafeName: cafe.name,
+            reason: 'Profile was suspended by an administrator.',
+          }, owner.id).catch(err => console.error('[AdminService]: Failed to send cafe suspended email:', err));
+        }
+      }
+    }
 
     return cafe;
   }
