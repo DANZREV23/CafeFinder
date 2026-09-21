@@ -65,6 +65,7 @@ const MENU_ITEMS = [
     label: 'System', 
     type: 'group',
     items: [
+      { id: 'status', label: 'System Status', icon: Activity, path: '/admin/system' },
       { id: 'activity', label: 'Activity Logs', icon: History, path: '/admin/activity' },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', comingSoon: true },
     ]

@@ -42,6 +42,7 @@ import AdminOwnerClaimsPage from './pages/admin/AdminOwnerClaimsPage';
 import AdminOwnerClaimDetailsPage from './pages/admin/AdminOwnerClaimDetailsPage';
 import AdminChangeRequestsPage from './pages/admin/AdminChangeRequestsPage';
 import AdminChangeRequestDetailsPage from './pages/admin/AdminChangeRequestDetailsPage';
+import { AdminSystemPage } from './pages/admin/AdminSystemPage';
 import BlogListPage from './pages/blog/BlogListPage';
 import BlogPostPage from './pages/blog/BlogPostPage';
 import ListsPage from './pages/lists/ListsPage';
@@ -154,6 +155,7 @@ export default function App() {
               <Route path="cafes" element={<AdminCafesPage />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="activity" element={<AdminActivityLogPage />} />
+              <Route path="system" element={<AdminSystemPage />} />
               <Route path="claims" element={<AdminOwnerClaimsPage />} />
               <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                           <Route path="change-requests" element={<AdminChangeRequestsPage />} />

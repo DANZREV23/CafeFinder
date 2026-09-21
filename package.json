@@ -13,7 +13,13 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx server/prisma/seed.ts",
-    "scrape:cafes": "tsx server/src/scripts/scrape-cafes.ts"
+    "scrape:cafes": "tsx server/src/scripts/scrape-cafes.ts",
+    "backup:db": "tsx server/src/scripts/run-backup.ts db",
+    "backup:uploads": "tsx server/src/scripts/run-backup.ts uploads",
+    "backup:all": "tsx server/src/scripts/run-backup.ts all",
+    "system:cleanup": "tsx server/src/scripts/cleanup.ts",
+    "db:restore-test": "tsx server/src/scripts/restore-test.ts",
+    "test:smoke": "tsx server/src/scripts/smoke-test.ts"
   },
   "prisma": {
     "seed": "tsx server/prisma/seed.ts"
@@ -57,6 +63,7 @@
     "sanitize-html": "^2.17.7",
     "sharp": "^0.35.4",
     "tailwind-merge": "^3.6.0",
+    "uuid": "^14.0.2",
     "vite": "^6.2.3",
     "zod": "^4.6.2"
   },
@@ -70,6 +77,7 @@
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^8.0.2",
     "@types/sanitize-html": "^2.16.1",
+    "@types/uuid": "^11.0.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",

@@ -59,6 +59,11 @@ router.patch('/users/:id/status', adminController.updateUserStatus);
 // Activity Logs
 router.get('/activity-logs', adminController.getActivityLogs);
 
+// System Status
+router.get('/system/status', adminController.getSystemStatus);
+router.post('/system/backup', adminController.runBackup);
+router.post('/system/cleanup', adminController.runCleanup);
+
 // Blog Management
 router.get('/blog', blogController.getAdminPosts);
 router.get('/blog/:id', blogController.getById);

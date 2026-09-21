@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { logger } from '../utils/logger.js';
 
 export function errorHandler(
   err: any,
@@ -7,7 +8,15 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  console.error(err);
+  const logData = {
+    requestId: req.id,
+    userId: (req as any).user?.id,
+    route: req.originalUrl,
+    method: req.method,
+    event: 'error.internal'
+  };
+
+  logger.error(err.message || 'Error caught by handler', err, logData);
 
   if (err instanceof ZodError) {
     return res.status(400).json({

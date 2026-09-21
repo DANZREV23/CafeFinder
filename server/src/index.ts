@@ -4,6 +4,7 @@ dotenv.config();
 // Initialize prisma config (this will set process.env.PRISMA_DATABASE_URL if needed)
 import { prisma, connectWithRetry } from './config/database.js';
 import { createApp } from './app.js';
+import { schedulerService } from './services/schedulerService.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const ENV = process.env.NODE_ENV || 'development';
@@ -19,11 +20,18 @@ async function startServer() {
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`[Server]: CafeFinder API is running on http://localhost:${PORT}`);
       console.log(`[Server]: Environment: ${ENV}`);
+      
+      // Start background jobs
+      schedulerService.start();
     });
 
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       console.log(`[Server]: ${signal} received. Shutting down gracefully...`);
+      
+      // Stop background jobs
+      schedulerService.stop();
+      
       server.close(async () => {
         console.log('[Server]: HTTP server closed.');
         try {

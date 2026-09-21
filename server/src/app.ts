@@ -10,6 +10,7 @@ import { createServer as createViteServer } from 'vite';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalRateLimit } from './config/security.js';
 import { cspConfig } from './config/security.js';
+import { requestCorrelation, requestLogger } from './middleware/requestLogger.js';
 
 // Routes
 import cafeRoutes from './routes/cafe.routes.js';
@@ -39,6 +40,10 @@ export async function createApp() {
 
   // Trust the first proxy (required for rate limiting on Cloud Run/behind Nginx)
   app.set('trust proxy', 1);
+
+  // Request correlation and logging
+  app.use(requestCorrelation);
+  app.use(requestLogger);
 
   // Apply global rate limit
   app.use(globalRateLimit);

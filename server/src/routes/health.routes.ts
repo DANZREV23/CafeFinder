@@ -1,34 +1,48 @@
 import { Router } from 'express';
 import { prisma } from '../config/database.js';
+import { operationalService } from '../services/operationalService.js';
 
 const router = Router();
 
+// Liveness: Process is alive
+router.get('/live', (req, res) => {
+  res.status(200).json({ success: true, status: 'alive' });
+});
+
+// Readiness: App is ready to handle requests
+router.get('/ready', async (req, res) => {
+  try {
+    // Check DB connection
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ success: true, status: 'ready' });
+  } catch (error) {
+    res.status(503).json({ success: false, status: 'not-ready', reason: 'Database unavailable' });
+  }
+});
+
+// Health: Detailed health info
 router.get('/', async (req, res) => {
   try {
-    // Check database connection with a timeout
-    const dbCheck = await Promise.race([
-      prisma.$queryRaw`SELECT 1`,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000))
-    ]);
+    const status = await operationalService.getStatus();
     
-    res.json({
-      success: true,
+    const isHealthy = status.database.status === 'connected';
+    
+    res.status(isHealthy ? 200 : 503).json({
+      success: isHealthy,
       data: {
-        status: 'ok',
-        database: 'connected',
-        timestamp: new Date().toISOString()
+        status: isHealthy ? 'ok' : 'degraded',
+        database: status.database.status,
+        timestamp: new Date().toISOString(),
+        version: status.application.version,
+        uptime: status.application.uptime
       }
     });
   } catch (error: any) {
-    console.error('[HealthCheck]: Database connection error:', error.message || error);
-    
-    res.status(503).json({
+    res.status(500).json({
       success: false,
       data: {
         status: 'error',
-        database: 'disconnected',
-        error: process.env.NODE_ENV === 'production' ? 'Database connection failed' : error.message || error,
-        code: error.code || 'UNKNOWN'
+        error: error.message || 'Health check failed'
       }
     });
   }

@@ -1,0 +1,30 @@
+[Unit]
+Description=CafeFinder Application
+After=network.target mariadb.service
+
+[Service]
+Type=simple
+User=cafefinder
+Group=cafefinder
+WorkingDirectory=/home/cafefinder/app
+Environment=NODE_ENV=production
+EnvironmentFile=/home/cafefinder/app/.env
+ExecStart=/usr/bin/node dist/server.cjs
+Restart=always
+RestartSec=5
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=cafefinder
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadOnlyPaths=/
+ReadWritePaths=/home/cafefinder/app/uploads
+ReadWritePaths=/home/cafefinder/app/logs
+ReadWritePaths=/home/cafefinder/app/backups
+
+[Install]
+WantedBy=multi-user.target

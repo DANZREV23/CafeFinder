@@ -270,4 +270,37 @@ export class AdminController {
       res.status(500).json({ success: false, error: { message: error.message } });
     }
   };
+
+  getSystemStatus = async (req: AuthRequest, res: Response) => {
+    try {
+      const { operationalService } = await import('../services/operationalService.js');
+      const status = await operationalService.getStatus();
+      res.json({ success: true, data: status });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  runBackup = async (req: AuthRequest, res: Response) => {
+    try {
+      const { backupService } = await import('../services/backupService.js');
+      // Run in background
+      backupService.backupDatabase().catch(err => console.error('Background DB backup failed:', err));
+      backupService.backupUploads().catch(err => console.error('Background Uploads backup failed:', err));
+      res.json({ success: true, message: 'Backup processes started in background' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  runCleanup = async (req: AuthRequest, res: Response) => {
+    try {
+      const { cleanupService } = await import('../services/cleanupService.js');
+      // Run in background
+      cleanupService.runAll().catch(err => console.error('Background cleanup failed:', err));
+      res.json({ success: true, message: 'Cleanup process started in background' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
 }
