@@ -221,6 +221,7 @@ model CafeSubmissionPhoto {
 
   submission CafeSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
+  @@index([submissionId])
   @@map("cafe_submission_photos")
 }
 
@@ -290,6 +291,7 @@ model CafePhoto {
 
   cafe Cafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
 
+  @@index([cafeId])
   @@map("cafe_photos")
 }
 

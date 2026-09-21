@@ -1,6 +1,6 @@
 {
   "name": "CafeFinder",
-  "description": "Local coffee shop discovery and directory platform for coffee lovers.",
+  "description": "Premium coffee shop discovery platform with advanced observability, performance monitoring, and maintenance tools.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

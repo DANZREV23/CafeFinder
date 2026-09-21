@@ -291,6 +291,27 @@ export class AdminController {
     }
   };
 
+  toggleMaintenanceMode = async (req: AuthRequest, res: Response) => {
+    try {
+      const { enabled } = req.body;
+      const { operationalService } = await import('../services/operationalService.js');
+      operationalService.setMaintenanceMode(!!enabled);
+      res.json({ success: true, maintenanceMode: !!enabled });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  resetMetrics = async (req: AuthRequest, res: Response) => {
+    try {
+      const { metricsService } = await import('../services/metricsService.js');
+      metricsService.resetMetrics();
+      res.json({ success: true, message: 'Metrics reset' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
   runBackup = async (req: AuthRequest, res: Response) => {
     try {
       const { backupService } = await import('../services/backupService.js');

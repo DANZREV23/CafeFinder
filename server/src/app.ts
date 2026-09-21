@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { globalRateLimit } from './config/security.js';
 import { cspConfig } from './config/security.js';
 import { requestCorrelation, requestLogger } from './middleware/requestLogger.js';
+import { maintenanceMiddleware } from './middleware/maintenanceMiddleware.js';
 
 // Routes
 import cafeRoutes from './routes/cafe.routes.js';
@@ -89,6 +90,10 @@ export async function createApp() {
 
   // API Routes
   app.use('/api/health', healthRoutes);
+  
+  // Apply maintenance mode to all other routes
+  app.use(maintenanceMiddleware);
+
   app.use('/api/cafes', cafeRoutes);
   app.use('/api/auth', authRoutes);
   app.use('/api/lists', listRoutes);

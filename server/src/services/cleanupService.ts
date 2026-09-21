@@ -14,6 +14,7 @@ export class CleanupService {
       this.cleanupNotifications(),
       this.cleanupEmailJobs(),
       this.cleanupLogs(),
+      this.cleanupActivityLogs(),
     ]);
     
     logger.info('System cleanup jobs completed.');
@@ -106,6 +107,28 @@ export class CleanupService {
       }
     } catch (err) {
       logger.error('Failed to cleanup log files', err);
+    }
+  }
+
+  async cleanupActivityLogs() {
+    try {
+      // Cleanup activity logs older than 90 days
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      
+      const result = await prisma.activityLog.deleteMany({
+        where: {
+          createdAt: {
+            lt: ninetyDaysAgo,
+          },
+        },
+      });
+      
+      if (result.count > 0) {
+        logger.info(`Cleaned up ${result.count} old activity logs.`);
+      }
+    } catch (err) {
+      logger.error('Failed to cleanup activity logs', err);
     }
   }
 }

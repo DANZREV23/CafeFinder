@@ -15,11 +15,13 @@ interface LogEntry {
   event?: string;
   requestId?: string;
   userId?: string;
+  role?: string;
   route?: string;
   method?: string;
   statusCode?: number;
   durationMs?: number;
   message: string;
+  errorCode?: string;
   details?: any;
 }
 

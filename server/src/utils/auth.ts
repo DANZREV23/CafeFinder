@@ -5,16 +5,17 @@ export const COOKIE_NAME = 'cafefinder_session';
 
 export const getCookieOptions = (): CookieOptions => {
   const isProd = process.env.NODE_ENV === 'production';
-  const isAistudio = process.env.APPLICATION_ID !== undefined; // Detect if running in AI Studio
+  // APPLICATION_ID or any common AI Studio env var can be used for detection
+  const isAistudio = true; // Default to true as we are running in the platform
 
   return {
     httpOnly: true,
-    // Enable secure cookies only in production OR when explicitly using HTTPS.
-    // For local IP or tailscale (usually HTTP), this must be false.
-    secure: isProd || isAistudio, 
-    // sameSite 'none' requires 'secure: true'. 
-    // For local HTTP, 'lax' is better.
-    sameSite: (isProd || isAistudio) ? 'none' : 'lax',
+    // Enable secure cookies in production OR AI Studio environment.
+    // AI Studio uses HTTPS for its preview URLs.
+    secure: true, 
+    // sameSite 'none' is essential for cookies to be sent from the AI Studio iframe.
+    // sameSite 'none' REQUIRES 'secure: true'.
+    sameSite: 'none',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };

@@ -7,6 +7,8 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+import { metricsService } from './metricsService.js';
+
 export interface SystemStatus {
   application: {
     status: string;
@@ -15,11 +17,13 @@ export interface SystemStatus {
     uptime: number;
     nodeVersion: string;
     memoryUsage: NodeJS.MemoryUsage;
+    maintenanceMode: boolean;
   };
   database: {
     status: string;
     latencyMs: number;
     migrationState?: string;
+    connectionPool?: any;
   };
   storage: {
     uploadsSize: number;
@@ -34,9 +38,15 @@ export interface SystemStatus {
     lastBackup?: string;
     backupCount: number;
   };
+  metrics: {
+    requests: any[];
+    recentEvents: any[];
+  };
 }
 
 export class OperationalService {
+  private maintenanceMode: boolean = process.env.MAINTENANCE_MODE === 'true';
+
   async getStatus(): Promise<SystemStatus> {
     const startTime = Date.now();
     let dbStatus = 'connected';
@@ -66,12 +76,13 @@ export class OperationalService {
 
     return {
       application: {
-        status: 'ok',
+        status: this.maintenanceMode ? 'maintenance' : 'ok',
         environment: process.env.NODE_ENV || 'development',
         version: process.env.APP_VERSION || '1.0.0',
         uptime: process.uptime(),
         nodeVersion: process.version,
         memoryUsage: process.memoryUsage(),
+        maintenanceMode: this.maintenanceMode,
       },
       database: {
         status: dbStatus,
@@ -89,8 +100,25 @@ export class OperationalService {
       backups: {
         lastBackup,
         backupCount: backupFiles.length,
+      },
+      metrics: {
+        requests: metricsService.getMetrics(),
+        recentEvents: metricsService.getRecentEvents(),
       }
     };
+  }
+
+  setMaintenanceMode(enabled: boolean) {
+    this.maintenanceMode = enabled;
+    metricsService.recordEvent(
+      enabled ? 'WARN' : 'INFO', 
+      enabled ? 'system.maintenance_enabled' : 'system.maintenance_disabled',
+      `Maintenance mode ${enabled ? 'enabled' : 'disabled'}`
+    );
+  }
+
+  isMaintenanceMode(): boolean {
+    return this.maintenanceMode;
   }
 
   private getDirectorySize(directoryPath: string): number {

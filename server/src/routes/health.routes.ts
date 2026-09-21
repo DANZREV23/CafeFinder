@@ -25,13 +25,15 @@ router.get('/', async (req, res) => {
   try {
     const status = await operationalService.getStatus();
     
+    const isMaintenance = status.application.maintenanceMode;
     const isHealthy = status.database.status === 'connected';
     
-    res.status(isHealthy ? 200 : 503).json({
-      success: isHealthy,
+    res.status(isHealthy ? (isMaintenance ? 503 : 200) : 503).json({
+      success: isHealthy && !isMaintenance,
       data: {
-        status: isHealthy ? 'ok' : 'degraded',
+        status: isHealthy ? (isMaintenance ? 'maintenance' : 'ok') : 'degraded',
         database: status.database.status,
+        maintenance: isMaintenance,
         timestamp: new Date().toISOString(),
         version: status.application.version,
         uptime: status.application.uptime
