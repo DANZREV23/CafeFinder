@@ -1,24 +1,13 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/authController.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
-import rateLimit from 'express-rate-limit';
+import { authRateLimit } from '../config/security.js';
 
 const router = Router();
 const authController = new AuthController();
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit each IP to 20 requests per windowMs for auth routes
-  message: {
-    success: false,
-    error: { message: 'Too many requests, please try again later.' }
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-router.post('/register', authLimiter, authController.register);
-router.post('/login', authLimiter, authController.login);
+router.post('/register', authRateLimit, authController.register);
+router.post('/login', authRateLimit, authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', requireAuth, authController.me);
 

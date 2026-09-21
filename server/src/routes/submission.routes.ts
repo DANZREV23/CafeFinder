@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { SubmissionController } from '../controllers/submissionController.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
 import { uploadSubmissionPhoto } from '../middleware/uploadMiddleware.js';
+import { submissionRateLimit } from '../config/security.js';
 
 const router = Router();
 const submissionController = new SubmissionController();
@@ -9,7 +10,7 @@ const submissionController = new SubmissionController();
 // All submission routes require authentication
 router.use(requireAuth);
 
-router.post('/', submissionController.createSubmission);
+router.post('/', submissionRateLimit, submissionController.createSubmission);
 router.get('/me', submissionController.getMySubmissions);
 router.post('/check-duplicates', submissionController.checkDuplicates);
 

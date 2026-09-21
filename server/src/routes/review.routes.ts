@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ReviewController } from '../controllers/reviewController.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/authMiddleware.js';
 import { uploadReviewPhoto } from '../middleware/uploadMiddleware.js';
+import { submissionRateLimit } from '../config/security.js';
 
 const router = Router();
 const reviewController = new ReviewController();
@@ -13,7 +14,7 @@ router.get('/cafe/:cafeId/my-review', optionalAuth, reviewController.getUserRevi
 
 // Protected routes
 router.get('/me', requireAuth, reviewController.getMyReviews);
-router.post('/cafe/:cafeId', requireAuth, reviewController.create);
+router.post('/cafe/:cafeId', requireAuth, submissionRateLimit, reviewController.create);
 router.patch('/:id', requireAuth, reviewController.update);
 router.delete('/:id', requireAuth, reviewController.delete);
 

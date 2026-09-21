@@ -2,6 +2,7 @@ import { SubmissionRepository } from '../repositories/submissionRepository.js';
 import { CreateSubmissionDto, UpdateSubmissionDto, SubmissionResponseDto } from '../dtos/submissionDto.js';
 import { CafeSubmissionStatus, Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
+import { sanitizePlain } from '../utils/sanitization.js';
 
 export class SubmissionService {
   private repository: SubmissionRepository;
@@ -28,21 +29,21 @@ export class SubmissionService {
     }
 
     const submissionData: Prisma.CafeSubmissionCreateInput = {
-      name: data.name,
-      shortDescription: data.shortDescription,
-      description: data.description,
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      country: data.country,
-      postalCode: data.postalCode,
+      name: sanitizePlain(data.name),
+      shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : null,
+      description: data.description ? sanitizePlain(data.description) : null,
+      address: sanitizePlain(data.address),
+      city: sanitizePlain(data.city),
+      state: data.state ? sanitizePlain(data.state) : null,
+      country: data.country ? sanitizePlain(data.country) : null,
+      postalCode: data.postalCode ? sanitizePlain(data.postalCode) : null,
       latitude: data.latitude,
       longitude: data.longitude,
-      phone: data.phone,
-      email: data.email,
-      website: data.website,
-      instagram: data.instagram,
-      facebook: data.facebook,
+      phone: data.phone ? sanitizePlain(data.phone) : null,
+      email: data.email ? sanitizePlain(data.email) : null,
+      website: data.website ? sanitizePlain(data.website) : null,
+      instagram: data.instagram ? sanitizePlain(data.instagram) : null,
+      facebook: data.facebook ? sanitizePlain(data.facebook) : null,
       priceRange: data.priceRange,
       status: CafeSubmissionStatus.PENDING,
       submittedBy: { connect: { id: userId } }
@@ -107,21 +108,21 @@ export class SubmissionService {
     }
 
     const updateData: Prisma.CafeSubmissionUpdateInput = {
-      name: data.name,
-      shortDescription: data.shortDescription,
-      description: data.description,
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      country: data.country,
-      postalCode: data.postalCode,
+      name: data.name ? sanitizePlain(data.name) : undefined,
+      shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : null,
+      description: data.description ? sanitizePlain(data.description) : null,
+      address: data.address ? sanitizePlain(data.address) : undefined,
+      city: data.city ? sanitizePlain(data.city) : undefined,
+      state: data.state ? sanitizePlain(data.state) : null,
+      country: data.country ? sanitizePlain(data.country) : null,
+      postalCode: data.postalCode ? sanitizePlain(data.postalCode) : null,
       latitude: data.latitude,
       longitude: data.longitude,
-      phone: data.phone,
-      email: data.email,
-      website: data.website,
-      instagram: data.instagram,
-      facebook: data.facebook,
+      phone: data.phone ? sanitizePlain(data.phone) : null,
+      email: data.email ? sanitizePlain(data.email) : null,
+      website: data.website ? sanitizePlain(data.website) : null,
+      instagram: data.instagram ? sanitizePlain(data.instagram) : null,
+      facebook: data.facebook ? sanitizePlain(data.facebook) : null,
       priceRange: data.priceRange
     };
 

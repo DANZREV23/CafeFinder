@@ -3,6 +3,7 @@ import { generateSlug } from '../utils/slug.js';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { UserCafeViewRepository } from '../repositories/userCafeViewRepository.js';
+import { sanitizePlain } from '../utils/sanitization.js';
 
 export class CafeService {
   private cafeRepository: CafeRepository;
@@ -159,12 +160,24 @@ export class CafeService {
     
     return this.cafeRepository.create({
       ...data,
+      name: sanitizePlain(data.name),
+      shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : undefined,
+      description: data.description ? sanitizePlain(data.description) : undefined,
+      address: sanitizePlain(data.address),
+      city: sanitizePlain(data.city),
       slug: uniqueSlug,
     });
   }
 
   async updateCafe(id: string, data: Prisma.CafeUpdateInput) {
-    return this.cafeRepository.update(id, data);
+    const sanitizedData = { ...data };
+    if (typeof data.name === 'string') sanitizedData.name = sanitizePlain(data.name);
+    if (typeof data.shortDescription === 'string') sanitizedData.shortDescription = sanitizePlain(data.shortDescription);
+    if (typeof data.description === 'string') sanitizedData.description = sanitizePlain(data.description);
+    if (typeof data.address === 'string') sanitizedData.address = sanitizePlain(data.address);
+    if (typeof data.city === 'string') sanitizedData.city = sanitizePlain(data.city);
+
+    return this.cafeRepository.update(id, sanitizedData);
   }
 
   async deleteCafe(id: string) {

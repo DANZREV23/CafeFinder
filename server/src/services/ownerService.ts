@@ -4,6 +4,7 @@ import path from 'path';
 import { prisma } from '../config/database.js';
 import { ActivityLogService } from './activityLogService.js';
 import { OwnerCafeSummaryDto, OwnerChangeRequestDto, OwnerDashboardDto, OwnerReviewDto } from '../dtos/ownerDto.js';
+import { sanitizePlain } from '../utils/sanitization.js';
 
 import { MenuRepository } from '../repositories/menuRepository.js';
 import { mapToMenuDto } from '../dtos/menuDto.js';
@@ -58,18 +59,18 @@ export class OwnerService {
   async updateBusiness(cafeId: string, userId: string, isAdmin: boolean, data: Record<string, unknown>) {
     const cafe = await this.requireCafe(cafeId, userId, isAdmin);
     const updated = await prisma.cafe.update({ where: { id: cafe.id }, data: {
-      shortDescription: data.shortDescription as string,
-      description: data.description as string,
-      address: data.address as string | undefined,
-      city: data.city as string | undefined,
-      state: (data.state as string | null | undefined) ?? "",
-      country: data.country as string | undefined,
-      postalCode: (data.postalCode as string | null | undefined) ?? "",
-      phone: data.phone as string | null,
-      email: data.email as string | null,
-      website: data.website as string | null,
-      instagram: data.instagram as string | null,
-      facebook: data.facebook as string | null,
+      shortDescription: sanitizePlain(data.shortDescription as string),
+      description: sanitizePlain(data.description as string),
+      address: data.address ? sanitizePlain(data.address as string) : undefined,
+      city: data.city ? sanitizePlain(data.city as string) : undefined,
+      state: data.state ? sanitizePlain(data.state as string) : "",
+      country: data.country ? sanitizePlain(data.country as string) : undefined,
+      postalCode: data.postalCode ? sanitizePlain(data.postalCode as string) : "",
+      phone: data.phone ? sanitizePlain(data.phone as string) : null,
+      email: data.email ? sanitizePlain(data.email as string) : null,
+      website: data.website ? sanitizePlain(data.website as string) : null,
+      instagram: data.instagram ? sanitizePlain(data.instagram as string) : null,
+      facebook: data.facebook ? sanitizePlain(data.facebook as string) : null,
       priceRange: data.priceRange as number
     }, include: ownerCafeInclude });
     await this.activityLogs.logAction({ userId, action: 'OWNER_UPDATED_CAFE', entityType: 'Cafe', entityId: cafe.id, description: `Updated business information for ${cafe.name}` });

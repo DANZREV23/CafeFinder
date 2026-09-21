@@ -15,6 +15,7 @@ import { ReviewService } from './reviewService.js';
 import { ActivityLogService } from './activityLogService.js';
 import { generateSlug } from '../utils/slug.js';
 import { emailService } from './email/email.service.js';
+import { sanitizePlain } from '../utils/sanitization.js';
 
 export class AdminService {
   private cafeRepository: CafeRepository;
@@ -170,22 +171,22 @@ export class AdminService {
       // Create Cafe
       const cafe = await tx.cafe.create({
         data: {
-          name: submission.name,
+          name: sanitizePlain(submission.name),
           slug: uniqueSlug,
-          shortDescription: submission.shortDescription.trim(),
-          description: submission.description.trim(),
-          address: submission.address,
-          city: submission.city,
-          state: submission.state || '',
-          country: submission.country,
-          postalCode: submission.postalCode || '',
+          shortDescription: sanitizePlain(submission.shortDescription.trim()),
+          description: sanitizePlain(submission.description.trim()),
+          address: sanitizePlain(submission.address),
+          city: sanitizePlain(submission.city),
+          state: submission.state ? sanitizePlain(submission.state.trim()) : '',
+          country: sanitizePlain(submission.country),
+          postalCode: submission.postalCode ? sanitizePlain(submission.postalCode.trim()) : '',
           latitude: submission.latitude === null ? null : Number(submission.latitude),
           longitude: submission.longitude === null ? null : Number(submission.longitude),
-          phone: submission.phone,
-          email: submission.email,
-          website: submission.website,
-          instagram: submission.instagram,
-          facebook: submission.facebook,
+          phone: submission.phone ? sanitizePlain(submission.phone.trim()) : null,
+          email: submission.email ? sanitizePlain(submission.email.trim()) : null,
+          website: submission.website ? sanitizePlain(submission.website.trim()) : null,
+          instagram: submission.instagram ? sanitizePlain(submission.instagram.trim()) : null,
+          facebook: submission.facebook ? sanitizePlain(submission.facebook.trim()) : null,
           priceRange: submission.priceRange,
           status: 'PUBLISHED',
           verified: false,

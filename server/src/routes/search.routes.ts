@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { SearchService } from '../services/searchService.js';
 import { z } from 'zod';
+import { searchRateLimit } from '../config/security.js';
 
 const router = Router();
 const searchService = new SearchService();
@@ -10,7 +11,7 @@ const suggestionsSchema = z.object({
   limit: z.string().optional().transform(v => v ? parseInt(v, 10) : 8)
 });
 
-router.get('/suggestions', async (req, res) => {
+router.get('/suggestions', searchRateLimit, async (req, res) => {
   try {
     const result = suggestionsSchema.safeParse(req.query);
     

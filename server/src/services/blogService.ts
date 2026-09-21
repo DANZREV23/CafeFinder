@@ -1,7 +1,7 @@
 import { BlogPostRepository, BlogFilters } from '../repositories/blogRepository.js';
 import { generateSlug } from '../utils/slug.js';
 import { PostStatus, Prisma } from '@prisma/client';
-import sanitizeHtml from 'sanitize-html';
+import { sanitizeContent } from '../utils/sanitization.js';
 
 export class BlogPostService {
   private blogRepository: BlogPostRepository;
@@ -17,15 +17,8 @@ export class BlogPostService {
     return `${minutes} min read`;
   }
 
-  private sanitizeContent(content: string): string {
-    return sanitizeHtml(content, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2', 'span']),
-      allowedAttributes: {
-        ...sanitizeHtml.defaults.allowedAttributes,
-        '*': ['style', 'class'],
-        'img': ['src', 'alt', 'title', 'width', 'height', 'loading']
-      }
-    });
+  private sanitizePostContent(content: string): string {
+    return sanitizeContent(content);
   }
 
   async getPublishedPosts(filters: BlogFilters = {}) {
@@ -89,7 +82,7 @@ export class BlogPostService {
       finalSlug = `${slug}-${++count}`;
     }
 
-    const sanitizedContent = this.sanitizeContent(data.content);
+    const sanitizedContent = this.sanitizePostContent(data.content);
 
     return this.blogRepository.create({
       title: data.title,
@@ -121,7 +114,7 @@ export class BlogPostService {
     };
 
     if (data.content) {
-      updateData.content = this.sanitizeContent(data.content);
+      updateData.content = this.sanitizePostContent(data.content);
     }
 
     if (data.title) {

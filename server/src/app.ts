@@ -8,6 +8,8 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { errorHandler } from './middleware/errorHandler.js';
+import { globalRateLimit } from './config/security.js';
+import { cspConfig } from './config/security.js';
 
 // Routes
 import cafeRoutes from './routes/cafe.routes.js';
@@ -38,9 +40,12 @@ export async function createApp() {
   // Trust the first proxy (required for rate limiting on Cloud Run/behind Nginx)
   app.set('trust proxy', 1);
 
+  // Apply global rate limit
+  app.use(globalRateLimit);
+
   // Basic security and logging
   app.use(helmet({
-    contentSecurityPolicy: false, // Disable CSP to allow Vite in dev
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? cspConfig : false,
   }));
   app.use(cors({
     origin: (origin, callback) => {
@@ -58,17 +63,19 @@ export async function createApp() {
       
       if (allowedOrigins.includes(origin) || isLocalIp) {
         callback(null, true);
-      } else {
-        // In some deployment scenarios, we might want to be more permissive 
-        // especially if it's a private deployment.
+      } else if (process.env.NODE_ENV !== 'production') {
+        // In dev, allow more easily
         callback(null, true);
+      } else {
+        // Strict in production
+        callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
   }));
   app.use(morgan('dev'));
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 
   // Static files for uploads
@@ -95,24 +102,6 @@ export async function createApp() {
 
   // SEO Routes (Robots and Sitemap)
   app.use('/', seoRoutes);
-
-  // Diagnostic route
-  app.get('/api/debug-routes', (req, res) => {
-    const routes: string[] = [];
-    app._router.stack.forEach((middleware: any) => {
-      if (middleware.route) {
-        routes.push(`${Object.keys(middleware.route.methods).join(',').toUpperCase()} ${middleware.route.path}`);
-      } else if (middleware.name === 'router') {
-        middleware.handle.stack.forEach((handler: any) => {
-          if (handler.route) {
-            const path = handler.route.path;
-            routes.push(`${Object.keys(handler.route.methods).join(',').toUpperCase()} ${middleware.regexp.toString()} ${path}`);
-          }
-        });
-      }
-    });
-    res.json({ success: true, routes });
-  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {

@@ -3,6 +3,7 @@ import { CafeRepository } from '../repositories/cafeRepository.js';
 import { ReviewStatus, Prisma } from '@prisma/client';
 import { emailService } from './email/email.service.js';
 import { prisma } from '../config/database.js';
+import { sanitizePlain } from '../utils/sanitization.js';
 
 export class ReviewService {
   private reviewRepository: ReviewRepository;
@@ -49,7 +50,7 @@ export class ReviewService {
       ambianceRating: data.ambianceRating,
       serviceRating: data.serviceRating,
       overallRating: data.overallRating,
-      comment: data.comment,
+      comment: sanitizePlain(data.comment),
       status: 'PENDING', // Reviews are pending by default
     });
 
@@ -71,7 +72,7 @@ export class ReviewService {
       ambianceRating: data.ambianceRating,
       serviceRating: data.serviceRating,
       overallRating: data.overallRating,
-      comment: data.comment,
+      comment: sanitizePlain(data.comment),
       status: 'PENDING', // Set back to pending after edit
     });
 
