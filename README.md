@@ -4,6 +4,11 @@ CafeFinder Davao is a full-stack cafe discovery and ownership platform for Davao
 
 ## Recent Updates (September 2026)
 
+- **Transactional Emails**: Implemented a robust, provider-agnostic email system using **Nodemailer**. It supports branded HTML templates for registration, moderation events (approvals/rejections), and status updates, with background processing and exponential backoff for reliability.
+- **In-App Notifications**: Added a real-time notification system and comprehensive **Activity Logging** (audit trails) for all moderation and management actions.
+- **Progressive Web App (PWA)**: Full PWA support with offline caching, custom service workers, and an installable manifest for a native app-like experience.
+- **Advanced SEO**: Integrated automated sitemaps, robots.txt, and dynamic OpenGraph/Meta-tag generation for optimal search engine visibility.
+- **Content Management**: Introduced **Curated Cafe Lists**, a **Specialty Coffee Blog**, and a **Community Testimonials** system to enrich the platform's discovery experience.
 - **Search Precision**: Implemented **case-insensitive search** across the entire application, ensuring cafes are discoverable regardless of casing in the database or user query.
 - **Enhanced Connection Resilience**: Added automatic **database connection retries** and exponential backoff middleware to handle transient PostgreSQL blips (e.g., E57P01 termination errors).
 - **Network Flexibility**: Optimized CORS and Cookie configurations to support access via **Local LAN and Tailscale IPs**, ensuring sessions remain active across different network environments.
@@ -35,6 +40,21 @@ CafeFinder Davao is a full-stack cafe discovery and ownership platform for Davao
   - `OWNER`: Verified cafe managers with access to the Owner Workspace.
   - `ADMIN`: Platform administrators with full moderation capabilities.
 - **Audit Logging**: Every sensitive action is recorded in a tamper-evident Activity Log.
+
+### Transactional Emails
+
+The platform includes a robust email system to keep users informed about their account and cafe status.
+
+- **Branded Templates**: Professionally designed HTML and plain-text templates for all notifications.
+- **Background Processing**: Emails are queued in the database and processed asynchronously to ensure fast API responses.
+- **Reliability**: Automatic retries with exponential backoff for transient delivery failures.
+- **Events Covered**:
+  - Welcome email upon registration.
+  - Cafe submission approval/rejection.
+  - Owner claim approval/rejection.
+  - Review approval/rejection/hidden status.
+  - Cafe publication and suspension alerts.
+  - Change request approval/rejection.
 
 ### Reviews and Favorites
 
@@ -164,6 +184,7 @@ Every admin API is protected by both authentication and the `ADMIN` role.
 - PostgreSQL through the Prisma datasource configuration.
 - Zod request validation.
 - HTTP-only cookie sessions.
+- **Nodemailer** for transactional email delivery.
 - Multer for controlled image uploads.
 - Sharp is available for image-related processing where needed.
 
@@ -210,6 +231,20 @@ CLIENT_URL="http://localhost:3000"
 
 # Maps configuration
 VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+
+# Email Configuration
+EMAIL_ENABLED=true
+EMAIL_PROVIDER=console # Set to 'smtp' for production
+EMAIL_FROM_NAME=CafeFinder
+EMAIL_FROM_ADDRESS=noreply@cafefinder.com
+EMAIL_BASE_URL=http://localhost:3000
+
+# SMTP Configuration (required if EMAIL_PROVIDER=smtp)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-user
+SMTP_PASSWORD=your-password
 ```
 
 ### 3. Initialize Database
@@ -534,6 +569,7 @@ server/
     repositories/     Prisma data access helpers
     routes/           Express route definitions
     services/         Business logic and transactions
+      email/          Transactional email service and templates
 prisma/
   schema.prisma      Database schema
   migrations/        Prisma migrations
@@ -579,5 +615,6 @@ Completed application areas include:
 - Owner cafe management.
 - Cafe change-request moderation.
 - Notifications and audit logging for moderation workflows.
+- Transactional email system.
 
 The project intentionally does not include billing, subscriptions, reservations, messaging, loyalty programs, marketing automation, or other unrelated future features.
