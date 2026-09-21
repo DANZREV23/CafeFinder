@@ -49,7 +49,7 @@ export class UserController {
         });
       }
 
-      const avatarUrl = `/uploads/${req.file.filename}`;
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
       const user = await userService.updateProfile(req.user.id, { avatarUrl });
 
       res.json({

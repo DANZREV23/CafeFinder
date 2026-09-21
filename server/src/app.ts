@@ -120,6 +120,7 @@ export async function createApp() {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'custom',
+      configFile: path.resolve(process.cwd(), 'vite.config.ts'),
     });
     app.use(vite.middlewares);
 
