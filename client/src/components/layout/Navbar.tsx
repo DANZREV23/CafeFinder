@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { PageContainer } from "./PageContainer";
 import { useAuth } from "@/contexts/AuthContext";
+import { PWAInstallButton } from "../pwa/PWAInstallButton";
 
 const navLinks = [
   { label: "Explore", href: "/explore" },
@@ -142,6 +143,9 @@ export function Navbar() {
                             <Settings size={16} className="text-brand-muted" />
                             Account
                           </Link>
+                          <div className="px-4 py-2">
+                            <PWAInstallButton className="w-full justify-start h-8 px-2 text-xs" variant="ghost" />
+                          </div>
                           <div className="h-px bg-brand-border my-1" />
                           <button 
                             onClick={handleLogout}
@@ -229,6 +233,9 @@ export function Navbar() {
                       <Settings size={20} className="text-brand-coffee" />
                       Account Settings
                     </Link>
+                    <div className="py-2">
+                      <PWAInstallButton className="w-full justify-start h-12 rounded-xl" variant="outline" />
+                    </div>
                     <button 
                       onClick={handleLogout}
                       className="text-lg font-medium text-red-600 flex items-center gap-2"

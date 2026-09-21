@@ -3,6 +3,10 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Role } from '../../types';
 import { SEO } from '../common/SEO';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { PrivateOfflineState } from '../pwa/PrivateOfflineState';
+import { MainLayout } from '../layout/MainLayout';
+import { PageContainer } from '../layout/PageContainer';
 
 interface RoleRouteProps {
   children: React.ReactNode;
@@ -23,6 +27,18 @@ const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRoles }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  const isOnline = useOnlineStatus();
+
+  if (!isOnline) {
+    return (
+      <MainLayout>
+        <PageContainer>
+          <PrivateOfflineState />
+        </PageContainer>
+      </MainLayout>
+    );
   }
 
   if (!user || !allowedRoles.includes(user.role)) {

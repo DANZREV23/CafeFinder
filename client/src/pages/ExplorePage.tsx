@@ -20,8 +20,9 @@ import { cn } from "@/lib/utils";
 
 import { MapProvider } from "@/components/map/MapProvider";
 import { CafeMap } from "@/components/map/CafeMap";
-import { Map, List } from "lucide-react";
+import { Map, List, WifiOff } from "lucide-react";
 import { SEO } from "@/components/common/SEO";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 export default function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,6 +35,7 @@ export default function ExplorePage() {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = React.useState(false);
   const [selectedCafeId, setSelectedCafeId] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"list" | "map">("list");
+  const isOnline = useOnlineStatus();
 
   // Ref for result list container to handle scrolling
   const resultListRef = React.useRef<HTMLDivElement>(null);
@@ -294,12 +296,22 @@ export default function ExplorePage() {
                 viewMode === "list" ? "hidden lg:block" : "block"
               )}
             >
-              <CafeMap 
-                cafes={cafes}
-                selectedCafeId={selectedCafeId}
-                onCafeSelect={handleCafeSelect}
-                className="rounded-none border-0"
-              />
+              {isOnline ? (
+                <CafeMap 
+                  cafes={cafes}
+                  selectedCafeId={selectedCafeId}
+                  onCafeSelect={handleCafeSelect}
+                  className="rounded-none border-0"
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center bg-brand-background">
+                  <div className="w-20 h-20 bg-brand-cream rounded-3xl flex items-center justify-center text-brand-coffee mb-6">
+                    <WifiOff className="h-10 w-10" />
+                  </div>
+                  <h3 className="text-2xl font-serif font-bold text-brand-charcoal">Map unavailable offline</h3>
+                  <p className="text-brand-muted mt-2 max-w-xs mx-auto">Reconnect to view the interactive map and discover cafes nearby.</p>
+                </div>
+              )}
               
               {/* Floating Map Actions */}
               <div className="absolute top-6 left-6 flex flex-col gap-2">

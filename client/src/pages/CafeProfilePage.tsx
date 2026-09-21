@@ -34,6 +34,8 @@ import { generateCafeJsonLd, generateBreadcrumbJsonLd } from "@/utils/seoUtils";
 import { CafeGallery } from "@/components/cafe/CafeGallery";
 import { RelatedCafes } from "@/components/cafe/RelatedCafes";
 import { CafeMenuHighlights } from "@/components/cafe/CafeMenuHighlights";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { WifiOff } from "lucide-react";
 
 import { MapProvider } from "@/components/map/MapProvider";
 import { CafeMap } from "@/components/map/CafeMap";
@@ -107,6 +109,8 @@ export default function CafeProfilePage() {
       setMyReview(null);
     }
   };
+
+  const isOnline = useOnlineStatus();
 
   const fetchCafe = async () => {
     if (!slug) return;
@@ -618,12 +622,20 @@ export default function CafeProfilePage() {
                     </div>
                  </div>
                  <div className="aspect-square bg-brand-cream/30 rounded-3xl border border-brand-border overflow-hidden relative group">
-                    <CafeMap 
-                      cafes={[cafe]} 
-                      selectedCafeId={cafe.id}
-                      center={cafe.latitude && cafe.longitude ? { lat: Number(cafe.latitude), lng: Number(cafe.longitude) } : undefined}
-                      zoom={15}
-                    />
+                    {isOnline ? (
+                      <CafeMap 
+                        cafes={[cafe]} 
+                        selectedCafeId={cafe.id}
+                        center={cafe.latitude && cafe.longitude ? { lat: Number(cafe.latitude), lng: Number(cafe.longitude) } : undefined}
+                        zoom={15}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-brand-background">
+                        <WifiOff className="h-10 w-10 text-brand-muted mb-4" />
+                        <p className="text-sm font-bold text-brand-charcoal">Map unavailable offline</p>
+                        <p className="text-xs text-brand-muted mt-2">Reconnect to view the interactive map.</p>
+                      </div>
+                    )}
                  </div>
               </div>
             </aside>

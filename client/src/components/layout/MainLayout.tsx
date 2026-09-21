@@ -1,6 +1,8 @@
 import * as React from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { OfflineIndicator } from "../pwa/OfflineIndicator";
+import { InstallAppPrompt } from "../pwa/InstallAppPrompt";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,8 @@ export function MainLayout({ children, showFooter = true }: MainLayoutProps) {
         {children}
       </main>
       {showFooter && <Footer />}
+      <OfflineIndicator />
+      <InstallAppPrompt />
     </div>
   );
 }

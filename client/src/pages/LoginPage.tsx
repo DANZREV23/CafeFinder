@@ -6,6 +6,8 @@ import { Button } from '../components/ui/Button';
 import { SEO } from '../components/common/SEO';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { PrivateOfflineState } from '../components/pwa/PrivateOfflineState';
 
 import { MainLayout } from '../components/layout/MainLayout';
 
@@ -19,8 +21,24 @@ const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isOnline = useOnlineStatus();
 
   const from = (location.state as any)?.from?.pathname || '/';
+
+  if (!isOnline) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 py-12">
+          <div className="w-full max-w-md">
+            <PrivateOfflineState 
+              title="Connection Required" 
+              description="Signing in requires an active internet connection to securely verify your credentials."
+            />
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,6 +3,7 @@ import { Search, X, Loader2, MapPin, Coffee, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchService, SearchSuggestion } from "@/services/searchService";
 import { useNavigate } from "react-router-dom";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 export interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   onClear?: () => void;
@@ -23,6 +24,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     const dropdownRef = React.useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const abortControllerRef = React.useRef<AbortController | null>(null);
+    const isOnline = useOnlineStatus();
 
     React.useEffect(() => {
       if (value !== undefined) {
@@ -50,7 +52,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
 
     // Debounced fetch suggestions
     React.useEffect(() => {
-      if (!showSuggestions || inputValue.toString().length < 2) {
+      if (!showSuggestions || !isOnline || inputValue.toString().length < 2) {
         setSuggestions([]);
         setShowDropdown(false);
         return;

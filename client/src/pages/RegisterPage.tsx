@@ -6,6 +6,8 @@ import { Button } from '../components/ui/Button';
 import { SEO } from '../components/common/SEO';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { PrivateOfflineState } from '../components/pwa/PrivateOfflineState';
 
 import { MainLayout } from '../components/layout/MainLayout';
 
@@ -21,6 +23,22 @@ const RegisterPage: React.FC = () => {
 
   const { register } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
+
+  if (!isOnline) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[85vh] px-4 py-12">
+          <div className="w-full max-w-md">
+            <PrivateOfflineState 
+              title="Connection Required" 
+              description="Creating an account requires an active internet connection to securely process your registration."
+            />
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

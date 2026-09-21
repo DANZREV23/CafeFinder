@@ -2,6 +2,10 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { SEO } from '../common/SEO';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { PrivateOfflineState } from '../pwa/PrivateOfflineState';
+import { MainLayout } from '../layout/MainLayout';
+import { PageContainer } from '../layout/PageContainer';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,6 +25,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  const isOnline = useOnlineStatus();
+
+  if (!isOnline) {
+    return (
+      <MainLayout>
+        <PageContainer>
+          <PrivateOfflineState />
+        </PageContainer>
+      </MainLayout>
+    );
   }
 
   return (

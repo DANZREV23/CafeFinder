@@ -46,6 +46,7 @@ import BlogListPage from './pages/blog/BlogListPage';
 import BlogPostPage from './pages/blog/BlogPostPage';
 import ListsPage from './pages/lists/ListsPage';
 import ListPage from './pages/lists/ListPage';
+import OfflinePage from './pages/OfflinePage';
 import AdminBlogPage from './pages/admin/AdminBlogPage';
 import AdminBlogPostEditPage from './pages/admin/AdminBlogPostEditPage';
 import AdminListsPage from './pages/admin/AdminListsPage';
@@ -78,6 +79,8 @@ export default function App() {
             {/* Curated Lists Routes */}
             <Route path="/lists" element={<ListsPage />} />
             <Route path="/lists/:slug" element={<ListPage />} />
+
+            <Route path="/offline" element={<OfflinePage />} />
 
             <Route path="/submit-cafe" element={
               <ProtectedRoute>
