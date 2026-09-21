@@ -42,10 +42,10 @@ export class AdminService {
       rejectedSubmissions,
       totalUsers
     ] = await Promise.all([
-      prisma.cafeSubmission.count({ where: { status: 'PENDING' } }),
-      prisma.cafeReview.count({ where: { status: 'PENDING' } }),
-      prisma.cafe.count({ where: { status: 'PUBLISHED' } }),
-      prisma.cafeSubmission.count({ where: { status: 'REJECTED' } }),
+      prisma.cafeSubmission.count({ where: { status: CafeSubmissionStatus.PENDING } }),
+      prisma.cafeReview.count({ where: { status: ReviewStatus.PENDING } }),
+      prisma.cafe.count({ where: { status: CafeStatus.PUBLISHED } }),
+      prisma.cafeSubmission.count({ where: { status: CafeSubmissionStatus.REJECTED } }),
       prisma.user.count()
     ]);
 
@@ -131,7 +131,7 @@ export class AdminService {
       });
 
       if (!submission) throw new Error('Submission not found');
-      if (submission.status !== 'PENDING') throw new Error('Submission is not in PENDING status');
+      if (submission.status !== CafeSubmissionStatus.PENDING) throw new Error('Submission is not in PENDING status');
 
       const requiredFields = [
         ['name', submission.name],
@@ -188,7 +188,7 @@ export class AdminService {
           instagram: submission.instagram ? sanitizePlain(submission.instagram.trim()) : null,
           facebook: submission.facebook ? sanitizePlain(submission.facebook.trim()) : null,
           priceRange: submission.priceRange,
-          status: 'PUBLISHED',
+          status: CafeStatus.PUBLISHED,
           verified: false,
           featured: false,
           trending: false,
@@ -213,7 +213,7 @@ export class AdminService {
       await tx.cafeSubmission.update({
         where: { id: submissionId },
         data: {
-          status: 'APPROVED',
+          status: CafeSubmissionStatus.APPROVED,
           cafeId: cafe.id
         }
       });
@@ -252,12 +252,12 @@ export class AdminService {
     });
 
     if (!submission) throw new Error('Submission not found');
-    if (submission.status !== 'PENDING') throw new Error('Only pending submissions can be rejected');
+    if (submission.status !== CafeSubmissionStatus.PENDING) throw new Error('Only pending submissions can be rejected');
 
     const updated = await prisma.cafeSubmission.update({
       where: { id: submissionId },
       data: {
-        status: 'REJECTED',
+        status: CafeSubmissionStatus.REJECTED,
         rejectionReason: reason
       }
     });
@@ -293,7 +293,7 @@ export class AdminService {
     const updated = await prisma.cafeSubmission.update({
       where: { id: submissionId },
       data: {
-        status: 'PENDING',
+        status: CafeSubmissionStatus.PENDING,
         rejectionReason: null
       }
     });
@@ -465,13 +465,13 @@ export class AdminService {
     if (cafe.ownerId) {
       const owner = await prisma.user.findUnique({ where: { id: cafe.ownerId } });
       if (owner) {
-        if (status === 'PUBLISHED') {
+        if (status === CafeStatus.PUBLISHED) {
           emailService.queueEmail('CAFE_PUBLISHED' as any, owner.email, {
             name: owner.name,
             cafeName: cafe.name,
             cafeUrl: `${process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`}/cafes/${cafe.slug}`,
           }, owner.id).catch(err => console.error('[AdminService]: Failed to send cafe published email:', err));
-        } else if (status === 'SUSPENDED') {
+        } else if (status === CafeStatus.SUSPENDED) {
           emailService.queueEmail('CAFE_SUSPENDED' as any, owner.email, {
             name: owner.name,
             cafeName: cafe.name,

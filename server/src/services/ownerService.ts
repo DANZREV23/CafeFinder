@@ -1,4 +1,4 @@
-import { CafeChangeRequestStatus, CafeChangeRequestType, Prisma } from '@prisma/client';
+import { CafeChangeRequestStatus, CafeChangeRequestType, Prisma, ReviewStatus, ClaimStatus, CafeStatus } from '@prisma/client';
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '../config/database.js';
@@ -30,11 +30,11 @@ export class OwnerService {
     const cafeWhere = isAdmin ? {} : { ownerId: userId };
     const [claimedCafes, pendingClaims, publishedCafes, pendingChangeRequests, reviews, rating] = await Promise.all([
       prisma.cafe.count({ where: cafeWhere }),
-      prisma.cafeOwnerClaim.count({ where: { userId, status: 'PENDING' } }),
-      prisma.cafe.count({ where: { ...cafeWhere, status: 'PUBLISHED' } }),
-      prisma.cafeChangeRequest.count({ where: { ...(isAdmin ? {} : { requestedById: userId }), status: 'PENDING' } }),
-      prisma.cafeReview.count({ where: { cafe: cafeWhere, status: { in: ['PENDING', 'APPROVED'] } } }),
-      prisma.cafe.aggregate({ where: { ...cafeWhere, status: 'PUBLISHED' }, _avg: { ratingAverage: true } })
+      prisma.cafeOwnerClaim.count({ where: { userId, status: ClaimStatus.PENDING } }),
+      prisma.cafe.count({ where: { ...cafeWhere, status: CafeStatus.PUBLISHED } }),
+      prisma.cafeChangeRequest.count({ where: { ...(isAdmin ? {} : { requestedById: userId }), status: CafeChangeRequestStatus.PENDING } }),
+      prisma.cafeReview.count({ where: { cafe: cafeWhere, status: { in: [ReviewStatus.PENDING, ReviewStatus.APPROVED] } } }),
+      prisma.cafe.aggregate({ where: { ...cafeWhere, status: CafeStatus.PUBLISHED }, _avg: { ratingAverage: true } })
     ]);
     return { isAdministrativeAccess: isAdmin, claimedCafes, pendingClaims, publishedCafes, pendingChangeRequests, totalReviews: reviews, averageRating: Number(rating._avg.ratingAverage || 0) };
   }
@@ -129,7 +129,7 @@ export class OwnerService {
     await this.requireCafe(cafeId, userId, isAdmin);
     const safePage = Math.max(page, 1);
     const safeLimit = Math.max(limit, 1);
-    const where = { cafeId, status: { in: ['PENDING', 'APPROVED'] as any[] } };
+    const where = { cafeId, status: { in: [ReviewStatus.PENDING, ReviewStatus.APPROVED] } };
     const [reviews, total] = await Promise.all([
       prisma.cafeReview.findMany({ where, skip: (safePage - 1) * safeLimit, take: safeLimit, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true, avatarUrl: true } }, photos: true } }),
       prisma.cafeReview.count({ where })

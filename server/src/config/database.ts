@@ -60,7 +60,7 @@ const createPrismaClient = (url: string | undefined) => {
         url,
       },
     },
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: process.env.PRISMA_LOG_QUERIES === 'true' ? ['query', 'error', 'warn'] : ['error', 'warn'],
   });
 
   // Middleware for automatic query retries on connection issues

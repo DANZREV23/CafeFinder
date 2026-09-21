@@ -16,6 +16,7 @@ interface RoleRouteProps {
 const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRoles }) => {
   const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
+  const isOnline = useOnlineStatus();
 
   if (loading) {
     return (
@@ -28,8 +29,6 @@ const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRoles }) => {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-
-  const isOnline = useOnlineStatus();
 
   if (!isOnline) {
     return (

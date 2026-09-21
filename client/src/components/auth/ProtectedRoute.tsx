@@ -14,6 +14,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
+  const isOnline = useOnlineStatus();
 
   if (loading) {
     return (
@@ -26,8 +27,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-
-  const isOnline = useOnlineStatus();
 
   if (!isOnline) {
     return (

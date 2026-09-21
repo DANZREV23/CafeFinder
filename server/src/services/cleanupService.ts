@@ -3,6 +3,7 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
+import { EmailJobStatus } from '@prisma/client';
 
 export class CleanupService {
   async runAll() {
@@ -65,7 +66,7 @@ export class CleanupService {
             lt: sevenDaysAgo,
           },
           status: {
-            in: ['SENT', 'CANCELLED'],
+            in: [EmailJobStatus.SENT, EmailJobStatus.CANCELLED],
           },
         },
       });

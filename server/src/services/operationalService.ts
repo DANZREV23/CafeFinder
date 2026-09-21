@@ -62,7 +62,7 @@ export class OperationalService {
     ]);
 
     const backupFiles = this.getBackupFiles(backupsDir);
-    const lastBackup = backupFiles.length > 0 ? backupFiles[0].birthtime.toISOString() : undefined;
+    const lastBackup = backupFiles.length > 0 ? backupFiles[0].mtime.toISOString() : undefined;
 
     return {
       application: {
@@ -126,12 +126,15 @@ export class OperationalService {
     if (!fs.existsSync(directoryPath)) return [];
     
     return fs.readdirSync(directoryPath)
-      .filter(f => f.startsWith('cafefinder-db-') || f.startsWith('cafefinder-uploads-'))
-      .map(f => ({
-        name: f,
-        birthtime: fs.statSync(path.join(directoryPath, f)).birthtime
-      }))
-      .sort((a, b) => b.birthtime.getTime() - a.birthtime.getTime());
+      .filter(f => f.startsWith('cafefinder-db-') || f.startsWith('cafefinder-uploads-') || f.startsWith('cafefinder-db-json-'))
+      .map(f => {
+        const stats = fs.statSync(path.join(directoryPath, f));
+        return {
+          name: f,
+          mtime: stats.mtime
+        };
+      })
+      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
   }
 }
 

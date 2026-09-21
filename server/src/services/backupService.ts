@@ -15,14 +15,21 @@ export class BackupService {
     this.backupDir = path.resolve(process.cwd(), process.env.BACKUP_DIR || './backups');
     this.retentionDays = parseInt(process.env.BACKUP_RETENTION_DAYS || '14');
     
+    // Ensure backup directory exists
     if (!fs.existsSync(this.backupDir)) {
-      fs.mkdirSync(this.backupDir, { recursive: true });
+      try {
+        fs.mkdirSync(this.backupDir, { recursive: true });
+        logger.info(`Created backup directory at ${this.backupDir}`);
+      } catch (err) {
+        logger.error(`Failed to create backup directory: ${this.backupDir}`, err);
+      }
     }
   }
 
   async backupDatabase() {
-    if (process.env.BACKUP_ENABLED !== 'true') {
-      logger.info('Database backup is disabled.');
+    // Default to true if not explicitly disabled
+    if (process.env.BACKUP_ENABLED === 'false') {
+      logger.info('Database backup is explicitly disabled.');
       return;
     }
 
@@ -32,6 +39,14 @@ export class BackupService {
     const compressedPath = `${filePath}.gz`;
 
     try {
+      // Check for pg_dump availability
+      try {
+        await execAsync('pg_dump --version');
+      } catch (err) {
+        logger.warn('pg_dump not found in system. Falling back to Prisma-based JSON backup.');
+        return await this.backupDatabaseFallback();
+      }
+
       logger.info(`Starting database backup: ${filename}`);
 
       // Construct connection parameters from environment
@@ -76,9 +91,74 @@ export class BackupService {
     }
   }
 
+  async backupDatabaseFallback() {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `cafefinder-db-json-${timestamp}.tar.gz`;
+    const tempDir = path.join(this.backupDir, `temp-backup-${timestamp}`);
+    const filePath = path.join(this.backupDir, filename);
+
+    try {
+      logger.info('Starting Prisma-based fallback database backup...');
+      
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      const { prisma } = await import('../config/database.js');
+      
+      // List of models to backup
+      const models = [
+        'user', 'session', 'cafe', 'cafeSubmission', 'cafeSubmissionPhoto', 
+        'cafeSubmissionAmenity', 'amenity', 'cafeAmenity', 'cafeHours', 
+        'cafePhoto', 'cafeReview', 'cafeReviewPhoto', 'cafeOwnerClaim', 
+        'cafeChangeRequest', 'cafeFavorite', 'blogPost', 'curatedList', 
+        'curatedListCafe', 'testimonial', 'notification', 'activityLog', 
+        'menu', 'menuCategory', 'menuItem', 'menuItemTag', 
+        'menuItemOptionGroup', 'menuItemOption', 'cafeAnalyticsEvent', 
+        'userCafeView', 'emailJob'
+      ];
+
+      for (const modelName of models) {
+        try {
+          const data = await (prisma as any)[modelName].findMany();
+          fs.writeFileSync(
+            path.join(tempDir, `${modelName}.json`), 
+            JSON.stringify(data, null, 2)
+          );
+          logger.debug(`Exported model ${modelName} (${data.length} records)`);
+        } catch (modelErr) {
+          logger.warn(`Failed to export model ${modelName}:`, modelErr);
+        }
+      }
+
+      // Create tar.gz of the JSON files
+      const command = `tar -czf ${filePath} -C ${this.backupDir} ${path.basename(tempDir)}`;
+      await execAsync(command);
+
+      // Verify
+      await this.verifyBackup(filePath);
+
+      logger.info(`Prisma-based fallback backup completed: ${filename}`);
+      
+      // Cleanup temp dir
+      fs.rmSync(tempDir, { recursive: true, force: true });
+      
+      await this.cleanupOldBackups();
+      return filename;
+    } catch (err: any) {
+      logger.error('Prisma fallback backup failed', err);
+      // Ensure cleanup if failed
+      if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+      throw err;
+    }
+  }
+
   async backupUploads() {
-    if (process.env.UPLOAD_BACKUP_ENABLED !== 'true') {
-      logger.info('Uploads backup is disabled.');
+    // Default to true if not explicitly disabled
+    if (process.env.UPLOAD_BACKUP_ENABLED === 'false') {
+      logger.info('Uploads backup is explicitly disabled.');
       return;
     }
 
@@ -121,15 +201,15 @@ export class BackupService {
       throw new Error(`Backup file is empty: ${filePath}`);
     }
 
-    // Basic content verification for SQL
+    // Basic content verification for SQL (uncompressed)
     if (filePath.endsWith('.sql')) {
       const content = fs.readFileSync(filePath, 'utf8');
-      if (!content.includes('CREATE TABLE')) {
+      if (!content.includes('CREATE TABLE') && !content.includes('COPY')) {
         throw new Error(`Backup file does not contain expected SQL structure: ${filePath}`);
       }
     }
 
-    // Gzip verification
+    // Gzip verification (handles both .sql.gz and .tar.gz)
     if (filePath.endsWith('.gz')) {
       try {
         await execAsync(`gzip -t ${filePath}`);

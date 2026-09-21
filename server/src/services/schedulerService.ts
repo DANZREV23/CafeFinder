@@ -3,6 +3,7 @@ import { cleanupService } from './cleanupService.js';
 import { emailService } from './email/email.service.js';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
+import { EmailJobStatus } from '@prisma/client';
 
 export class SchedulerService {
   private intervals: NodeJS.Timeout[] = [];
@@ -25,7 +26,7 @@ export class SchedulerService {
       try {
         const pendingJobs = await prisma.emailJob.findMany({
           where: {
-            status: { in: ['PENDING', 'FAILED'] },
+            status: { in: [EmailJobStatus.PENDING, EmailJobStatus.FAILED] },
             attempts: { lt: 5 },
             availableAt: { lte: new Date() }
           },
