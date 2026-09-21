@@ -12,7 +12,8 @@ import {
   X,
   MapPin,
   ChevronRight,
-  LayoutGrid
+  LayoutGrid,
+  Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';

@@ -30,33 +30,41 @@ async function runRestoreTest() {
   try {
     // 1. Parse connection info from environment
     const dbUrl = process.env.PRISMA_DATABASE_URL || '';
-    const urlMatch = dbUrl.match(/mysql:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/([^?]+)/);
+    const urlMatch = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/([^?]+)/);
 
     if (!urlMatch) {
       throw new Error('Could not parse PRISMA_DATABASE_URL');
     }
 
     const [, user, pass, host, port, db] = urlMatch;
-    const portArg = port ? `-P ${port}` : '';
-    const commonArgs = `-h ${host} ${portArg} -u ${user} -p'${pass}'`;
+    const portArg = port ? `-p ${port}` : '';
+    
+    let hostArg = `-h ${host}`;
+    if (dbUrl.includes('host=')) {
+      const socketPath = dbUrl.split('host=')[1].split('&')[0];
+      hostArg = `-h ${socketPath}`;
+    }
+    
+    const commonArgs = `${hostArg} ${portArg} -U ${user}`;
+    const env = { ...process.env, PGPASSWORD: pass };
 
     // 2. Create temporary database
     console.log('[RestoreTest]: Creating temporary database...');
-    await execAsync(`mariadb ${commonArgs} -e "CREATE DATABASE ${tempDbName};"`);
+    await execAsync(`psql ${commonArgs} -c "CREATE DATABASE ${tempDbName};"`, { env });
 
     // 3. Restore backup
     console.log('[RestoreTest]: Restoring backup...');
     let restoreCmd = '';
     if (absoluteBackupPath.endsWith('.gz')) {
-      restoreCmd = `gunzip -c ${absoluteBackupPath} | mariadb ${commonArgs} ${tempDbName}`;
+      restoreCmd = `gunzip -c ${absoluteBackupPath} | psql ${commonArgs} ${tempDbName}`;
     } else {
-      restoreCmd = `mariadb ${commonArgs} ${tempDbName} < ${absoluteBackupPath}`;
+      restoreCmd = `psql ${commonArgs} ${tempDbName} < ${absoluteBackupPath}`;
     }
-    await execAsync(restoreCmd);
+    await execAsync(restoreCmd, { env });
 
     // 4. Verify data with Prisma
     console.log('[RestoreTest]: Verifying data integrity...');
-    const tempDbUrl = `mysql://${user}:${encodeURIComponent(pass)}@${host}:${port || 3306}/${tempDbName}`;
+    const tempDbUrl = `postgresql://${user}:${encodeURIComponent(pass)}@${host}:${port || 5432}/${tempDbName}${dbUrl.includes('?') ? '?' + dbUrl.split('?')[1] : ''}`;
     const prisma = new PrismaClient({
       datasources: { db: { url: tempDbUrl } }
     });
@@ -80,7 +88,7 @@ async function runRestoreTest() {
 
     // 5. Cleanup
     console.log('[RestoreTest]: Cleaning up temporary database...');
-    await execAsync(`mariadb ${commonArgs} -e "DROP DATABASE ${tempDbName};"`);
+    await execAsync(`psql ${commonArgs} -c "DROP DATABASE ${tempDbName};"`, { env });
 
     console.log('[RestoreTest]: VERIFICATION COMPLETE. Backup is valid.');
     process.exit(0);
@@ -92,11 +100,16 @@ async function runRestoreTest() {
     // Attempt cleanup
     try {
       const dbUrl = process.env.PRISMA_DATABASE_URL || '';
-      const urlMatch = dbUrl.match(/mysql:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/([^?]+)/);
+      const urlMatch = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/([^?]+)/);
       if (urlMatch) {
         const [, user, pass, host, port] = urlMatch;
-        const portArg = port ? `-P ${port}` : '';
-        await execAsync(`mariadb -h ${host} ${portArg} -u ${user} -p'${pass}' -e "DROP DATABASE IF EXISTS ${tempDbName};"`);
+        const portArg = port ? `-p ${port}` : '';
+        let hostArg = `-h ${host}`;
+        if (dbUrl.includes('host=')) {
+          const socketPath = dbUrl.split('host=')[1].split('&')[0];
+          hostArg = `-h ${socketPath}`;
+        }
+        await execAsync(`psql -h ${hostArg} ${portArg} -U ${user} -c "DROP DATABASE IF EXISTS ${tempDbName};"`, { env: { ...process.env, PGPASSWORD: pass } });
       }
     } catch (cleanupErr) {
       // Ignore cleanup error

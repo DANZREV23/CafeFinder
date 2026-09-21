@@ -142,6 +142,13 @@ export const adminService = {
     });
   },
 
+  async updateCafeOwner(id: string, ownerId: string | null): Promise<ApiResponse<Cafe>> {
+    return fetchApi<ApiResponse<Cafe>>(`/admin/cafes/${id}/owner`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ownerId })
+    });
+  },
+
   // Users
   async getUsers(params: { role?: string; status?: string; search?: string; page?: number; limit?: number }): Promise<ApiResponse<User[]>> {
     const query = new URLSearchParams();

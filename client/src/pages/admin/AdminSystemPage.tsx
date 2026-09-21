@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   CheckCircle2
 } from 'lucide-react';
+import { clsx } from 'clsx';
 import { SystemStatus } from '@/types/system';
 import { motion } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
@@ -114,7 +115,7 @@ export const AdminSystemPage: React.FC = () => {
           metrics={[
             { label: 'Status', value: status?.database.status === 'connected' ? 'CONNECTED' : 'DISCONNECTED' },
             { label: 'Latency', value: `${status?.database.latencyMs}ms` || 'N/A' },
-            { label: 'Type', value: 'MariaDB / MySQL' },
+            { label: 'Type', value: 'PostgreSQL' },
             { label: 'Connection Pool', value: 'Active' },
           ]}
         />
@@ -251,4 +252,4 @@ const OpButton: React.FC<{ icon: any, label: string, sub: string, color: string,
   return <button onClick={onClick} className="w-full text-left">{content}</button>;
 };
 
-import { clsx } from 'clsx';
+

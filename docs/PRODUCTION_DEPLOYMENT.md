@@ -15,13 +15,13 @@ Node.js CafeFinder Application (Systemd Managed)
    ↓
 Prisma ORM
    ↓
-MariaDB Database (Cloud SQL or Managed Instance)
+PostgreSQL Database (Cloud SQL or Managed Instance)
 ```
 
 ## 2. Infrastructure Requirements
 
 - **Node.js**: v20 or newer
-- **MariaDB**: v10.6 or newer
+- **PostgreSQL**: v15 or newer
 - **Memory**: Minimum 1GB RAM
 - **Storage**: SSD recommended for application and uploads
 

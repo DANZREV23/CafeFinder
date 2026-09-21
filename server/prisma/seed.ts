@@ -21,14 +21,14 @@ if (!process.env.PRISMA_DATABASE_URL) {
     const user = process.env.DB_USERNAME || process.env.DB_USER || 'root';
     const pass = process.env.DB_PASSWORD || '';
     const host = process.env.DATABASE_URL || process.env.DB_HOST || 'localhost';
-    const port = process.env.DB_PORT || '3306';
+    const port = process.env.DB_PORT || '5432';
     const db = process.env.DB_NAME || 'cafefinder';
     
     if (host && host.includes('://')) {
       process.env.PRISMA_DATABASE_URL = host;
     } else if (host) {
-      // Keep mysql fallback just in case of local dev variations
-      process.env.PRISMA_DATABASE_URL = `mysql://${user}:${encodeURIComponent(pass)}@${host}:${port}/${db}`;
+      // Use postgresql as the default driver
+      process.env.PRISMA_DATABASE_URL = `postgresql://${user}:${encodeURIComponent(pass)}@${host}:${port}/${db}`;
     }
   }
 }

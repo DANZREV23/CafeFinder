@@ -1,6 +1,6 @@
 [Unit]
 Description=CafeFinder Application
-After=network.target mariadb.service
+After=network.target postgresql.service
 
 [Service]
 Type=simple

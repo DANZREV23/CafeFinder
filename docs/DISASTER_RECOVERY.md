@@ -13,7 +13,7 @@ This document outlines the procedures to follow in the event of various system f
 4. Restart the service.
 5. If persistent, check for recent configuration changes or failed deployments.
 
-## Scenario 2: MariaDB Failure
+## Scenario 2: PostgreSQL Failure
 
 **Symptom**: `/api/ready` returns 503. "Database connection error" in logs.
 

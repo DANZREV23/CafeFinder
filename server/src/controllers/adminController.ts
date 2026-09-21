@@ -221,6 +221,16 @@ export class AdminController {
     }
   };
 
+  updateCafeOwner = async (req: AuthRequest, res: Response) => {
+    try {
+      const { ownerId } = req.body;
+      const result = await this.adminService.updateCafeOwner(req.params.id, req.user!.id, ownerId);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
   // --- Users ---
 
   getUsers = async (req: AuthRequest, res: Response) => {

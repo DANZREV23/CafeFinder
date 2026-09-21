@@ -19,23 +19,24 @@ const getDatabaseUrl = () => {
   const dbPass = process.env.DB_PASSWORD;
 
   if (sqlUser && sqlPass && sqlHost && sqlDb) {
-    // Correct format for Prisma with Cloud SQL Unix sockets or direct TCP
-    return `mysql://${sqlUser}:${encodeURIComponent(sqlPass)}@${sqlHost}/${sqlDb}`;
+    // Correct format for Prisma with Cloud SQL Unix sockets (PostgreSQL)
+    // We use localhost as a placeholder and pass the socket directory via the host parameter
+    return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}`;
   }
 
   if (dbHost && dbUser && dbPass) {
-    const port = process.env.DB_PORT || '3306';
+    const port = process.env.DB_PORT || '5432';
     const db = process.env.DB_NAME || 'cafefinder';
-    return `mysql://${dbUser}:${encodeURIComponent(dbPass)}@${dbHost}:${port}/${db}`;
+    return `postgresql://${dbUser}:${encodeURIComponent(dbPass)}@${dbHost}:${port}/${db}`;
   }
 
   // Final fallback
   if (dbHost) {
-    const user = dbUser || 'root';
+    const user = dbUser || 'postgres';
     const pass = dbPass || '';
-    const port = process.env.DB_PORT || '3306';
+    const port = process.env.DB_PORT || '5432';
     const db = process.env.DB_NAME || 'cafefinder';
-    return `mysql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}`;
+    return `postgresql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}`;
   }
 
   return undefined;

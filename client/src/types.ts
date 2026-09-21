@@ -98,6 +98,12 @@ export interface Cafe {
   trending: boolean;
   verified: boolean;
   status?: CafeStatus;
+  ownerId?: string | null;
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
   photos: CafePhoto[];
   hours?: CafeHours[];
   amenities?: { amenity: Amenity; amenityId?: string }[];

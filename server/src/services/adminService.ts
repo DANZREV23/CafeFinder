@@ -430,7 +430,10 @@ export class AdminService {
         skip,
         take: safeLimit,
         include: {
-          _count: { select: { reviews: true } }
+          _count: { select: { reviews: true } },
+          owner: {
+            select: { id: true, name: true, email: true }
+          }
         }
       }),
       prisma.cafe.count({ where })
@@ -499,6 +502,48 @@ export class AdminService {
       entityType: 'Cafe',
       entityId: cafeId,
       description: `${value ? 'Enabled' : 'Disabled'} ${flag} for cafe: ${cafe.name}`
+    });
+
+    return updated;
+  }
+
+  async updateCafeOwner(cafeId: string, adminId: string, ownerId: string | null) {
+    const cafe = await prisma.cafe.findUnique({
+      where: { id: cafeId },
+      include: { owner: true }
+    });
+
+    if (!cafe) throw new Error('Cafe not found');
+
+    const updated = await prisma.cafe.update({
+      where: { id: cafeId },
+      data: {
+        ownerId: ownerId,
+        // If assigning an owner, we should probably ensure they have the OWNER role
+        // or at least make them aware they now own this cafe.
+      },
+      include: {
+        owner: { select: { id: true, name: true, email: true } }
+      }
+    });
+
+    // If new owner assigned, ensure their role is at least OWNER if they were just a USER
+    if (ownerId) {
+      const newOwner = await prisma.user.findUnique({ where: { id: ownerId } });
+      if (newOwner && newOwner.role === Role.USER) {
+        await prisma.user.update({
+          where: { id: ownerId },
+          data: { role: Role.OWNER }
+        });
+      }
+    }
+
+    await this.activityLogService.logAction({
+      userId: adminId,
+      action: 'ADMIN_UPDATED_CAFE_OWNER',
+      entityType: 'Cafe',
+      entityId: cafeId,
+      description: `Updated cafe owner for ${cafe.name}. Old owner: ${cafe.owner?.email || 'None'}, New owner: ${updated.owner?.email || 'None'}`
     });
 
     return updated;

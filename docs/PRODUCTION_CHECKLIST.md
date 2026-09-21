@@ -11,7 +11,7 @@ Use this checklist to verify that the application is ready for production use.
 - [ ] Node.js version is v20+.
 
 ## Database
-- [ ] MariaDB instance is reachable from the application server.
+- [ ] PostgreSQL instance is reachable from the application server.
 - [ ] `PRISMA_DATABASE_URL` uses a secure password.
 - [ ] `npx prisma migrate deploy` has been run.
 - [ ] Database backup system is enabled (`BACKUP_ENABLED=true`).

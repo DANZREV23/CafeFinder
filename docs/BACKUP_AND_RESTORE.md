@@ -37,14 +37,14 @@ npm run backup:uploads
 
 ## 2. Database Backup Procedure
 
-The database backup uses `mariadb-dump` to create a consistent snapshot of the schema and data.
+The database backup uses `pg_dump` to create a consistent snapshot of the schema and data.
 
 ### Manual Database Dump
 
 If you need to perform a manual dump outside the application:
 
 ```bash
-mariadb-dump -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p<DB_PASSWORD> <DB_NAME> > backup.sql
+pg_dump -h <DB_HOST> -p <DB_PORT> -U <DB_USER> <DB_NAME> > backup.sql
 ```
 
 ### Verification
@@ -62,7 +62,7 @@ The automated process verifies:
 ### Step 1: Create a Temporary Database for Testing
 
 ```bash
-mariadb -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p<DB_PASSWORD> -e "CREATE DATABASE cafefinder_restore_test;"
+psql -h <DB_HOST> -p <DB_PORT> -U <DB_USER> -c "CREATE DATABASE cafefinder_restore_test;"
 ```
 
 ### Step 2: Decompress the Backup (if needed)
@@ -74,7 +74,7 @@ gunzip -c cafefinder-db-YYYY-MM-DD.sql.gz > restore.sql
 ### Step 3: Restore into the Test Database
 
 ```bash
-mariadb -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p<DB_PASSWORD> cafefinder_restore_test < restore.sql
+psql -h <DB_HOST> -p <DB_PORT> -U <DB_USER> cafefinder_restore_test < restore.sql
 ```
 
 ### Step 4: Verify the Restored Data
@@ -82,7 +82,7 @@ mariadb -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p<DB_PASSWORD> cafefinder_restor
 Check the presence of critical tables:
 
 ```bash
-mariadb -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p<DB_PASSWORD> cafefinder_restore_test -e "SHOW TABLES;"
+psql -h <DB_HOST> -p <DB_PORT> -U <DB_USER> cafefinder_restore_test -c "\dt"
 ```
 
 Expected tables include: `users`, `cafes`, `cafe_reviews`, `cafe_favorites`, `menus`, `blog_posts`, etc.
@@ -92,7 +92,7 @@ Expected tables include: `users`, `cafes`, `cafe_reviews`, `cafe_favorites`, `me
 If the test restore is successful and you must restore to production:
 
 ```bash
-mariadb -h <DB_HOST> -P <DB_PORT> -u <DB_USER> -p<DB_PASSWORD> <DB_NAME> < restore.sql
+psql -h <DB_HOST> -p <DB_PORT> -U <DB_USER> <DB_NAME> < restore.sql
 ```
 
 ## 4. Uploads Backup and Restore

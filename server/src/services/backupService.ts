@@ -35,19 +35,27 @@ export class BackupService {
       logger.info(`Starting database backup: ${filename}`);
 
       // Construct connection parameters from environment
-      // We assume mariadb-dump is available in the environment
+      // We assume pg_dump is available in the environment
       const dbUrl = process.env.PRISMA_DATABASE_URL || '';
-      const urlMatch = dbUrl.match(/mysql:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/([^?]+)/);
+      const urlMatch = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:/]+):?(\d+)?\/([^?]+)/);
 
       if (!urlMatch) {
         throw new Error('Could not parse PRISMA_DATABASE_URL for backup');
       }
 
       const [, user, pass, host, port, db] = urlMatch;
-      const portArg = port ? `-P ${port}` : '';
+      const portArg = port ? `-p ${port}` : '';
       
-      // Use mariadb-dump (compatible with MySQL)
-      const command = `mariadb-dump -h ${host} ${portArg} -u ${user} -p'${pass}' ${db} > ${filePath}`;
+      // Use pg_dump
+      // If host is localhost and there's a socket in the URL, we might need to handle it differently
+      // but usually pg_dump handles -h as the socket directory if it starts with /
+      let hostArg = `-h ${host}`;
+      if (dbUrl.includes('host=')) {
+        const socketPath = dbUrl.split('host=')[1].split('&')[0];
+        hostArg = `-h ${socketPath}`;
+      }
+
+      const command = `PGPASSWORD='${pass}' pg_dump ${hostArg} ${portArg} -U ${user} ${db} > ${filePath}`;
       
       await execAsync(command);
       

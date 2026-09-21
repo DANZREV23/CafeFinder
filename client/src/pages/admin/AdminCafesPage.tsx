@@ -15,7 +15,11 @@ import {
   Edit,
   Eye,
   AlertCircle,
-  Utensils
+  Utensils,
+  User,
+  UserPlus,
+  UserMinus,
+  X
 } from 'lucide-react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
@@ -29,6 +33,13 @@ export const AdminCafesPage: React.FC = () => {
   const [pagination, setPagination] = useState<PaginatedResponse<Cafe>['pagination'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ownerModal, setOwnerModal] = useState<{ isOpen: boolean; cafe: Cafe | null }>({
+    isOpen: false,
+    cafe: null
+  });
+  const [userSearch, setUserSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const status = searchParams.get('status') || '';
   const search = searchParams.get('search') || '';
@@ -61,6 +72,45 @@ export const AdminCafesPage: React.FC = () => {
   useEffect(() => {
     fetchCafes();
   }, [fetchCafes]);
+
+  const handleSearchUsers = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      setIsSearching(true);
+      const res = await adminService.getUsers({ search: query, limit: 10 });
+      if (res.success) {
+        setSearchResults(res.data);
+      }
+    } catch (err) {
+      console.error('User search failed', err);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (userSearch) handleSearchUsers(userSearch);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [userSearch, handleSearchUsers]);
+
+  const handleUpdateOwner = async (cafeId: string, ownerId: string | null) => {
+    try {
+      const res = await adminService.updateCafeOwner(cafeId, ownerId);
+      if (res.success) {
+        setCafes(prev => prev.map(c => c.id === cafeId ? { ...c, ownerId, owner: res.data.owner } : c));
+        setOwnerModal({ isOpen: false, cafe: null });
+        setUserSearch('');
+        setSearchResults([]);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Update failed');
+    }
+  };
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -189,6 +239,7 @@ export const AdminCafesPage: React.FC = () => {
                   <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest">Location</th>
                   <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-center">Rating</th>
                   <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-center">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest">Owner</th>
                   <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-center">Badges</th>
                   <th className="px-6 py-4 text-xs font-bold text-stone-500 uppercase tracking-widest text-right">Actions</th>
                 </tr>
@@ -229,6 +280,25 @@ export const AdminCafesPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <AdminStatusBadge type="cafe" status={cafe.status as any} size="sm" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {cafe.owner ? (
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium text-stone-900 truncate max-w-[120px]">{cafe.owner.name}</span>
+                            <span className="text-[10px] text-stone-500 truncate max-w-[120px]">{cafe.owner.email}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-stone-400 italic">Unclaimed</span>
+                        )}
+                        <button 
+                          onClick={() => setOwnerModal({ isOpen: true, cafe })}
+                          className="p-1 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-all ml-auto shrink-0"
+                          title="Change Owner"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-center">
                        <div className="flex items-center justify-center gap-2">
@@ -342,6 +412,99 @@ export const AdminCafesPage: React.FC = () => {
           >
             <ChevronRight className="w-5 h-5" />
           </button>
+        </div>
+      )}
+
+      {/* Change Owner Modal */}
+      {ownerModal.isOpen && ownerModal.cafe && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-stone-900">Manage Ownership</h3>
+                <p className="text-xs text-stone-500 mt-1">Assign or revoke ownership for <span className="font-semibold text-stone-700">{ownerModal.cafe.name}</span></p>
+              </div>
+              <button 
+                onClick={() => {
+                  setOwnerModal({ isOpen: false, cafe: null });
+                  setUserSearch('');
+                  setSearchResults([]);
+                }}
+                className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {ownerModal.cafe.owner && (
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center text-amber-700">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-amber-800 uppercase tracking-widest">Current Owner</p>
+                      <p className="text-sm font-semibold text-amber-900">{ownerModal.cafe.owner.name}</p>
+                      <p className="text-xs text-amber-700/70">{ownerModal.cafe.owner.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleUpdateOwner(ownerModal.cafe!.id, null)}
+                    className="flex flex-col items-center gap-1 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all group"
+                  >
+                    <UserMinus className="w-5 h-5" />
+                    <span className="text-[10px] font-bold uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Revoke</span>
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-stone-400 uppercase tracking-widest">Search New Owner</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search by name or email..."
+                    className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="max-h-[200px] overflow-y-auto divide-y divide-stone-50 rounded-lg border border-stone-100">
+                  {isSearching ? (
+                    <div className="p-4 text-center text-sm text-stone-400">Searching...</div>
+                  ) : userSearch.length > 0 && searchResults.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-stone-400 italic">No users found.</div>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => handleUpdateOwner(ownerModal.cafe!.id, user.id)}
+                        disabled={user.id === ownerModal.cafe?.ownerId}
+                        className="w-full p-3 flex items-center justify-between hover:bg-stone-50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center text-stone-500 group-hover:bg-amber-100 group-hover:text-amber-600 transition-colors">
+                            <User className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-stone-900">{user.name}</p>
+                            <p className="text-xs text-stone-500">{user.email}</p>
+                          </div>
+                        </div>
+                        <UserPlus className="w-4 h-4 text-stone-300 group-hover:text-amber-600 transition-colors" />
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-xs text-stone-400">Type at least 2 characters to search users.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

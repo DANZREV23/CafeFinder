@@ -51,6 +51,7 @@ router.get('/cafes', adminController.getCafes);
 router.get('/cafes/:id', adminController.getCafeById);
 router.patch('/cafes/:id/status', adminController.updateCafeStatus);
 router.patch('/cafes/:id/toggle-flag', adminController.toggleCafeFlag);
+router.patch('/cafes/:id/owner', adminController.updateCafeOwner);
 
 // Users
 router.get('/users', adminController.getUsers);

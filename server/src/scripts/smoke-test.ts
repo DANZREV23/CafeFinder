@@ -8,9 +8,9 @@ async function runSmokeTest() {
   console.log(`[SmokeTest]: Starting tests on ${BASE_URL}`);
   
   const endpoints = [
-    { path: '/api/live', expectedStatus: 200, name: 'Liveness Probe' },
-    { path: '/api/ready', expectedStatus: 200, name: 'Readiness Probe' },
-    { path: '/api/health', expectedStatus: 401, name: 'Health (Unauthorized)' }, // Should be 401/403 for public
+    { path: '/api/health/live', expectedStatus: 200, name: 'Liveness Probe' },
+    { path: '/api/health/ready', expectedStatus: 200, name: 'Readiness Probe' },
+    { path: '/api/health', expectedStatus: 200, name: 'Health Status' },
     { path: '/', expectedStatus: 200, name: 'Root/SPA' },
   ];
 
