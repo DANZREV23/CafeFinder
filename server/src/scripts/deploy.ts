@@ -4,14 +4,13 @@ import path from 'path';
 import crypto from 'crypto';
 import { execSync } from 'child_process';
 import { prisma } from '../config/database.js';
-import { deploymentService } from '../services/deploymentService.js';
+import { deploymentService, DeploymentStatus } from '../services/deploymentService.js';
 import { deploymentLock } from './deploy-lock.js';
 import { runPreflightChecks } from './deploy-preflight.js';
 import { generateReleaseManifest } from './generate-release-manifest.js';
 import { scanMigrations, printMigrationSafetyReport } from './migration-safety.js';
 import { verifyDeployment } from './verify-deployment.js';
 import { cleanupOldReleases } from './release-cleanup.js';
-import { DeploymentStatus } from '@prisma/client';
 
 export async function executeDeployment() {
   const deploymentId = `dep_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;

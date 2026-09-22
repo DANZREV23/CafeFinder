@@ -3,7 +3,16 @@ import fs from 'fs';
 import path from 'path';
 import { prisma } from '../config/database.js';
 import { metricsService } from './metricsService.js';
-import { DeploymentStatus } from '@prisma/client';
+export enum DeploymentStatus {
+  PENDING = 'PENDING',
+  BUILDING = 'BUILDING',
+  MIGRATING = 'MIGRATING',
+  RESTARTING = 'RESTARTING',
+  VERIFYING = 'VERIFYING',
+  SUCCEEDED = 'SUCCEEDED',
+  FAILED = 'FAILED',
+  ROLLED_BACK = 'ROLLED_BACK',
+}
 
 export interface ReleaseMetadata {
   application: string;

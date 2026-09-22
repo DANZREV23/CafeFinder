@@ -5,6 +5,8 @@ import { ActivityLogService } from '../services/activityLogService.js';
 import { CafeService } from '../services/cafeService.js';
 import { dataIntegrityService } from '../services/dataIntegrityService.js';
 import { cafeDuplicateService } from '../services/cafeDuplicateService.js';
+import { deploymentService } from '../services/deploymentService.js';
+import { cleanupService } from '../services/cleanupService.js';
 import { CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
 
 export class AdminController {
@@ -328,7 +330,6 @@ export class AdminController {
 
   runCleanup = async (req: AuthRequest, res: Response) => {
     try {
-      const { cleanupService } = await import('../services/cleanupService.js');
       // Run in background
       cleanupService.runAll().catch(err => console.error('Background cleanup failed:', err));
       res.json({ success: true, message: 'Cleanup process started in background' });
@@ -339,7 +340,6 @@ export class AdminController {
 
   getDeployments = async (req: AuthRequest, res: Response) => {
     try {
-      const { deploymentService } = await import('../services/deploymentService.js');
       const page = parseInt(req.query.page as string, 10) || 1;
       const limit = parseInt(req.query.limit as string, 10) || 10;
       const result = await deploymentService.getDeployments({ page, limit });
@@ -351,7 +351,6 @@ export class AdminController {
 
   getReleaseMetadata = async (req: AuthRequest, res: Response) => {
     try {
-      const { deploymentService } = await import('../services/deploymentService.js');
       const metadata = deploymentService.getReleaseMetadata();
       res.json({ success: true, data: metadata });
     } catch (error: any) {

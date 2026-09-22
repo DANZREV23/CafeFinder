@@ -4,10 +4,9 @@ import path from 'path';
 import crypto from 'crypto';
 import { execSync } from 'child_process';
 import { prisma } from '../config/database.js';
-import { deploymentService } from '../services/deploymentService.js';
+import { deploymentService, DeploymentStatus } from '../services/deploymentService.js';
 import { deploymentLock } from './deploy-lock.js';
 import { verifyDeployment } from './verify-deployment.js';
-import { DeploymentStatus } from '@prisma/client';
 
 export async function executeRollback() {
   const rollbackId = `rb_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
