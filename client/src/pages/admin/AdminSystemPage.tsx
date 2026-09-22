@@ -13,7 +13,8 @@ import {
   FileCode,
   Download,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Rocket
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { SystemStatus } from '@/types/system';
@@ -164,7 +165,8 @@ export const AdminSystemPage: React.FC = () => {
           <Activity className="w-5 h-5 text-stone-700" />
           <h3 className="font-bold text-stone-900">System Operations</h3>
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <OpButton icon={Rocket} label="Deployments" sub="Releases & Rollback" color="amber" link="/admin/system/deployments" />
           <OpButton 
             icon={Box} 
             label="Run Backup" 

@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 
-const sqlUser = process.env.SQL_USER || process.env.SQL_ADMIN_USER;
-const sqlPass = process.env.SQL_PASSWORD || process.env.SQL_ADMIN_PASSWORD;
+const sqlUser = process.env.SQL_ADMIN_USER || process.env.SQL_USER;
+const sqlPass = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD;
 const sqlHost = process.env.SQL_HOST;
 const sqlDb = process.env.SQL_DB_NAME || process.env.DB_NAME;
 

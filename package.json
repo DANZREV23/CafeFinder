@@ -1,14 +1,19 @@
 {
-  "name": "react-example",
+  "name": "cafefinder",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server/src/index.ts",
-    "build": "prisma generate && vite build && esbuild server/src/index.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "prisma generate && vite build && esbuild server/src/index.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && tsx server/src/scripts/generate-release-manifest.ts",
     "start": "NODE_ENV=production node dist/server.cjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "deploy:check": "tsx server/src/scripts/deploy-preflight.ts",
+    "deploy:verify": "tsx server/src/scripts/verify-deployment.ts",
+    "deploy": "tsx server/src/scripts/deploy.ts",
+    "rollback": "tsx server/src/scripts/rollback.ts",
+    "migration:check": "tsx server/src/scripts/migration-safety.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -19,7 +24,8 @@
     "backup:all": "tsx server/src/scripts/run-backup.ts all",
     "system:cleanup": "tsx server/src/scripts/cleanup.ts",
     "db:restore-test": "tsx server/src/scripts/restore-test.ts",
-    "test:smoke": "tsx server/src/scripts/smoke-test.ts"
+    "test:smoke": "tsx server/src/scripts/smoke-test.ts",
+    "test": "npm run lint && tsx server/src/scripts/deploy-preflight.ts"
   },
   "prisma": {
     "seed": "tsx server/prisma/seed.ts"

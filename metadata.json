@@ -1,6 +1,6 @@
 {
   "name": "CafeFinder",
-  "description": "Premium coffee shop discovery platform with advanced observability, performance monitoring, and maintenance tools.",
+  "description": "Premium coffee shop discovery platform with automated production deployment, release management, health verification, and rollback control.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

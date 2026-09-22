@@ -12,6 +12,7 @@ import { globalRateLimit } from './config/security.js';
 import { cspConfig } from './config/security.js';
 import { requestCorrelation, requestLogger } from './middleware/requestLogger.js';
 import { maintenanceMiddleware } from './middleware/maintenanceMiddleware.js';
+import { prisma } from './config/database.js';
 
 // Routes
 import cafeRoutes from './routes/cafe.routes.js';
@@ -90,6 +91,15 @@ export async function createApp() {
 
   // API Routes
   app.use('/api/health', healthRoutes);
+  app.get('/api/live', (req, res) => res.status(200).json({ success: true, status: 'alive' }));
+  app.get('/api/ready', async (req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.status(200).json({ success: true, status: 'ready' });
+    } catch (error) {
+      res.status(503).json({ success: false, status: 'not-ready', reason: 'Database unavailable' });
+    }
+  });
   
   // Apply maintenance mode to all other routes
   app.use(maintenanceMiddleware);

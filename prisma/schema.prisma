@@ -684,3 +684,34 @@ model EmailJob {
   @@index([userId])
   @@map("email_jobs")
 }
+
+enum DeploymentStatus {
+  PENDING
+  BUILDING
+  MIGRATING
+  RESTARTING
+  VERIFYING
+  SUCCEEDED
+  FAILED
+  ROLLED_BACK
+}
+
+model DeploymentRecord {
+  id              String           @id @default(cuid())
+  deploymentId    String           @unique
+  version         String
+  environment     String           @default("production")
+  status          DeploymentStatus @default(PENDING)
+  migrationStatus String?
+  healthStatus    String?
+  rollbackStatus  String?
+  details         Json?
+  startedAt       DateTime         @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([status])
+  @@index([startedAt])
+  @@map("deployment_records")
+}

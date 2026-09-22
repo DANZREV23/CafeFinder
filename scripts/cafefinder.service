@@ -10,8 +10,17 @@ WorkingDirectory=/home/cafefinder/app
 Environment=NODE_ENV=production
 EnvironmentFile=/home/cafefinder/app/.env
 ExecStart=/usr/bin/node dist/server.cjs
+# Process management and graceful restart
 Restart=always
 RestartSec=5
+RestartPreventExitStatus=0
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=cafefinder
@@ -25,6 +34,7 @@ ReadOnlyPaths=/
 ReadWritePaths=/home/cafefinder/app/uploads
 ReadWritePaths=/home/cafefinder/app/logs
 ReadWritePaths=/home/cafefinder/app/backups
+ReadWritePaths=/home/cafefinder/app
 
 [Install]
 WantedBy=multi-user.target

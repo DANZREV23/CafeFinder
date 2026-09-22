@@ -337,6 +337,28 @@ export class AdminController {
     }
   };
 
+  getDeployments = async (req: AuthRequest, res: Response) => {
+    try {
+      const { deploymentService } = await import('../services/deploymentService.js');
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 10;
+      const result = await deploymentService.getDeployments({ page, limit });
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getReleaseMetadata = async (req: AuthRequest, res: Response) => {
+    try {
+      const { deploymentService } = await import('../services/deploymentService.js');
+      const metadata = deploymentService.getReleaseMetadata();
+      res.json({ success: true, data: metadata });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
   // --- Data Integrity & Maintenance ---
 
   getDataIntegrityReport = async (req: AuthRequest, res: Response) => {

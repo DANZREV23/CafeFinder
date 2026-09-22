@@ -13,7 +13,8 @@ import {
   MapPin,
   ChevronRight,
   LayoutGrid,
-  Activity
+  Activity,
+  Rocket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
@@ -67,6 +68,7 @@ const MENU_ITEMS = [
     type: 'group',
     items: [
       { id: 'status', label: 'System Status', icon: Activity, path: '/admin/system', end: true },
+      { id: 'deployments', label: 'Deployments', icon: Rocket, path: '/admin/system/deployments' },
       { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
       { id: 'activity', label: 'Activity Logs', icon: History, path: '/admin/activity' },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', comingSoon: true },

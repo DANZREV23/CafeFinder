@@ -244,5 +244,16 @@ export const adminService = {
     const query = params ? new URLSearchParams(params).toString() : '';
     const response = await fetchApi<ApiResponse<any>>(`/admin/system/cafes/duplicates${query ? `?${query}` : ''}`);
     return response.data;
+  },
+
+  async getDeployments(params?: { page?: number; limit?: number }): Promise<ApiResponse<{ deployments: any[]; pagination: any }>> {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    return fetchApi<ApiResponse<{ deployments: any[]; pagination: any }>>(`/admin/system/deployments?${query.toString()}`);
+  },
+
+  async getReleaseMetadata(): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>('/admin/system/release');
   }
 };

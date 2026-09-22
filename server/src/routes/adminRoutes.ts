@@ -62,6 +62,8 @@ router.get('/activity-logs', adminController.getActivityLogs);
 
 // System Status
 router.get('/system/status', adminController.getSystemStatus);
+router.get('/system/deployments', adminController.getDeployments);
+router.get('/system/release', adminController.getReleaseMetadata);
 router.post('/system/maintenance', adminController.toggleMaintenanceMode);
 router.post('/system/metrics/reset', adminController.resetMetrics);
 router.post('/system/backup', adminController.runBackup);
