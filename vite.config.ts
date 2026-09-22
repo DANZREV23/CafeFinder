@@ -182,7 +182,7 @@ export default defineConfig(() => {
       emptyOutDir: true,
     },
     server: {
-      port: Number(process.env.PORT) || 3000,
+      port: 3000,
       host: '0.0.0.0',
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
