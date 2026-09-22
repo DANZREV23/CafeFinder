@@ -21,6 +21,7 @@ import { SystemStatus } from '@/types/system';
 import { motion } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
+import { adminService } from '@/services/adminService';
 
 export const AdminSystemPage: React.FC = () => {
   const [status, setStatus] = useState<SystemStatus | null>(null);
@@ -30,16 +31,15 @@ export const AdminSystemPage: React.FC = () => {
   const fetchStatus = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const response = await fetch('/api/admin/system/status');
-      const data = await response.json();
-      if (data.success) {
-        setStatus(data.data);
+      const response = await adminService.getSystemStatus();
+      if (response.success && response.data) {
+        setStatus(response.data);
       } else {
         toast.error('Failed to fetch system status');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching system status:', err);
-      toast.error('Connection error');
+      toast.error(err.message || 'Connection error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -165,8 +165,9 @@ export const AdminSystemPage: React.FC = () => {
           <Activity className="w-5 h-5 text-stone-700" />
           <h3 className="font-bold text-stone-900">System Operations</h3>
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
           <OpButton icon={Rocket} label="Deployments" sub="Releases & Rollback" color="amber" link="/admin/system/deployments" />
+          <OpButton icon={ShieldCheck} label="Data Integrity" sub="Audit & Repairs" color="purple" link="/admin/system/integrity" />
           <OpButton 
             icon={Box} 
             label="Run Backup" 
@@ -174,21 +175,37 @@ export const AdminSystemPage: React.FC = () => {
             color="amber" 
             onClick={async () => {
               try {
-                await toast.promise(fetch('/api/admin/system/backup', { method: 'POST' }), { 
+                await toast.promise(adminService.runBackup(), { 
                   loading: 'Starting backup...', 
                   success: 'Backup processes started in background', 
                   error: 'Failed to start backup' 
                 });
-                // Small delay to allow backup to at least start/create files before refreshing
                 setTimeout(() => fetchStatus(true), 2000);
               } catch (err) {
                 console.error('Backup trigger failed:', err);
               }
             }} 
           />
-          <OpButton icon={FileCode} label="Run Cleanup" sub="Logs & Sessions" color="stone" onClick={() => toast.promise(fetch('/api/admin/system/cleanup', { method: 'POST' }), { loading: 'Starting cleanup...', success: 'Cleanup started', error: 'Failed to start cleanup' })} />
+          <OpButton 
+            icon={FileCode} 
+            label="Run Cleanup" 
+            sub="Logs & Sessions" 
+            color="stone" 
+            onClick={async () => {
+              try {
+                await toast.promise(adminService.runCleanup(), { 
+                  loading: 'Starting cleanup...', 
+                  success: 'Cleanup started', 
+                  error: 'Failed to start cleanup' 
+                });
+                setTimeout(() => fetchStatus(true), 1500);
+              } catch (err) {
+                console.error('Cleanup trigger failed:', err);
+              }
+            }} 
+          />
           <OpButton icon={CheckCircle2} label="Health Check" sub="Full Diagnostic" color="green" onClick={() => window.open('/api/health', '_blank')} />
-          <OpButton icon={ShieldCheck} label="Audit Logs" sub="Security Events" color="blue" link="/admin/activity" />
+          <OpButton icon={Activity} label="Audit Logs" sub="Security Events" color="blue" link="/admin/activity" />
         </div>
       </div>
     </div>

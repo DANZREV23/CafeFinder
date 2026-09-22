@@ -28,3 +28,37 @@ export const hashToken = (token: string): string => {
 export const generateToken = (): string => {
   return crypto.randomBytes(32).toString('hex');
 };
+
+export const extractToken = (req: any): string | null => {
+  if (!req) return null;
+
+  // 1. Check standard Authorization header (Bearer <token> or direct token)
+  const authHeader = req.headers?.authorization;
+  if (authHeader && typeof authHeader === 'string') {
+    const trimmed = authHeader.trim();
+    if (trimmed.toLowerCase().startsWith('bearer ')) {
+      return trimmed.substring(7).trim();
+    }
+    if (!trimmed.includes(' ')) {
+      return trimmed;
+    }
+  }
+
+  // 2. Check custom x-auth-token header
+  const customHeader = req.headers?.['x-auth-token'];
+  if (customHeader && typeof customHeader === 'string') {
+    return customHeader.trim();
+  }
+
+  // 3. Check cookies
+  if (req.cookies && req.cookies[COOKIE_NAME]) {
+    return req.cookies[COOKIE_NAME];
+  }
+
+  // 4. Check query string token parameter (safe fallback)
+  if (req.query && typeof req.query.token === 'string') {
+    return req.query.token.trim();
+  }
+
+  return null;
+};

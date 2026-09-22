@@ -18,12 +18,21 @@ const LoginPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { login } = useAuth();
+  const { user, login, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isOnline = useOnlineStatus();
 
   const from = (location.state as any)?.from?.pathname || '/';
+
+  React.useEffect(() => {
+    if (isAuthenticated && !authLoading && user) {
+      const target = (from && from !== '/' && from !== '/login') 
+        ? from 
+        : (user.role === 'ADMIN' ? '/admin' : user.role === 'OWNER' ? '/owner' : '/');
+      navigate(target, { replace: true });
+    }
+  }, [isAuthenticated, authLoading, user, from, navigate]);
 
   if (!isOnline) {
     return (
@@ -51,8 +60,11 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      await login({ email, password });
-      navigate(from, { replace: true });
+      const loggedUser = await login({ email, password });
+      const target = (from && from !== '/' && from !== '/login') 
+        ? from 
+        : (loggedUser?.role === 'ADMIN' ? '/admin' : loggedUser?.role === 'OWNER' ? '/owner' : '/');
+      navigate(target, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {

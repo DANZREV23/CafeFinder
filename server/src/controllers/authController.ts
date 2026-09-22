@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/authService.js';
-import { COOKIE_NAME, getCookieOptions } from '../utils/auth.js';
+import { COOKIE_NAME, getCookieOptions, extractToken } from '../utils/auth.js';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { emailService } from '../services/email/email.service.js';
@@ -35,7 +35,7 @@ export class AuthController {
 
       res.status(201).json({
         success: true,
-        data: { user },
+        data: { user, token },
       });
     } catch (error) {
       next(error);
@@ -51,7 +51,7 @@ export class AuthController {
 
       res.json({
         success: true,
-        data: { user },
+        data: { user, token },
       });
     } catch (error) {
       next(error);
@@ -60,7 +60,7 @@ export class AuthController {
 
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
-      const token = req.cookies[COOKIE_NAME];
+      const token = extractToken(req);
       if (token) {
         await authService.logout(token);
       }
@@ -85,9 +85,11 @@ export class AuthController {
         });
       }
 
+      const token = extractToken(req);
+
       res.json({
         success: true,
-        data: { user: req.user },
+        data: { user: req.user, token: token || undefined },
       });
     } catch (error) {
       next(error);

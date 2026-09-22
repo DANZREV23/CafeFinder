@@ -50,14 +50,15 @@ export const DataIntegrity: React.FC = () => {
   const [report, setReport] = useState<IntegrityReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [repairing, setRepairing] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ action: string; label: string; destructive?: boolean } | null>(null);
 
   const fetchReport = async () => {
     try {
       setLoading(true);
       const data = await adminService.getDataIntegrityReport();
       setReport(data);
-    } catch (error) {
-      toast.error('Failed to load integrity report');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to load integrity report');
     } finally {
       setLoading(false);
     }
@@ -67,10 +68,14 @@ export const DataIntegrity: React.FC = () => {
     fetchReport();
   }, []);
 
-  const handleRepair = async (action: string, id?: string) => {
-    if (!window.confirm('Are you sure you want to perform this repair operation? This will modify data.')) {
-      return;
-    }
+  const handleActionClick = (action: string, label: string, destructive?: boolean) => {
+    setPendingAction({ action, label, destructive });
+  };
+
+  const executeRepair = async () => {
+    if (!pendingAction) return;
+    const { action } = pendingAction;
+    setPendingAction(null);
 
     try {
       setRepairing(action);
@@ -99,7 +104,7 @@ export const DataIntegrity: React.FC = () => {
           break;
         case 'find-duplicates':
           result = await adminService.findDuplicateCafes();
-          toast.success(`Scan complete. Found ${result.length} potential duplicate pairs.`);
+          toast.success(`Scan complete. Found ${result.length || 0} potential duplicate pairs.`);
           break;
         default:
           toast.error('Action not implemented yet');
@@ -241,7 +246,7 @@ export const DataIntegrity: React.FC = () => {
                   {section.actions.map((btn) => (
                     <button
                       key={btn.label}
-                      onClick={() => handleRepair(btn.action)}
+                      onClick={() => handleActionClick(btn.action, btn.label, btn.destructive)}
                       disabled={repairing !== null}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                         btn.destructive
@@ -275,6 +280,60 @@ export const DataIntegrity: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {pendingAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-stone-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2.5 rounded-xl ${pendingAction.destructive ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-stone-900">Confirm Operation</h3>
+                <p className="text-xs text-stone-500">Data Integrity Maintenance</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-stone-600 mb-6 leading-relaxed">
+              Are you sure you want to execute <strong className="text-stone-900">{pendingAction.label}</strong>?
+              {pendingAction.destructive ? (
+                <span className="block mt-2 text-red-600 font-medium">
+                  This operation may remove or permanently alter database records.
+                </span>
+              ) : (
+                <span className="block mt-2 text-stone-500">
+                  This process will run in the background and reconcile system data.
+                </span>
+              )}
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPendingAction(null)}
+                disabled={repairing !== null}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-stone-600 hover:bg-stone-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeRepair}
+                disabled={repairing !== null}
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white shadow-sm transition-all ${
+                  pendingAction.destructive 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-amber-600 hover:bg-amber-700'
+                }`}
+              >
+                {repairing ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Execute Action
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

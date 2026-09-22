@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/authService.js';
-import { COOKIE_NAME } from '../utils/auth.js';
+import { COOKIE_NAME, extractToken, getCookieOptions } from '../utils/auth.js';
 import { Role } from '@prisma/client';
 
 const authService = new AuthService();
@@ -20,7 +20,7 @@ export const requireAuth = async (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies[COOKIE_NAME];
+  const token = extractToken(req);
 
   if (!token) {
     return res.status(401).json({
@@ -33,7 +33,7 @@ export const requireAuth = async (
     const user = await authService.validateSession(token);
 
     if (!user) {
-      res.clearCookie(COOKIE_NAME);
+      res.clearCookie(COOKIE_NAME, getCookieOptions());
       return res.status(401).json({
         success: false,
         error: { message: 'Session expired or invalid' },
@@ -52,7 +52,7 @@ export const optionalAuth = async (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies[COOKIE_NAME];
+  const token = extractToken(req);
 
   if (!token) {
     return next();

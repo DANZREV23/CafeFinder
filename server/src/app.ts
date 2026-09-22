@@ -80,6 +80,8 @@ export async function createApp() {
       }
     },
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'X-Requested-With', 'Accept', 'X-Correlation-Id'],
+    exposedHeaders: ['Authorization', 'x-auth-token'],
   }));
   app.use(morgan('dev'));
   app.use(express.json({ limit: '1mb' }));

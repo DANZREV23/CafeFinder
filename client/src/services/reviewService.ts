@@ -80,21 +80,10 @@ const reviewService = {
     const formData = new FormData();
     formData.append('photo', file);
     
-    // fetchApi adds Content-Type: application/json by default, 
-    // but for FormData we need the browser to set it with the boundary.
-    // So we'll use raw fetch here or handle it in fetchApi.
-    // Given fetchApi's implementation, we'll use fetch directly.
-    const response = await fetch(`/api/reviews/${reviewId}/photos`, {
+    return fetchApi<any>(`/reviews/${reviewId}/photos`, {
       method: 'POST',
       body: formData,
-      credentials: 'include',
     });
-    
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.error?.message || 'Upload failed');
-    }
-    return result;
   },
 
   deletePhoto: async (reviewId: string, photoId: string) => {

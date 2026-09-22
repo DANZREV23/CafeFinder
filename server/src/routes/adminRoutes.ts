@@ -73,6 +73,7 @@ router.post('/system/cafes/:id/recalculate-ratings', adminController.recalculate
 router.post('/system/reviews/repair-orphans', adminController.repairOrphanedReviews);
 router.post('/system/media/cleanup', adminController.cleanupMedia);
 router.get('/system/cafes/duplicates', adminController.findDuplicateCafes);
+router.get('/system/cafes/find-duplicates', adminController.findDuplicateCafes);
 
 // Blog Management
 router.get('/blog', blogController.getAdminPosts);
