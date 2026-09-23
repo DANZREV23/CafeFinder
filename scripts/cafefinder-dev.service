@@ -1,0 +1,32 @@
+[Unit]
+Description=CafeFinder Development Server
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=sdn
+Group=sdn
+WorkingDirectory=/home/sdn/cafefinder
+# Ensure NVM's Node and npm are in systemd's PATH
+Environment="PATH=/home/sdn/.nvm/versions/node/v24.21.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment=NODE_ENV=development
+Environment=PORT=3000
+EnvironmentFile=/home/sdn/cafefinder/.env
+
+# Execute dev script using NVM npm
+ExecStart=/home/sdn/.nvm/versions/node/v24.21.0/bin/npm run dev
+
+# Restart settings
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# Standard output to journalctl
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cafefinder
+
+[Install]
+WantedBy=multi-user.target

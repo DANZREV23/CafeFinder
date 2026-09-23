@@ -66,10 +66,21 @@ export class OperationalService {
     const backupsSize = this.getDirectorySize(backupsDir);
     const diskSpace = await this.getAvailableDiskSpace();
 
-    const [pendingEmails, failedEmails] = await Promise.all([
-      prisma.emailJob.count({ where: { status: 'PENDING' } }),
-      prisma.emailJob.count({ where: { status: 'FAILED' } })
-    ]);
+    let pendingEmails = 0;
+    let failedEmails = 0;
+
+    if (dbStatus === 'connected') {
+      try {
+        const [pCount, fCount] = await Promise.all([
+          prisma.emailJob.count({ where: { status: 'PENDING' } }),
+          prisma.emailJob.count({ where: { status: 'FAILED' } })
+        ]);
+        pendingEmails = pCount;
+        failedEmails = fCount;
+      } catch (err) {
+        console.warn('[OperationalService]: Failed to fetch email job counts:', err);
+      }
+    }
 
     const backupFiles = this.getBackupFiles(backupsDir);
     const lastBackup = backupFiles.length > 0 ? backupFiles[0].mtime.toISOString() : undefined;

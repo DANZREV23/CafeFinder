@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
-import {defineConfig, Plugin} from 'vite';
+import {defineConfig, loadEnv, Plugin} from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 function aistudioMediaPlugin(): Plugin {
@@ -63,7 +63,10 @@ function aistudioMediaPlugin(): Plugin {
   };
 }
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const port = Number(env.PORT) || 3000;
+
   return {
     root: 'client',
     plugins: [
@@ -182,7 +185,7 @@ export default defineConfig(() => {
       emptyOutDir: true,
     },
     server: {
-      port: 3000,
+      port: port,
       host: '0.0.0.0',
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},

@@ -6,9 +6,9 @@ let localServerInstance: net.Server | null = null;
 let pgliteDbInstance: any = null;
 let isStarting = false;
 
-export const LOCAL_PG_PORT = 5432;
+export const LOCAL_PG_PORT = 5434;
 export const LOCAL_PG_HOST = '127.0.0.1';
-export const LOCAL_DATABASE_URL = `postgresql://postgres:postgres@${LOCAL_PG_HOST}:${LOCAL_PG_PORT}/cloud_sql_development_database`;
+export const LOCAL_DATABASE_URL = `postgresql://postgres:postgres@${LOCAL_PG_HOST}:${LOCAL_PG_PORT}/cloud_sql_development_database?sslmode=disable`;
 
 /**
  * Starts the embedded PostgreSQL server using PGlite and pglite-server if not already running.

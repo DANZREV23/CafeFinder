@@ -8,6 +8,9 @@ import { startLocalPostgresServer, stopLocalPostgresServer, LOCAL_DATABASE_URL }
 export const getDatabaseUrl = () => {
   const envUrl = process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL;
   
+  console.log('[DatabaseConfig]: process.env.SQL_HOST:', process.env.SQL_HOST);
+  console.log('[DatabaseConfig]: process.env.SQL_ADMIN_USER:', process.env.SQL_ADMIN_USER);
+  
   if (envUrl && envUrl.includes('://')) {
     return envUrl;
   }
@@ -40,7 +43,7 @@ export const getDatabaseUrl = () => {
     const pass = dbPass || '';
     const port = process.env.DB_PORT || '5432';
     const db = process.env.DB_NAME || 'cafefinder';
-    return `postgresql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}`;
+    return `postgresql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}?sslmode=disable`;
   }
 
   return LOCAL_DATABASE_URL;
@@ -57,7 +60,7 @@ async function checkCloudSqlReady(socketDir?: string): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = net.createConnection(socketPath);
     let gotData = false;
-    socket.setTimeout(400);
+    socket.setTimeout(2000); // Increased from 400ms to 2s for more reliability
 
     socket.on('connect', () => {
       // Send standard Postgres SSLRequest
