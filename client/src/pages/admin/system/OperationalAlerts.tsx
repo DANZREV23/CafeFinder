@@ -9,6 +9,7 @@ import {
   RefreshCw, 
   Check, 
   Eye,
+  Clock,
   MoreVertical,
   XCircle
 } from 'lucide-react';

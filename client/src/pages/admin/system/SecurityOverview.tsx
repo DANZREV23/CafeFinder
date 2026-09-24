@@ -27,6 +27,7 @@ interface SecurityConfig {
   productionDebugDisabled: boolean;
   databasePubliclyExposed: boolean;
   environment: string;
+  nodeVersion: string;
 }
 
 export const SecurityOverview: React.FC = () => {
@@ -153,7 +154,7 @@ export const SecurityOverview: React.FC = () => {
               </div>
               <div className="flex justify-between border-b border-stone-800 pb-2">
                 <span className="text-stone-500 uppercase tracking-widest">Node Version</span>
-                <span className="text-stone-300">{process.version || 'v20.x'}</span>
+                <span className="text-stone-300">{config?.nodeVersion || 'N/A'}</span>
               </div>
               <div className="flex justify-between border-b border-stone-800 pb-2">
                 <span className="text-stone-500 uppercase tracking-widest">Database URL</span>

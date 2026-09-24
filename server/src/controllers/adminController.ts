@@ -8,6 +8,7 @@ import { cafeDuplicateService } from '../services/cafeDuplicateService.js';
 import { deploymentService } from '../services/deploymentService.js';
 import { cleanupService } from '../services/cleanupService.js';
 import { alertService } from '../services/alertService.js';
+import { operationalService } from '../services/operationalService.js';
 import { AlertSeverity, AlertStatus, CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
 
 export class AdminController {
@@ -99,7 +100,8 @@ export class AdminController {
         rateLimitingEnabled: true,
         productionDebugDisabled: process.env.NODE_ENV === 'production',
         databasePubliclyExposed: false,
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        nodeVersion: process.version
       };
       res.json({ success: true, data: overview });
     } catch (error: any) {

@@ -163,7 +163,7 @@ export const AdminDeploymentsPage: React.FC = () => {
           </div>
           <div className="p-3 bg-stone-50 rounded-xl border border-stone-100">
             <span className="text-xs text-stone-500 block font-medium">Node.js Runtime</span>
-            <span className="text-sm font-bold text-stone-900">{release?.nodeVersion || process.version}</span>
+            <span className="text-sm font-bold text-stone-900">{release?.nodeVersion || 'N/A'}</span>
           </div>
           <div className="p-3 bg-stone-50 rounded-xl border border-stone-100">
             <span className="text-xs text-stone-500 block font-medium">Uptime</span>

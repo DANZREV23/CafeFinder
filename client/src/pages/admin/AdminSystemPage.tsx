@@ -9,6 +9,7 @@ import {
   Activity, 
   ShieldCheck, 
   Clock, 
+  History,
   Box,
   FileCode,
   Download,
