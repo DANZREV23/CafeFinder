@@ -81,7 +81,7 @@ export class OperationalService {
           prisma.emailJob.count({ where: { status: 'PENDING' } }),
           prisma.emailJob.count({ where: { status: 'FAILED' } }),
           prisma.$queryRawUnsafe<any[]>(`
-            SELECT relname AS name, pg_total_relation_size(relid) AS size
+            SELECT relname AS name, pg_total_relation_size(relid)::text AS size
             FROM pg_catalog.pg_statio_user_tables
             ORDER BY pg_total_relation_size(relid) DESC
             LIMIT 10
