@@ -719,3 +719,39 @@ model DeploymentRecord {
   @@index([startedAt])
   @@map("deployment_records")
 }
+
+enum JobStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+}
+
+model MaintenanceJobRun {
+  id             String    @id @default(cuid())
+  jobName        String
+  executionId    String    @unique
+  status         JobStatus
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+  durationMs     Int?
+  processedCount Int       @default(0)
+  successCount   Int       @default(0)
+  failureCount   Int       @default(0)
+  errorMessage   String?   @db.Text
+  createdAt      DateTime  @default(now())
+
+  @@index([jobName])
+  @@index([status])
+  @@index([startedAt])
+  @@map("maintenance_job_runs")
+}
+
+model MaintenanceJobLock {
+  jobName   String   @id
+  lockedAt  DateTime @default(now())
+  expiresAt DateTime
+  processId String?
+
+  @@map("maintenance_job_locks")
+}

@@ -1,11 +1,10 @@
 // server/src/services/dataIntegrityService.ts
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/database.js';
+import { JobResult } from './jobRunnerService.js';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger.js';
 import { metricsService } from './metricsService.js';
-
-const prisma = new PrismaClient();
 
 export interface IntegrityReport {
   cafes: {
@@ -196,7 +195,7 @@ export class DataIntegrityService {
     return report;
   }
 
-  async recalculateAllCafeRatings() {
+  async recalculateAllCafeRatings(): Promise<JobResult> {
     const cafes = await prisma.cafe.findMany({
       select: { id: true }
     });
@@ -212,7 +211,7 @@ export class DataIntegrityService {
       }
     }
 
-    return fixedCount;
+    return { processedCount: cafes.length, successCount: fixedCount, failureCount: 0 };
   }
 
   async recalculateCafeRatings(cafeId: string) {
@@ -256,7 +255,7 @@ export class DataIntegrityService {
     };
   }
 
-  async repairOrphanedReviews() {
+  async repairOrphanedReviews(): Promise<JobResult> {
     // This is more complex, usually means deleting them if cafe or user is gone
     const reviews = await prisma.cafeReview.findMany();
     let count = 0;
@@ -269,10 +268,10 @@ export class DataIntegrityService {
         count++;
       }
     }
-    return count;
+    return { processedCount: reviews.length, successCount: count, failureCount: 0 };
   }
 
-  async cleanupMissingMedia() {
+  async cleanupMissingMedia(): Promise<JobResult> {
     const mediaModels = [
       { model: 'cafePhoto', fields: ['url', 'thumbnailUrl'] },
       { model: 'cafeSubmissionPhoto', fields: ['url'] },
@@ -284,10 +283,12 @@ export class DataIntegrityService {
       { model: 'menuItem', fields: ['imageUrl'] }
     ];
 
+    let totalChecked = 0;
     let removedCount = 0;
 
     for (const { model, fields } of mediaModels) {
       const records = await (prisma as any)[model].findMany();
+      totalChecked += records.length;
       for (const record of records) {
         for (const field of fields) {
           const url = record[field];
@@ -312,14 +313,15 @@ export class DataIntegrityService {
     }
 
     metricsService.recordEvent('INFO', 'data.repair', `Cleaned up ${removedCount} missing media records across all models`);
-    return removedCount;
+    return { processedCount: totalChecked, successCount: removedCount, failureCount: 0 };
   }
 
-  async cleanupOrphanedFiles() {
+  async cleanupOrphanedFiles(): Promise<JobResult> {
     const uploadsDir = path.join(process.cwd(), 'uploads');
     let removedCount = 0;
+    let totalScanned = 0;
 
-    if (!fs.existsSync(uploadsDir)) return 0;
+    if (!fs.existsSync(uploadsDir)) return { processedCount: 0, successCount: 0, failureCount: 0 };
 
     const mediaModels = [
       { model: 'cafePhoto', fields: ['url', 'thumbnailUrl'] },
@@ -345,6 +347,7 @@ export class DataIntegrityService {
           continue;
         }
 
+        totalScanned++;
         // It's a file, check if it's orphaned
         let isUsed = false;
         for (const { model, fields } of mediaModels) {
@@ -375,12 +378,12 @@ export class DataIntegrityService {
     try {
       await scanDirectory(uploadsDir);
       metricsService.recordEvent('INFO', 'data.repair', `Cleaned up ${removedCount} orphaned files from disk`);
-    } catch (err) {
+    } catch (err: any) {
       logger.error('Error during orphaned files cleanup:', err);
-      throw err;
+      return { processedCount: totalScanned, successCount: removedCount, failureCount: 1, message: err.message };
     }
     
-    return removedCount;
+    return { processedCount: totalScanned, successCount: removedCount, failureCount: 0 };
   }
 }
 

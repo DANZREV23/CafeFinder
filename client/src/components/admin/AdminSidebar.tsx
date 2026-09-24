@@ -68,6 +68,7 @@ const MENU_ITEMS = [
     type: 'group',
     items: [
       { id: 'status', label: 'System Status', icon: Activity, path: '/admin/system', end: true },
+      { id: 'jobs', label: 'Maintenance Jobs', icon: Clock, path: '/admin/system/jobs' },
       { id: 'deployments', label: 'Deployments', icon: Rocket, path: '/admin/system/deployments' },
       { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
       { id: 'activity', label: 'Activity Logs', icon: History, path: '/admin/activity' },

@@ -428,4 +428,97 @@ export class AdminController {
       res.status(500).json({ success: false, error: { message: error.message } });
     }
   };
+
+  // --- Maintenance Jobs ---
+
+  getMaintenanceJobs = async (req: AuthRequest, res: Response) => {
+    try {
+      const { jobRunnerService } = await import('../services/jobRunnerService.js');
+      const jobs = await jobRunnerService.getJobsStatus();
+      res.json({ success: true, data: jobs });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getJobRuns = async (req: AuthRequest, res: Response) => {
+    try {
+      const { jobRunnerService } = await import('../services/jobRunnerService.js');
+      const limit = parseInt(req.query.limit as string) || 20;
+      const runs = await jobRunnerService.getRecentRuns(limit);
+      res.json({ success: true, data: runs });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  runJob = async (req: AuthRequest, res: Response) => {
+    try {
+      const { jobName } = req.params;
+      const { jobRunnerService } = await import('../services/jobRunnerService.js');
+      const { backupService } = await import('../services/backupService.js');
+      const { dataIntegrityService } = await import('../services/dataIntegrityService.js');
+      const { cleanupService } = await import('../services/cleanupService.js');
+
+      let executionId: string;
+
+      switch (jobName) {
+        case 'backup-database':
+          executionId = await jobRunnerService.runJob('backup-database', async () => {
+            await backupService.backupDatabase();
+            return { processedCount: 1, successCount: 1, failureCount: 0 };
+          });
+          break;
+        case 'backup-uploads':
+          executionId = await jobRunnerService.runJob('backup-uploads', async () => {
+            await backupService.backupUploads();
+            return { processedCount: 1, successCount: 1, failureCount: 0 };
+          });
+          break;
+        case 'verify-backups':
+          executionId = await jobRunnerService.runJob('verify-backups', () => backupService.verifyBackups());
+          break;
+        case 'system-cleanup':
+          executionId = await jobRunnerService.runJob('system-cleanup', () => cleanupService.runAll());
+          break;
+        case 'data-integrity-scan':
+          executionId = await jobRunnerService.runJob('data-integrity-scan', async () => {
+             const report = await dataIntegrityService.getIntegrityReport();
+             return { processedCount: 1, successCount: 1, failureCount: 0, message: 'Scan complete' };
+          });
+          break;
+        case 'recalculate-ratings':
+          executionId = await jobRunnerService.runJob('recalculate-ratings', () => dataIntegrityService.recalculateAllCafeRatings());
+          break;
+        case 'cleanup-missing-media':
+          executionId = await jobRunnerService.runJob('cleanup-missing-media', () => dataIntegrityService.cleanupMissingMedia());
+          break;
+        case 'cleanup-orphaned-media':
+          executionId = await jobRunnerService.runJob('cleanup-orphaned-media', () => dataIntegrityService.cleanupOrphanedFiles());
+          break;
+        case 'repair-orphaned-reviews':
+          executionId = await jobRunnerService.runJob('repair-orphaned-reviews', () => dataIntegrityService.repairOrphanedReviews());
+          break;
+        case 'release-cleanup':
+          executionId = await jobRunnerService.runJob('release-cleanup', async () => {
+            const { deploymentService } = await import('../services/deploymentService.js');
+            const count = await deploymentService.cleanupOldReleases();
+            return { processedCount: count, successCount: count, failureCount: 0, message: `Cleaned up ${count} old releases` };
+          });
+          break;
+        case 'certificate-monitoring':
+          executionId = await jobRunnerService.runJob('certificate-monitoring', async () => {
+            const hasSSL = process.env.SSL_ENABLED === 'true';
+            return { processedCount: 1, successCount: 1, failureCount: 0, message: hasSSL ? 'SSL Active' : 'SSL Not Configured' };
+          });
+          break;
+        default:
+          return res.status(400).json({ success: false, error: { message: `Invalid job name: ${jobName}` } });
+      }
+
+      res.json({ success: true, executionId });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
 }

@@ -165,8 +165,9 @@ export const AdminSystemPage: React.FC = () => {
           <Activity className="w-5 h-5 text-stone-700" />
           <h3 className="font-bold text-stone-900">System Operations</h3>
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
           <OpButton icon={Rocket} label="Deployments" sub="Releases & Rollback" color="amber" link="/admin/system/deployments" />
+          <OpButton icon={Clock} label="Background Jobs" sub="Automation & Tasks" color="blue" link="/admin/system/jobs" />
           <OpButton icon={ShieldCheck} label="Data Integrity" sub="Audit & Repairs" color="purple" link="/admin/system/integrity" />
           <OpButton 
             icon={Box} 

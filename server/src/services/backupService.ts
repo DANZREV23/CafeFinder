@@ -260,6 +260,36 @@ export class BackupService {
       logger.info(`Cleaned up ${removedCount} old backup files.`);
     }
   }
+
+  async verifyBackups(): Promise<{ processedCount: number; successCount: number; failureCount: number; message: string }> {
+    if (!fs.existsSync(this.backupDir)) {
+      return { processedCount: 0, successCount: 0, failureCount: 0, message: 'Backup directory does not exist' };
+    }
+
+    const files = fs.readdirSync(this.backupDir);
+    let successCount = 0;
+    let failureCount = 0;
+    const errors: string[] = [];
+
+    for (const file of files) {
+      if (!file.startsWith('cafefinder-')) continue;
+      const filePath = path.join(this.backupDir, file);
+      try {
+        await this.verifyBackup(filePath);
+        successCount++;
+      } catch (err: any) {
+        failureCount++;
+        errors.push(`${file}: ${err.message}`);
+      }
+    }
+
+    return {
+      processedCount: successCount + failureCount,
+      successCount,
+      failureCount,
+      message: failureCount > 0 ? `Verification failed for ${failureCount} files: ${errors.join(', ')}` : `Verified ${successCount} backup files`
+    };
+  }
 }
 
 export const backupService = new BackupService();

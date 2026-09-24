@@ -66,12 +66,13 @@ router.get('/system/deployments', adminController.getDeployments);
 router.get('/system/release', adminController.getReleaseMetadata);
 router.post('/system/maintenance', adminController.toggleMaintenanceMode);
 router.post('/system/metrics/reset', adminController.resetMetrics);
-router.post('/system/backup', adminController.runBackup);
-router.post('/system/cleanup', adminController.runCleanup);
+
+// Maintenance Jobs
+router.get('/system/jobs', adminController.getMaintenanceJobs);
+router.get('/system/jobs/runs', adminController.getJobRuns);
+router.post('/system/jobs/:jobName/run', adminController.runJob);
+
 router.get('/system/data-integrity', adminController.getDataIntegrityReport);
-router.post('/system/cafes/:id/recalculate-ratings', adminController.recalculateCafeRatings);
-router.post('/system/reviews/repair-orphans', adminController.repairOrphanedReviews);
-router.post('/system/media/cleanup', adminController.cleanupMedia);
 router.get('/system/cafes/duplicates', adminController.findDuplicateCafes);
 router.get('/system/cafes/find-duplicates', adminController.findDuplicateCafes);
 

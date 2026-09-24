@@ -4,21 +4,43 @@ import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 import { EmailJobStatus } from '@prisma/client';
+import { JobResult } from './jobRunnerService.js';
 
 export class CleanupService {
-  async runAll() {
+  async runAll(): Promise<JobResult> {
     logger.info('Starting system cleanup jobs...');
     
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       this.cleanupSessions(),
       this.cleanupNotifications(),
       this.cleanupEmailJobs(),
       this.cleanupLogs(),
       this.cleanupActivityLogs(),
       this.cleanupAnalytics(),
+      this.cleanupJobHistory(),
+      this.cleanupTempFiles(),
     ]);
     
+    let totalProcessed = 0;
+    let totalSuccess = 0;
+    let totalFailure = 0;
+
+    results.forEach(r => {
+      if (r.status === 'fulfilled') {
+        totalProcessed += r.value.processedCount;
+        totalSuccess += r.value.successCount;
+        totalFailure += r.value.failureCount;
+      } else {
+        totalFailure++;
+      }
+    });
+
     logger.info('System cleanup jobs completed.');
+    return {
+      processedCount: totalProcessed,
+      successCount: totalSuccess,
+      failureCount: totalFailure
+    };
   }
 
   /**
@@ -54,7 +76,7 @@ export class CleanupService {
     return totalDeleted;
   }
 
-  async cleanupSessions() {
+  async cleanupSessions(): Promise<JobResult> {
     try {
       const result = await prisma.session.deleteMany({
         where: {
@@ -66,12 +88,14 @@ export class CleanupService {
       if (result.count > 0) {
         logger.info(`Cleaned up ${result.count} expired sessions.`);
       }
-    } catch (err) {
+      return { processedCount: result.count, successCount: result.count, failureCount: 0 };
+    } catch (err: any) {
       logger.error('Failed to cleanup sessions', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }
 
-  async cleanupNotifications() {
+  async cleanupNotifications(): Promise<JobResult> {
     try {
       const retentionDays = parseInt(process.env.NOTIFICATION_RETENTION_DAYS || '30');
       const cutoff = new Date();
@@ -85,12 +109,14 @@ export class CleanupService {
       if (count > 0) {
         logger.info(`Cleaned up ${count} old notifications.`);
       }
-    } catch (err) {
+      return { processedCount: count, successCount: count, failureCount: 0 };
+    } catch (err: any) {
       logger.error('Failed to cleanup notifications', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }
 
-  async cleanupEmailJobs() {
+  async cleanupEmailJobs(): Promise<JobResult> {
     try {
       // Cleanup successful or cancelled email jobs older than 7 days
       const sevenDaysAgo = new Date();
@@ -107,16 +133,18 @@ export class CleanupService {
         },
       });
       logger.info(`Cleaned up ${result.count} old email jobs.`);
-    } catch (err) {
+      return { processedCount: result.count, successCount: result.count, failureCount: 0 };
+    } catch (err: any) {
       logger.error('Failed to cleanup email jobs', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }
 
-  async cleanupLogs() {
+  async cleanupLogs(): Promise<JobResult> {
     const logDir = path.resolve(process.cwd(), 'logs');
     const retentionDays = parseInt(process.env.LOG_RETENTION_DAYS || '14');
     
-    if (!fs.existsSync(logDir)) return;
+    if (!fs.existsSync(logDir)) return { processedCount: 0, successCount: 0, failureCount: 0 };
     
     try {
       const files = fs.readdirSync(logDir);
@@ -140,12 +168,14 @@ export class CleanupService {
       if (removedCount > 0) {
         logger.info(`Cleaned up ${removedCount} old log files.`);
       }
-    } catch (err) {
+      return { processedCount: removedCount, successCount: removedCount, failureCount: 0 };
+    } catch (err: any) {
       logger.error('Failed to cleanup log files', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }
 
-  async cleanupActivityLogs() {
+  async cleanupActivityLogs(): Promise<JobResult> {
     try {
       const retentionDays = parseInt(process.env.ACTIVITY_LOG_RETENTION_DAYS || '90');
       const cutoff = new Date();
@@ -158,12 +188,14 @@ export class CleanupService {
       if (count > 0) {
         logger.info(`Cleaned up ${count} old activity logs.`);
       }
-    } catch (err) {
+      return { processedCount: count, successCount: count, failureCount: 0 };
+    } catch (err: any) {
       logger.error('Failed to cleanup activity logs', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }
 
-  async cleanupAnalytics() {
+  async cleanupAnalytics(): Promise<JobResult> {
     try {
       const retentionDays = parseInt(process.env.ANALYTICS_RETENTION_DAYS || '180');
       const cutoff = new Date();
@@ -176,8 +208,68 @@ export class CleanupService {
       if (count > 0) {
         logger.info(`Cleaned up ${count} old analytics events.`);
       }
-    } catch (err) {
+      return { processedCount: count, successCount: count, failureCount: 0 };
+    } catch (err: any) {
       logger.error('Failed to cleanup analytics', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
+    }
+  }
+
+  async cleanupJobHistory(): Promise<JobResult> {
+    try {
+      const retentionDays = parseInt(process.env.JOB_HISTORY_RETENTION_DAYS || '30');
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - retentionDays);
+      
+      const result = await prisma.maintenanceJobRun.deleteMany({
+        where: {
+          startedAt: { lt: cutoff },
+          status: { not: 'RUNNING' }
+        }
+      });
+      
+      if (result.count > 0) {
+        logger.info(`Cleaned up ${result.count} old maintenance job runs.`);
+      }
+      return { processedCount: result.count, successCount: result.count, failureCount: 0 };
+    } catch (err: any) {
+      logger.error('Failed to cleanup job history', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
+    }
+  }
+
+  async cleanupTempFiles(): Promise<JobResult> {
+    const tempDir = path.resolve(process.cwd(), 'temp');
+    if (!fs.existsSync(tempDir)) return { processedCount: 0, successCount: 0, failureCount: 0 };
+
+    try {
+      const files = fs.readdirSync(tempDir);
+      const now = Date.now();
+      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+      let removedCount = 0;
+
+      for (const file of files) {
+        const filePath = path.join(tempDir, file);
+        const stats = fs.statSync(filePath);
+        const age = now - stats.mtime.getTime();
+
+        if (age > maxAge) {
+          if (stats.isDirectory()) {
+            fs.rmSync(filePath, { recursive: true, force: true });
+          } else {
+            fs.unlinkSync(filePath);
+          }
+          removedCount++;
+        }
+      }
+
+      if (removedCount > 0) {
+        logger.info(`Cleaned up ${removedCount} temporary files.`);
+      }
+      return { processedCount: removedCount, successCount: removedCount, failureCount: 0 };
+    } catch (err: any) {
+      logger.error('Failed to cleanup temp files', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }
 }

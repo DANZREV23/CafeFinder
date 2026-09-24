@@ -255,5 +255,20 @@ export const adminService = {
 
   async getReleaseMetadata(): Promise<ApiResponse<any>> {
     return fetchApi<ApiResponse<any>>('/admin/system/release');
+  },
+
+  // Jobs
+  async getMaintenanceJobs(): Promise<ApiResponse<any[]>> {
+    return fetchApi<ApiResponse<any[]>>('/admin/system/jobs');
+  },
+
+  async getJobRuns(limit: number = 20): Promise<ApiResponse<any[]>> {
+    return fetchApi<ApiResponse<any[]>>(`/admin/system/jobs/runs?limit=${limit}`);
+  },
+
+  async runJob(jobName: string): Promise<ApiResponse<{ executionId: string }>> {
+    return fetchApi<ApiResponse<{ executionId: string }>>(`/admin/system/jobs/${jobName}/run`, {
+      method: 'POST'
+    });
   }
 };
