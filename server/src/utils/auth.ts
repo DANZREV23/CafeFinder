@@ -8,14 +8,16 @@ export const getCookieOptions = (): CookieOptions => {
   // APPLICATION_ID or any common AI Studio env var can be used for detection
   const isAistudio = true; // Default to true as we are running in the platform
 
+  // sameSite 'none' is essential for cookies to be sent from the AI Studio iframe.
+  // In a real production deployment outside of an iframe, 'lax' is preferred.
+  const sameSite = (isProd && !process.env.CLIENT_URL?.includes('asia-southeast1.run.app')) ? 'lax' : 'none';
+
   return {
     httpOnly: true,
     // Enable secure cookies in production OR AI Studio environment.
     // AI Studio uses HTTPS for its preview URLs.
     secure: true, 
-    // sameSite 'none' is essential for cookies to be sent from the AI Studio iframe.
-    // sameSite 'none' REQUIRES 'secure: true'.
-    sameSite: 'none',
+    sameSite: sameSite as any,
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };

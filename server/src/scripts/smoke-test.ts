@@ -9,10 +9,17 @@ async function runSmokeTest() {
   console.log(`[SmokeTest]: Starting tests on ${BASE_URL}`);
   
   const endpoints = [
-    { path: '/api/health/live', expectedStatus: 200, name: 'Liveness Probe' },
-    { path: '/api/health/ready', expectedStatus: 200, name: 'Readiness Probe' },
+    { path: '/api/live', expectedStatus: 200, name: 'Liveness Probe' },
+    { path: '/api/ready', expectedStatus: 200, name: 'Readiness Probe' },
     { path: '/api/health', expectedStatus: 200, name: 'Health Status' },
     { path: '/', expectedStatus: 200, name: 'Root/SPA' },
+    { path: '/manifest.webmanifest', expectedStatus: 200, name: 'PWA Manifest' },
+    { path: '/sw.js', expectedStatus: 200, name: 'Service Worker' },
+    { path: '/api/cafes', expectedStatus: 200, name: 'Cafes List API' },
+    { path: '/api/blog', expectedStatus: 200, name: 'Blog API' },
+    { path: '/api/lists', expectedStatus: 200, name: 'Lists API' },
+    { path: '/robots.txt', expectedStatus: 200, name: 'Robots.txt' },
+    { path: '/sitemap.xml', expectedStatus: 200, name: 'Sitemap' },
   ];
 
   let failedCount = 0;

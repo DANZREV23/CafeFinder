@@ -34,7 +34,8 @@ export const getDatabaseUrl = () => {
   if (dbHost && dbUser && dbPass) {
     const port = process.env.DB_PORT || '5432';
     const db = process.env.DB_NAME || 'cafefinder';
-    return `postgresql://${dbUser}:${encodeURIComponent(dbPass)}@${dbHost}:${port}/${db}`;
+    const ssl = (dbHost === 'localhost' || dbHost === '127.0.0.1') ? '?sslmode=disable' : '';
+    return `postgresql://${dbUser}:${encodeURIComponent(dbPass)}@${dbHost}:${port}/${db}${ssl}`;
   }
 
   // Final fallback
@@ -43,7 +44,8 @@ export const getDatabaseUrl = () => {
     const pass = dbPass || '';
     const port = process.env.DB_PORT || '5432';
     const db = process.env.DB_NAME || 'cafefinder';
-    return `postgresql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}?sslmode=disable`;
+    const ssl = (dbHost === 'localhost' || dbHost === '127.0.0.1') ? '?sslmode=disable' : '';
+    return `postgresql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}${ssl}`;
   }
 
   return LOCAL_DATABASE_URL;

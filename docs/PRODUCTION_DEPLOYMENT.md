@@ -1,81 +1,125 @@
-# CafeFinder Production Deployment Guide
+# Production Deployment Guide
 
-This guide describes the recommended production deployment architecture and procedure for CafeFinder.
+This guide describes the steps to deploy CafeFinder to a production environment using Nginx as a reverse proxy and Systemd for process management.
 
-## 1. Architecture
+## 1. Prerequisites
 
-The recommended production architecture is:
+- Ubuntu 22.04+ server
+- Node.js 20+ installed (via NVM recommended)
+- PostgreSQL 14+ installed and running
+- Nginx installed
+- Domain name with DNS A records pointing to the server IP
 
-```
-Internet
-   ↓
-Reverse Proxy (Nginx / Apache / Cloud Load Balancer)
-   ↓
-Node.js CafeFinder Application (Systemd Managed)
-   ↓
-Prisma ORM
-   ↓
-PostgreSQL Database (Cloud SQL or Managed Instance)
-```
+## 2. Server Architecture
 
-## 2. Infrastructure Requirements
-
-- **Node.js**: v20 or newer
-- **PostgreSQL**: v15 or newer
-- **Memory**: Minimum 1GB RAM
-- **Storage**: SSD recommended for application and uploads
-
-## 3. Deployment Procedure
-
-### Step 1: Prepare the Environment
-
-Create a dedicated system user:
-```bash
-sudo useradd -m -s /bin/bash cafefinder
+```text
+                    INTERNET
+                       |
+                    HTTPS :443
+                       |
+                    Nginx (Reverse Proxy)
+                       |
+                localhost:3000
+                       |
+                 Node / Express (CafeFinder)
+                       |
+              +--------+--------+
+              |                 |
+           Prisma            Uploads
+              |          (/var/www/CafeFinder/shared/uploads)
+           PostgreSQL
+         localhost:5432
 ```
 
-### Step 2: Configure Environment Variables
+## 3. Directory Structure
 
-Create a `/home/cafefinder/app/.env` file with production secrets. Use `.env.example` as a template.
+We recommend the following directory structure:
 
-### Step 3: Build the Application
-
-```bash
-# Install production dependencies
-npm ci
-
-# Generate Prisma client
-npx prisma generate
-
-# Build frontend and server bundle
-npm run build
+```text
+/var/www/CafeFinder/
+├── current -> releases/20260923000000
+├── releases/
+│   └── 20260923000000/
+└── shared/
+    ├── .env
+    ├── uploads/
+    └── backups/
 ```
 
-### Step 4: Apply Database Migrations
+## 4. Environment Configuration
+
+Create the production `.env` file in `/var/www/CafeFinder/shared/.env`. Use the `.env.example` as a template.
 
 ```bash
-# Apply migrations to production database
-npx prisma migrate deploy
+# Example shared .env content
+NODE_ENV=production
+PORT=3000
+DATABASE_URL="postgresql://user:password@localhost:5432/cafefinder"
+CLIENT_URL="https://yourdomain.com"
+SESSION_SECRET="your-very-long-random-secret"
+UPLOAD_DIR="/var/www/CafeFinder/shared/uploads"
 ```
 
-### Step 5: Start the Service
+## 5. Build and Release
 
-It is recommended to use `systemd` to manage the process. See `scripts/cafefinder.service` for a template.
+1. Clone the repository to the `releases` directory.
+2. Install dependencies: `npm install --omit=dev`
+3. Generate Prisma client: `npx prisma generate`
+4. Build the application: `npm run build`
+5. Link the `shared/uploads` and `shared/.env`:
+   ```bash
+   ln -s /var/www/CafeFinder/shared/.env .env
+   ln -s /var/www/CafeFinder/shared/uploads uploads
+   ```
+6. Update the `current` symlink:
+   ```bash
+   ln -sfn /var/www/CafeFinder/releases/$(date +%Y%m%d%H%M%S) /var/www/CafeFinder/current
+   ```
+
+## 6. Systemd Service
+
+Create `/etc/systemd/system/cafefinder.service`:
+
+```ini
+[Unit]
+Description=CafeFinder Production Server
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=sdn
+WorkingDirectory=/var/www/CafeFinder/current
+Environment=NODE_ENV=production
+EnvironmentFile=/var/www/CafeFinder/shared/.env
+ExecStart=/usr/bin/node /var/www/CafeFinder/current/dist/server.cjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
 
 ```bash
+sudo systemctl daemon-reload
 sudo systemctl enable cafefinder
 sudo systemctl start cafefinder
 ```
 
-## 4. Reverse Proxy Configuration (Nginx Example)
+## 7. Nginx Configuration
+
+Create `/etc/nginx/sites-available/cafefinder`:
 
 ```nginx
 server {
     listen 80;
-    server_name cafefinder.example.com;
+    listen [::]:80;
+    server_name yourdomain.com www.yourdomain.com;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -85,34 +129,21 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
-    # Serve static uploads directly for better performance
-    location /uploads/ {
-        alias /home/cafefinder/app/uploads/;
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-    }
 }
 ```
 
-## 5. Maintenance and Backups
-
-Configure cron jobs for backups and cleanup:
+Enable the site and test Nginx:
 
 ```bash
-# Edit crontab for cafefinder user
-crontab -e
-
-# Daily backup at 2 AM
-0 2 * * * cd /home/cafefinder/app && npm run backup:all >> /home/cafefinder/app/logs/backup.log 2>&1
-
-# Daily cleanup at 3 AM
-0 3 * * * cd /home/cafefinder/app && npm run system:cleanup >> /home/cafefinder/app/logs/cleanup.log 2>&1
+sudo ln -s /etc/nginx/sites-available/cafefinder /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
-## 6. Monitoring
+## 8. Firewall
 
-Use the following endpoints for monitoring:
-- `/api/health`: Comprehensive system health (Internal use)
-- `/api/ready`: Readiness probe for load balancers
-- `/api/live`: Liveness probe for process managers
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+```
