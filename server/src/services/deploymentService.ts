@@ -201,6 +201,42 @@ export class DeploymentService {
 
     return record;
   }
+
+  /**
+   * Cleans up old release directories (simulated or real depending on environment)
+   */
+  async cleanupOldReleases(): Promise<number> {
+    const releasesDir = path.resolve(process.cwd(), 'releases');
+    if (!fs.existsSync(releasesDir)) {
+      return 0;
+    }
+
+    try {
+      const dirs = fs.readdirSync(releasesDir);
+      const now = Date.now();
+      const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      let removedCount = 0;
+
+      for (const dir of dirs) {
+        const dirPath = path.join(releasesDir, dir);
+        const stats = fs.statSync(dirPath);
+        const age = now - stats.mtime.getTime();
+
+        if (age > maxAge) {
+          fs.rmSync(dirPath, { recursive: true, force: true });
+          removedCount++;
+        }
+      }
+
+      if (removedCount > 0) {
+        console.log(`[DeploymentService]: Cleaned up ${removedCount} old release directories.`);
+      }
+      return removedCount;
+    } catch (err) {
+      console.error('[DeploymentService]: Failed to cleanup old releases:', err);
+      return 0;
+    }
+  }
 }
 
 export const deploymentService = new DeploymentService();

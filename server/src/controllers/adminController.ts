@@ -388,9 +388,11 @@ export class AdminController {
       const { type } = req.query as any;
       let count = 0;
       if (type === 'missing') {
-        count = await dataIntegrityService.cleanupMissingMedia();
+        const result = await dataIntegrityService.cleanupMissingMedia();
+        count = result.processedCount;
       } else if (type === 'orphaned') {
-        count = await dataIntegrityService.cleanupOrphanedFiles();
+        const result = await dataIntegrityService.cleanupOrphanedFiles();
+        count = result.processedCount;
       } else {
         return res.status(400).json({ success: false, error: { message: 'Invalid cleanup type' } });
       }

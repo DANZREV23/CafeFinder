@@ -14,7 +14,8 @@ import {
   ChevronRight,
   LayoutGrid,
   Activity,
-  Rocket
+  Rocket,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';

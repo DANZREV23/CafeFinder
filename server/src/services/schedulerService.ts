@@ -1,4 +1,6 @@
 // server/src/services/schedulerService.ts
+import path from 'path';
+import fs from 'fs';
 import { cleanupService } from './cleanupService.js';
 import { emailService } from './email/email.service.js';
 import { prisma } from '../config/database.js';
@@ -174,5 +176,3 @@ export class SchedulerService {
 }
 
 export const schedulerService = new SchedulerService();
-import path from 'path';
-import fs from 'fs';
