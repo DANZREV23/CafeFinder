@@ -2,7 +2,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
-import { JobStatus, Notification } from '@prisma/client';
+import { JobStatus } from '@prisma/client';
 
 export interface JobResult {
   processedCount: number;

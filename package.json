@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server/src/index.ts",
+    "dev": "prisma generate && tsx server/src/index.ts",
     "build": "prisma generate && vite build && esbuild server/src/index.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && tsx server/src/scripts/generate-release-manifest.ts",
     "start": "NODE_ENV=production node dist/server.cjs",
     "clean": "rm -rf dist",
