@@ -518,7 +518,7 @@ export class AdminController {
           return res.status(400).json({ success: false, error: { message: `Invalid job name: ${jobName}` } });
       }
 
-      res.json({ success: true, executionId });
+      res.json({ success: true, data: { executionId } });
     } catch (error: any) {
       res.status(500).json({ success: false, error: { message: error.message } });
     }

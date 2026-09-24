@@ -80,8 +80,8 @@ export const MaintenanceJobs: React.FC = () => {
     setRunningJob(jobName);
     try {
       const res = await adminService.runJob(jobName);
-      if (res.success) {
-        toast.success(`Job "${jobName}" started (Execution: ${res.data.executionId.substring(0, 8)})`);
+      if (res.success && res.data) {
+        toast.success(`Job "${jobName}" started (Execution: ${res.data.executionId?.substring(0, 8) || 'N/A'})`);
         fetchData(true);
       } else {
         toast.error('Failed to start job');
@@ -216,7 +216,7 @@ export const MaintenanceJobs: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-stone-900 text-sm">{run.jobName}</span>
-                          <span className="text-[10px] font-mono text-stone-400 mt-0.5">{run.executionId.substring(0, 12)}</span>
+                          <span className="text-[10px] font-mono text-stone-400 mt-0.5">{run.executionId?.substring(0, 12) || 'N/A'}</span>
                           <span className="text-[10px] text-stone-500 mt-1">{formatDistanceToNow(new Date(run.startedAt), { addSuffix: true })}</span>
                         </div>
                       </td>
