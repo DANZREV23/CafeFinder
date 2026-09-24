@@ -173,6 +173,8 @@ model Cafe {
   @@index([ratingAverage])
   @@index([createdAt])
   @@index([ownerId])
+  @@index([priceRange])
+  @@index([verified])
   @@map("cafes")
 }
 
@@ -401,6 +403,7 @@ model CafeFavorite {
   @@index([userId])
   @@index([cafeId])
   @@index([userId, createdAt])
+  @@index([cafeId, createdAt])
   @@map("cafe_favorites")
 }
 
@@ -428,6 +431,7 @@ model BlogPost {
   @@index([status])
   @@index([publishedAt])
   @@index([category])
+  @@index([authorId])
   @@map("blog_posts")
 }
 

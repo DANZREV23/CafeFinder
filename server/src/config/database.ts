@@ -108,6 +108,23 @@ export const createPrismaClient = (url?: string) => {
     log: process.env.PRISMA_LOG_QUERIES === 'true' ? ['query', 'error', 'warn'] : ['error', 'warn'],
   });
 
+  // Middleware for performance monitoring
+  client.$use(async (params, next) => {
+    const start = Date.now();
+    try {
+      const result = await next(params);
+      const duration = Date.now() - start;
+      const { metricsService } = await import('../services/metricsService.js');
+      metricsService.recordOperation('database', `${params.model}.${params.action}`, duration, {
+        model: params.model,
+        action: params.action
+      });
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  });
+
   // Middleware for automatic query retries on connection issues
   client.$use(async (params, next) => {
     let retries = 0;

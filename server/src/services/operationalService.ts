@@ -2,6 +2,7 @@
 import { prisma } from '../config/database.js';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -18,12 +19,16 @@ export interface SystemStatus {
     nodeVersion: string;
     memoryUsage: NodeJS.MemoryUsage;
     maintenanceMode: boolean;
+    loadAvg: number[];
+    cpus: number;
+    platform: string;
   };
-  database: {
+    database: {
     status: string;
     latencyMs: number;
     migrationState?: string;
     connectionPool?: any;
+    tableSizes?: any[];
   };
   storage: {
     uploadsSize: number;
@@ -68,17 +73,25 @@ export class OperationalService {
 
     let pendingEmails = 0;
     let failedEmails = 0;
+    let tableSizes: any[] = [];
 
     if (dbStatus === 'connected') {
       try {
-        const [pCount, fCount] = await Promise.all([
+        const [pCount, fCount, tSizes] = await Promise.all([
           prisma.emailJob.count({ where: { status: 'PENDING' } }),
-          prisma.emailJob.count({ where: { status: 'FAILED' } })
+          prisma.emailJob.count({ where: { status: 'FAILED' } }),
+          prisma.$queryRawUnsafe<any[]>(`
+            SELECT relname AS name, pg_total_relation_size(relid) AS size
+            FROM pg_catalog.pg_statio_user_tables
+            ORDER BY pg_total_relation_size(relid) DESC
+            LIMIT 10
+          `)
         ]);
         pendingEmails = pCount;
         failedEmails = fCount;
+        tableSizes = tSizes;
       } catch (err) {
-        console.warn('[OperationalService]: Failed to fetch email job counts:', err);
+        console.warn('[OperationalService]: Failed to fetch DB stats:', err);
       }
     }
 
@@ -94,10 +107,14 @@ export class OperationalService {
         nodeVersion: process.version,
         memoryUsage: process.memoryUsage(),
         maintenanceMode: this.maintenanceMode,
+        loadAvg: os.loadavg(),
+        cpus: os.cpus().length,
+        platform: os.platform(),
       },
       database: {
         status: dbStatus,
         latencyMs: dbLatency,
+        tableSizes
       },
       storage: {
         uploadsSize,

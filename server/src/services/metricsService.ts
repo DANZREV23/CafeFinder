@@ -22,6 +22,7 @@ class MetricsService {
   private recentEvents: OperationalEvent[] = [];
   private readonly MAX_EVENTS = 100;
   private readonly SLOW_THRESHOLD_MS = parseInt(process.env.SLOW_REQUEST_MS || '1000');
+  private readonly SLOW_DB_QUERY_MS = parseInt(process.env.SLOW_DB_QUERY_MS || '500');
 
   recordRequest(route: string, statusCode: number, durationMs: number, requestId: string, method: string) {
     let metric = this.routeMetrics.get(route);
@@ -60,6 +61,27 @@ class MetricsService {
         requestId,
         durationMs,
         statusCode
+      });
+    }
+  }
+
+  recordOperation(type: string, name: string, durationMs: number, details?: any) {
+    const threshold = type === 'database' ? this.SLOW_DB_QUERY_MS : this.SLOW_THRESHOLD_MS;
+    
+    if (durationMs > threshold) {
+      logger.warn(`slow_operation: ${type}:${name} took ${durationMs}ms`, {
+        type,
+        name,
+        durationMs,
+        ...details,
+        event: 'performance.slow_operation'
+      });
+
+      this.recordEvent('WARN', 'slow_operation', `${type}:${name} took ${durationMs}ms`, {
+        type,
+        name,
+        durationMs,
+        ...details
       });
     }
   }

@@ -88,8 +88,11 @@ export async function createApp() {
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 
-  // Static files for uploads
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  // Static files for uploads with caching
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+    maxAge: '30d',
+    immutable: true
+  }));
 
   // API Routes
   app.use('/api/health', healthRoutes);
