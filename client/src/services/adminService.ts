@@ -195,6 +195,14 @@ export const adminService = {
     return fetchApi<ApiResponse<any>>('/admin/system/status');
   },
 
+  async getDiagnostics(): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>('/admin/system/diagnostics');
+  },
+
+  async getSecurityOverview(): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>('/admin/system/security');
+  },
+
   async toggleMaintenanceMode(enabled: boolean): Promise<ApiResponse<any>> {
     return fetchApi<ApiResponse<any>>('/admin/system/maintenance', {
       method: 'POST',
@@ -217,6 +225,26 @@ export const adminService = {
   async getDataIntegrityReport(): Promise<any> {
     const response = await fetchApi<ApiResponse<any>>('/admin/system/data-integrity');
     return response.data;
+  },
+
+  // Alerts
+  async getAlerts(params: { status?: string; severity?: string } = {}): Promise<ApiResponse<any[]>> {
+    const query = new URLSearchParams();
+    if (params.status) query.append('status', params.status);
+    if (params.severity) query.append('severity', params.severity);
+    return fetchApi<ApiResponse<any[]>>(`/admin/system/alerts?${query.toString()}`);
+  },
+
+  async acknowledgeAlert(id: string): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>(`/admin/system/alerts/${id}/acknowledge`, {
+      method: 'POST'
+    });
+  },
+
+  async resolveAlert(id: string): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>(`/admin/system/alerts/${id}/resolve`, {
+      method: 'POST'
+    });
   },
 
   async recalculateCafeRatings(id: string): Promise<any> {

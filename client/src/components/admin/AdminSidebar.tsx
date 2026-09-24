@@ -15,7 +15,8 @@ import {
   LayoutGrid,
   Activity,
   Rocket,
-  Clock
+  Clock,
+  Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
@@ -68,11 +69,13 @@ const MENU_ITEMS = [
     label: 'System', 
     type: 'group',
     items: [
-      { id: 'status', label: 'System Status', icon: Activity, path: '/admin/system', end: true },
-      { id: 'jobs', label: 'Maintenance Jobs', icon: Clock, path: '/admin/system/jobs' },
-      { id: 'deployments', label: 'Deployments', icon: Rocket, path: '/admin/system/deployments' },
+      { id: 'overview', label: 'Control Center', icon: Activity, path: '/admin/system', end: true },
+      { id: 'alerts', label: 'Operational Alerts', icon: Bell, path: '/admin/system/alerts' },
+      { id: 'jobs', label: 'Scheduled Jobs', icon: Clock, path: '/admin/system/jobs' },
+      { id: 'deployments', label: 'Deployment History', icon: Rocket, path: '/admin/system/deployments' },
       { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
-      { id: 'activity', label: 'Activity Logs', icon: History, path: '/admin/activity' },
+      { id: 'security', label: 'Security & Logs', icon: ShieldCheck, path: '/admin/system/security' },
+      { id: 'activity', label: 'Audit Logs', icon: History, path: '/admin/activity' },
       { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', comingSoon: true },
     ]
   }

@@ -80,11 +80,14 @@ export const MaintenanceJobs: React.FC = () => {
     setRunningJob(jobName);
     try {
       const res = await adminService.runJob(jobName);
-      if (res.success && res.data) {
-        toast.success(`Job "${jobName}" started (Execution: ${res.data.executionId?.substring(0, 8) || 'N/A'})`);
+      // More robust check for res and res.data
+      if (res && res.success && res.data) {
+        const executionId = res.data.executionId;
+        const shortId = typeof executionId === 'string' ? executionId.substring(0, 8) : 'N/A';
+        toast.success(`Job "${jobName}" started (Execution: ${shortId})`);
         fetchData(true);
       } else {
-        toast.error('Failed to start job');
+        toast.error('Failed to start job: Invalid response from server');
       }
     } catch (err: any) {
       toast.error(err.message || 'Error running job');
@@ -216,7 +219,9 @@ export const MaintenanceJobs: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-stone-900 text-sm">{run.jobName}</span>
-                          <span className="text-[10px] font-mono text-stone-400 mt-0.5">{run.executionId?.substring(0, 12) || 'N/A'}</span>
+                          <span className="text-[10px] font-mono text-stone-400 mt-0.5">
+                            {typeof run.executionId === 'string' ? run.executionId.substring(0, 12) : 'N/A'}
+                          </span>
                           <span className="text-[10px] text-stone-500 mt-1">{formatDistanceToNow(new Date(run.startedAt), { addSuffix: true })}</span>
                         </div>
                       </td>

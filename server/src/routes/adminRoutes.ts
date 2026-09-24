@@ -62,10 +62,17 @@ router.get('/activity-logs', adminController.getActivityLogs);
 
 // System Status
 router.get('/system/status', adminController.getSystemStatus);
+router.get('/system/diagnostics', adminController.getDiagnostics);
+router.get('/system/security', adminController.getSecurityOverview);
 router.get('/system/deployments', adminController.getDeployments);
 router.get('/system/release', adminController.getReleaseMetadata);
 router.post('/system/maintenance', adminController.toggleMaintenanceMode);
 router.post('/system/metrics/reset', adminController.resetMetrics);
+
+// Operational Alerts
+router.get('/system/alerts', adminController.getAlerts);
+router.post('/system/alerts/:id/acknowledge', adminController.acknowledgeAlert);
+router.post('/system/alerts/:id/resolve', adminController.resolveAlert);
 
 // Maintenance Jobs
 router.get('/system/jobs', adminController.getMaintenanceJobs);

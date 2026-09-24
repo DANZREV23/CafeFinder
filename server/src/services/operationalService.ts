@@ -9,6 +9,9 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 import { metricsService } from './metricsService.js';
+import { deploymentService } from './deploymentService.js';
+import { alertService } from './alertService.js';
+import { jobRunnerService } from './jobRunnerService.js';
 
 export interface SystemStatus {
   application: {
@@ -22,12 +25,13 @@ export interface SystemStatus {
     loadAvg: number[];
     cpus: number;
     platform: string;
+    release?: any;
+    lastDeployment?: any;
   };
-    database: {
+  database: {
     status: string;
     latencyMs: number;
     migrationState?: string;
-    connectionPool?: any;
     tableSizes?: any[];
   };
   storage: {
@@ -42,6 +46,16 @@ export interface SystemStatus {
   backups: {
     lastBackup?: string;
     backupCount: number;
+    status: 'HEALTHY' | 'WARNING' | 'FAILED' | 'UNKNOWN';
+  };
+  jobs: {
+    total: number;
+    failedCount: number;
+    lastRun?: string;
+  };
+  alerts: {
+    openCount: number;
+    criticalCount: number;
   };
   metrics: {
     requests: any[];
@@ -74,10 +88,12 @@ export class OperationalService {
     let pendingEmails = 0;
     let failedEmails = 0;
     let tableSizes: any[] = [];
+    let alertsInfo = { openCount: 0, criticalCount: 0 };
+    let jobsInfo = { total: 0, failedCount: 0, lastRun: undefined as string | undefined };
 
     if (dbStatus === 'connected') {
       try {
-        const [pCount, fCount, tSizes] = await Promise.all([
+        const [pCount, fCount, tSizes, openAlerts, criticalAlerts, jStatus, recentRuns] = await Promise.all([
           prisma.emailJob.count({ where: { status: 'PENDING' } }),
           prisma.emailJob.count({ where: { status: 'FAILED' } }),
           prisma.$queryRawUnsafe<any[]>(`
@@ -85,24 +101,48 @@ export class OperationalService {
             FROM pg_catalog.pg_statio_user_tables
             ORDER BY pg_total_relation_size(relid) DESC
             LIMIT 10
-          `)
+          `),
+          prisma.operationalAlert.count({ where: { status: 'OPEN' } }),
+          prisma.operationalAlert.count({ where: { status: 'OPEN', severity: 'CRITICAL' } }),
+          jobRunnerService.getJobsStatus(),
+          jobRunnerService.getRecentRuns(1)
         ]);
         pendingEmails = pCount;
         failedEmails = fCount;
         tableSizes = tSizes;
+        alertsInfo = { openCount: openAlerts, criticalCount: criticalAlerts };
+        jobsInfo = { 
+          total: jStatus.length, 
+          failedCount: jStatus.filter(j => j.status === 'FAILED').length,
+          lastRun: recentRuns.length > 0 ? recentRuns[0].startedAt.toISOString() : undefined
+        };
       } catch (err) {
         console.warn('[OperationalService]: Failed to fetch DB stats:', err);
       }
     }
 
     const backupFiles = this.getBackupFiles(backupsDir);
-    const lastBackup = backupFiles.length > 0 ? backupFiles[0].mtime.toISOString() : undefined;
+    const lastBackupFile = backupFiles.length > 0 ? backupFiles[0] : undefined;
+    const lastBackupTime = lastBackupFile?.mtime;
+    
+    let backupStatus: 'HEALTHY' | 'WARNING' | 'FAILED' | 'UNKNOWN' = 'UNKNOWN';
+    if (lastBackupTime) {
+      const hoursSinceBackup = (Date.now() - lastBackupTime.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceBackup > 48) backupStatus = 'FAILED';
+      else if (hoursSinceBackup > 24) backupStatus = 'WARNING';
+      else backupStatus = 'HEALTHY';
+    } else {
+      backupStatus = 'FAILED';
+    }
+
+    const release = deploymentService.getReleaseMetadata();
+    const latestDeployment = await deploymentService.getLatestDeployment();
 
     return {
       application: {
         status: this.maintenanceMode ? 'maintenance' : 'ok',
         environment: process.env.NODE_ENV || 'development',
-        version: process.env.APP_VERSION || '1.0.0',
+        version: release.version,
         uptime: process.uptime(),
         nodeVersion: process.version,
         memoryUsage: process.memoryUsage(),
@@ -110,6 +150,8 @@ export class OperationalService {
         loadAvg: os.loadavg(),
         cpus: os.cpus().length,
         platform: os.platform(),
+        release,
+        lastDeployment: latestDeployment
       },
       database: {
         status: dbStatus,
@@ -126,9 +168,12 @@ export class OperationalService {
         failedJobs: failedEmails,
       },
       backups: {
-        lastBackup,
+        lastBackup: lastBackupTime?.toISOString(),
         backupCount: backupFiles.length,
+        status: backupStatus
       },
+      jobs: jobsInfo,
+      alerts: alertsInfo,
       metrics: {
         requests: metricsService.getMetrics(),
         recentEvents: metricsService.getRecentEvents(),

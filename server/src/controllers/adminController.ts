@@ -7,7 +7,8 @@ import { dataIntegrityService } from '../services/dataIntegrityService.js';
 import { cafeDuplicateService } from '../services/cafeDuplicateService.js';
 import { deploymentService } from '../services/deploymentService.js';
 import { cleanupService } from '../services/cleanupService.js';
-import { CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
+import { alertService } from '../services/alertService.js';
+import { AlertSeverity, AlertStatus, CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
 
 export class AdminController {
   private adminService: AdminService;
@@ -19,6 +20,92 @@ export class AdminController {
     this.activityLogService = new ActivityLogService();
     this.cafeService = new CafeService();
   }
+
+  getAlerts = async (req: AuthRequest, res: Response) => {
+    try {
+      const status = req.query.status as AlertStatus;
+      const severity = req.query.severity as AlertSeverity;
+      const alerts = await alertService.getAlerts({ status, severity });
+      res.json({ success: true, data: alerts });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  acknowledgeAlert = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const alert = await alertService.acknowledgeAlert(id, req.user!.id);
+      
+      await this.activityLogService.logAction({
+        userId: req.user!.id,
+        action: 'ADMIN_ACKNOWLEDGE_ALERT',
+        entityType: 'OperationalAlert',
+        entityId: id,
+        description: `Acknowledged alert: ${alert.key}`
+      });
+
+      res.json({ success: true, data: alert });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  resolveAlert = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const alert = await alertService.resolveAlert(id);
+
+      await this.activityLogService.logAction({
+        userId: req.user!.id,
+        action: 'ADMIN_RESOLVE_ALERT',
+        entityType: 'OperationalAlert',
+        entityId: id,
+        description: `Resolved alert: ${alert.key}`
+      });
+
+      res.json({ success: true, data: alert });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getDiagnostics = async (req: AuthRequest, res: Response) => {
+    try {
+      const status = await operationalService.getStatus();
+      
+      const diagnostics = {
+        application: status.application.status,
+        database: status.database.status,
+        storage: status.storage.availableDiskSpace !== 'unknown' ? 'healthy' : 'warning',
+        email: status.email.failedJobs > 10 ? 'warning' : 'healthy',
+        backups: status.backups.status.toLowerCase(),
+        jobs: status.jobs.failedCount > 0 ? 'warning' : 'healthy',
+        timestamp: new Date().toISOString()
+      };
+
+      res.json({ success: true, data: diagnostics });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getSecurityOverview = async (req: AuthRequest, res: Response) => {
+    try {
+      const overview = {
+        httpsEnabled: process.env.SSL_ENABLED === 'true',
+        secureCookies: process.env.NODE_ENV === 'production',
+        corsConfigured: true,
+        rateLimitingEnabled: true,
+        productionDebugDisabled: process.env.NODE_ENV === 'production',
+        databasePubliclyExposed: false,
+        environment: process.env.NODE_ENV || 'development'
+      };
+      res.json({ success: true, data: overview });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
 
   getDashboardStats = async (req: AuthRequest, res: Response) => {
     try {

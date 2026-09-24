@@ -2,7 +2,15 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
-import { JobStatus } from '@prisma/client';
+import type { JobStatus as PrismaJobStatus } from '@prisma/client';
+
+// Use a local enum-like object for JobStatus to be safe against ESM export issues
+export const JobStatus = {
+  RUNNING: 'RUNNING' as const,
+  SUCCEEDED: 'SUCCEEDED' as const,
+  FAILED: 'FAILED' as const,
+  SKIPPED: 'SKIPPED' as const
+};
 
 export interface JobResult {
   processedCount: number;

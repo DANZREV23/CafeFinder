@@ -14,11 +14,25 @@ export interface SystemStatus {
       external: number;
       arrayBuffers: number;
     };
+    maintenanceMode: boolean;
+    release?: {
+      application: string;
+      version: string;
+      environment: string;
+      buildId: string;
+      buildTime: string;
+      nodeVersion: string;
+      schemaVersion?: string;
+      uptime: number;
+      platform: string;
+    };
+    lastDeployment?: any;
   };
   database: {
     status: string;
     latencyMs: number;
     migrationState?: string;
+    tableSizes?: { name: string; size: string }[];
   };
   storage: {
     uploadsSize: number;
@@ -32,5 +46,15 @@ export interface SystemStatus {
   backups: {
     lastBackup?: string;
     backupCount: number;
+    status: 'HEALTHY' | 'WARNING' | 'FAILED' | 'UNKNOWN';
+  };
+  jobs: {
+    total: number;
+    failedCount: number;
+    lastRun?: string;
+  };
+  alerts: {
+    openCount: number;
+    criticalCount: number;
   };
 }

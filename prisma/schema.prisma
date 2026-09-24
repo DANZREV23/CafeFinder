@@ -95,6 +95,7 @@ model User {
   notifications   Notification[]
   activityLogs    ActivityLog[]
   sessions        Session[]
+  acknowledgedAlerts OperationalAlert[]
   cafeSubmissions CafeSubmission[] @relation("CafeSubmitter")
   changeRequests  CafeChangeRequest[] @relation("ChangeRequestOwner")
   reviewedChangeRequests CafeChangeRequest[] @relation("ChangeRequestReviewer")
@@ -725,6 +726,40 @@ enum JobStatus {
   SUCCEEDED
   FAILED
   SKIPPED
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model OperationalAlert {
+  id        String        @id @default(cuid())
+  key       String        @unique
+  severity  AlertSeverity @default(INFO)
+  message   String        @db.Text
+  source    String
+  status    AlertStatus   @default(OPEN)
+  count     Int           @default(1)
+  details   Json?
+  acknowledgedAt DateTime?
+  acknowledgedById String?
+  resolvedAt     DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  acknowledgedBy User? @relation(fields: [acknowledgedById], references: [id])
+
+  @@index([status])
+  @@index([severity])
+  @@map("operational_alerts")
 }
 
 model MaintenanceJobRun {

@@ -74,6 +74,16 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        name: 'System Administrator',
+        email: 'revero.b@agentsofvalue.com',
+        passwordHash,
+        role: Role.ADMIN,
+        status: UserStatus.ACTIVE,
+        avatarUrl: 'https://i.pravatar.cc/150?u=revero',
+      },
+    }),
+    prisma.user.create({
+      data: {
         name: 'Cafe Owner',
         email: 'owner@cafefinder.local',
         passwordHash,

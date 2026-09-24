@@ -65,6 +65,8 @@ const AdminSystemPage = lazy(() => import('./pages/admin/AdminSystemPage').then(
 const AdminDeploymentsPage = lazy(() => import('./pages/admin/AdminDeploymentsPage').then(m => ({ default: m.AdminDeploymentsPage })));
 const AdminDataIntegrityPage = lazy(() => import('./pages/admin/DataIntegrity').then(m => ({ default: m.DataIntegrity })));
 const AdminMaintenanceJobsPage = lazy(() => import('./pages/admin/system/MaintenanceJobs').then(m => ({ default: m.MaintenanceJobs })));
+const AdminOperationalAlertsPage = lazy(() => import('./pages/admin/system/OperationalAlerts').then(m => ({ default: m.OperationalAlerts })));
+const AdminSecurityOverviewPage = lazy(() => import('./pages/admin/system/SecurityOverview').then(m => ({ default: m.SecurityOverview })));
 const AdminOwnerClaimsPage = lazy(() => import('./pages/admin/AdminOwnerClaimsPage'));
 const AdminOwnerClaimDetailsPage = lazy(() => import('./pages/admin/AdminOwnerClaimDetailsPage'));
 const AdminChangeRequestsPage = lazy(() => import('./pages/admin/AdminChangeRequestsPage'));
@@ -175,6 +177,8 @@ export default function App() {
                   <Route path="system/deployments" element={<AdminDeploymentsPage />} />
                   <Route path="system/integrity" element={<AdminDataIntegrityPage />} />
                   <Route path="system/jobs" element={<AdminMaintenanceJobsPage />} />
+                  <Route path="system/alerts" element={<AdminOperationalAlertsPage />} />
+                  <Route path="system/security" element={<AdminSecurityOverviewPage />} />
                   <Route path="claims" element={<AdminOwnerClaimsPage />} />
                   <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                   <Route path="change-requests" element={<AdminChangeRequestsPage />} />
