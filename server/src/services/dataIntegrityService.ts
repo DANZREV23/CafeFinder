@@ -122,38 +122,70 @@ export class DataIntegrityService {
     }
 
     // 3. Media Integrity
-    const photos = await prisma.cafePhoto.findMany();
-    const uploadsDir = path.join(process.cwd(), 'uploads');
+    const mediaModels = [
+      { model: 'cafePhoto', fields: ['url', 'thumbnailUrl'] },
+      { model: 'cafeSubmissionPhoto', fields: ['url'] },
+      { model: 'cafeReviewPhoto', fields: ['url'] },
+      { model: 'user', fields: ['avatarUrl'] },
+      { model: 'blogPost', fields: ['coverImage'] },
+      { model: 'curatedList', fields: ['coverImage'] },
+      { model: 'testimonial', fields: ['avatarUrl'] },
+      { model: 'menuItem', fields: ['imageUrl'] }
+    ];
 
-    for (const photo of photos) {
-      if (photo.url.startsWith('/uploads/')) {
-        const filePath = path.join(process.cwd(), photo.url.substring(1));
-        if (!fs.existsSync(filePath)) {
-          report.media.missingFiles++;
+    const uploadsDir = path.join(process.cwd(), 'uploads');
+    
+    // Count total media and check for missing files
+    for (const { model, fields } of mediaModels) {
+      const records = await (prisma as any)[model].findMany();
+      for (const record of records) {
+        for (const field of fields) {
+          const url = record[field];
+          if (url && url.startsWith('/uploads/')) {
+            report.media.total++;
+            const filePath = path.join(process.cwd(), url.substring(1));
+            if (!fs.existsSync(filePath)) {
+              report.media.missingFiles++;
+            }
+          }
         }
       }
     }
 
-    // Orphaned files detection
+    // Orphaned files detection (Recursive)
     if (fs.existsSync(uploadsDir)) {
-      const files = fs.readdirSync(uploadsDir);
-      for (const file of files) {
-        if (file === '.gitkeep') continue;
-        const fileUrl = `/uploads/${file}`;
-        const dbRecord = await prisma.cafePhoto.findFirst({
-          where: { url: { contains: file } }
-        });
-        const submissionPhoto = await prisma.cafeSubmissionPhoto.findFirst({
-          where: { url: { contains: file } }
-        });
-        const reviewPhoto = await prisma.cafeReviewPhoto.findFirst({
-          where: { url: { contains: file } }
-        });
+      const checkOrphaned = async (dir: string) => {
+        const items = fs.readdirSync(dir);
+        for (const item of items) {
+          if (item === '.gitkeep') continue;
+          const fullPath = path.join(dir, item);
+          const stats = fs.statSync(fullPath);
+          
+          if (stats.isDirectory()) {
+            await checkOrphaned(fullPath);
+          } else {
+            // Check if this filename is used in any of the media models
+            let isUsed = false;
+            for (const { model, fields } of mediaModels) {
+              for (const field of fields) {
+                const record = await (prisma as any)[model].findFirst({
+                  where: { [field]: { contains: item } }
+                });
+                if (record) {
+                  isUsed = true;
+                  break;
+                }
+              }
+              if (isUsed) break;
+            }
 
-        if (!dbRecord && !submissionPhoto && !reviewPhoto) {
-          report.media.orphanedFiles++;
+            if (!isUsed) {
+              report.media.orphanedFiles++;
+            }
+          }
         }
-      }
+      };
+      await checkOrphaned(uploadsDir);
     }
 
     // 4. User Integrity
@@ -241,20 +273,45 @@ export class DataIntegrityService {
   }
 
   async cleanupMissingMedia() {
-    const photos = await prisma.cafePhoto.findMany();
+    const mediaModels = [
+      { model: 'cafePhoto', fields: ['url', 'thumbnailUrl'] },
+      { model: 'cafeSubmissionPhoto', fields: ['url'] },
+      { model: 'cafeReviewPhoto', fields: ['url'] },
+      { model: 'user', fields: ['avatarUrl'] },
+      { model: 'blogPost', fields: ['coverImage'] },
+      { model: 'curatedList', fields: ['coverImage'] },
+      { model: 'testimonial', fields: ['avatarUrl'] },
+      { model: 'menuItem', fields: ['imageUrl'] }
+    ];
+
     let removedCount = 0;
 
-    for (const photo of photos) {
-      if (photo.url.startsWith('/uploads/')) {
-        const filePath = path.join(process.cwd(), photo.url.substring(1));
-        if (!fs.existsSync(filePath)) {
-          await prisma.cafePhoto.delete({ where: { id: photo.id } });
-          removedCount++;
+    for (const { model, fields } of mediaModels) {
+      const records = await (prisma as any)[model].findMany();
+      for (const record of records) {
+        for (const field of fields) {
+          const url = record[field];
+          if (url && url.startsWith('/uploads/')) {
+            const filePath = path.join(process.cwd(), url.substring(1));
+            if (!fs.existsSync(filePath)) {
+              if (fields.length > 1) {
+                // For multiple fields, we might want to just nullify the field
+                await (prisma as any)[model].update({
+                  where: { id: record.id },
+                  data: { [field]: null }
+                });
+              } else {
+                // For models where the record is essentially the photo (like cafePhoto)
+                await (prisma as any)[model].delete({ where: { id: record.id } });
+              }
+              removedCount++;
+            }
+          }
         }
       }
     }
 
-    metricsService.recordEvent('INFO', 'data.repair', `Cleaned up ${removedCount} missing media records`);
+    metricsService.recordEvent('INFO', 'data.repair', `Cleaned up ${removedCount} missing media records across all models`);
     return removedCount;
   }
 
@@ -264,27 +321,65 @@ export class DataIntegrityService {
 
     if (!fs.existsSync(uploadsDir)) return 0;
 
-    const files = fs.readdirSync(uploadsDir);
-    for (const file of files) {
-      if (file === '.gitkeep') continue;
-      const dbRecord = await prisma.cafePhoto.findFirst({
-        where: { url: { contains: file } }
-      });
-      const submissionPhoto = await prisma.cafeSubmissionPhoto.findFirst({
-        where: { url: { contains: file } }
-      });
-      const reviewPhoto = await prisma.cafeReviewPhoto.findFirst({
-        where: { url: { contains: file } }
-      });
+    const mediaModels = [
+      { model: 'cafePhoto', fields: ['url', 'thumbnailUrl'] },
+      { model: 'cafeSubmissionPhoto', fields: ['url'] },
+      { model: 'cafeReviewPhoto', fields: ['url'] },
+      { model: 'user', fields: ['avatarUrl'] },
+      { model: 'blogPost', fields: ['coverImage'] },
+      { model: 'curatedList', fields: ['coverImage'] },
+      { model: 'testimonial', fields: ['avatarUrl'] },
+      { model: 'menuItem', fields: ['imageUrl'] }
+    ];
 
-      if (!dbRecord && !submissionPhoto && !reviewPhoto) {
-        const filePath = path.join(uploadsDir, file);
-        fs.unlinkSync(filePath);
-        removedCount++;
+    const scanDirectory = async (dir: string) => {
+      const items = fs.readdirSync(dir);
+      for (const item of items) {
+        if (item === '.gitkeep') continue;
+        
+        const fullPath = path.join(dir, item);
+        const stats = fs.statSync(fullPath);
+
+        if (stats.isDirectory()) {
+          await scanDirectory(fullPath);
+          continue;
+        }
+
+        // It's a file, check if it's orphaned
+        let isUsed = false;
+        for (const { model, fields } of mediaModels) {
+          for (const field of fields) {
+            const record = await (prisma as any)[model].findFirst({
+              where: { [field]: { contains: item } }
+            });
+            if (record) {
+              isUsed = true;
+              break;
+            }
+          }
+          if (isUsed) break;
+        }
+
+        if (!isUsed) {
+          try {
+            fs.unlinkSync(fullPath);
+            removedCount++;
+            logger.info(`Removed orphaned file: ${fullPath}`);
+          } catch (err) {
+            logger.error(`Failed to remove orphaned file: ${fullPath}`, err);
+          }
+        }
       }
-    }
+    };
 
-    metricsService.recordEvent('INFO', 'data.repair', `Cleaned up ${removedCount} orphaned files from disk`);
+    try {
+      await scanDirectory(uploadsDir);
+      metricsService.recordEvent('INFO', 'data.repair', `Cleaned up ${removedCount} orphaned files from disk`);
+    } catch (err) {
+      logger.error('Error during orphaned files cleanup:', err);
+      throw err;
+    }
+    
     return removedCount;
   }
 }
