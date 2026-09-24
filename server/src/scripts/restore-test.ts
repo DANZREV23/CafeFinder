@@ -56,9 +56,9 @@ async function runRestoreTest() {
     console.log('[RestoreTest]: Restoring backup...');
     let restoreCmd = '';
     if (absoluteBackupPath.endsWith('.gz')) {
-      restoreCmd = `gunzip -c ${absoluteBackupPath} | psql ${commonArgs} ${tempDbName}`;
+      restoreCmd = `gunzip -c "${absoluteBackupPath}" | psql ${commonArgs} ${tempDbName}`;
     } else {
-      restoreCmd = `psql ${commonArgs} ${tempDbName} < ${absoluteBackupPath}`;
+      restoreCmd = `psql ${commonArgs} ${tempDbName} < "${absoluteBackupPath}"`;
     }
     await execAsync(restoreCmd, { env });
 

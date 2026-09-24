@@ -26,6 +26,19 @@ export class BackupService {
     }
   }
 
+  private async getTarBaseCommand(): Promise<string> {
+    try {
+      // Check if GNU tar with --force-local is available
+      const { stdout } = await execAsync('tar --help');
+      if (stdout.includes('--force-local')) {
+        return 'tar --force-local';
+      }
+    } catch (err) {
+      // Fallback to standard tar
+    }
+    return 'tar';
+  }
+
   async backupDatabase() {
     // Default to true if not explicitly disabled
     if (process.env.BACKUP_ENABLED === 'false') {
@@ -132,7 +145,8 @@ export class BackupService {
       }
 
       // Create tar.gz of the JSON files
-      const command = `tar -czf ${filePath} -C ${this.backupDir} ${path.basename(tempDir)}`;
+      const tarBase = await this.getTarBaseCommand();
+      const command = `${tarBase} -czf "${filePath}" -C "${this.backupDir}" "${path.basename(tempDir)}"`;
       await execAsync(command);
 
       // Verify
@@ -176,7 +190,8 @@ export class BackupService {
       logger.info(`Starting uploads backup: ${filename}`);
       
       // Compress uploads directory
-      const command = `tar -czf ${filePath} -C ${path.dirname(uploadsDir)} uploads`;
+      const tarBase = await this.getTarBaseCommand();
+      const command = `${tarBase} -czf "${filePath}" -C "${path.dirname(uploadsDir)}" uploads`;
       await execAsync(command);
       
       await this.verifyBackup(filePath);
