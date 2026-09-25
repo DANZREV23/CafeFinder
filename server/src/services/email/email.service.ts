@@ -1,10 +1,10 @@
 import { prisma } from '../../config/database.js';
 import { IEmailProvider } from './provider.interface.js';
-import { SmtpProvider } from './smtp.provider.ts';
-import { ConsoleProvider } from './console.provider.ts';
+import { SmtpProvider } from './smtp.provider.js';
+import { ConsoleProvider } from './console.provider.js';
 import { EmailTemplate, EmailPayloads } from './types.js';
 import { EmailJobStatus } from '@prisma/client';
-import { renderTemplate } from './templates.ts';
+import { renderTemplate } from './templates.js';
 
 export class EmailService {
   private provider: IEmailProvider;

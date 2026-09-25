@@ -15,10 +15,11 @@ export class SearchService {
     const normalizedQuery = query.trim().toLowerCase();
 
     // Fetch in parallel
-    const [cafes, cities, amenities] = await Promise.all([
+    const [cafes, cities, amenities, articles] = await Promise.all([
       this.searchRepository.getCafeSuggestions(normalizedQuery, limit),
       this.searchRepository.getCitySuggestions(normalizedQuery, Math.floor(limit / 2)),
-      this.searchRepository.getAmenitySuggestions(normalizedQuery, Math.floor(limit / 2))
+      this.searchRepository.getAmenitySuggestions(normalizedQuery, Math.floor(limit / 2)),
+      this.searchRepository.getArticleSuggestions(normalizedQuery, limit)
     ]);
 
     // Combine and sort by relevance (simple heuristic)
@@ -26,7 +27,7 @@ export class SearchService {
     // 2. Starts with query
     // 3. Contains query
     
-    const combined = [...cafes, ...cities, ...amenities];
+    const combined = [...cafes, ...cities, ...amenities, ...articles];
     
     return combined
       .sort((a, b) => {

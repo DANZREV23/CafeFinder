@@ -2,7 +2,7 @@ import { fetchApi } from './api';
 import { ApiResponse } from '../types';
 
 export interface SearchSuggestion {
-  type: 'cafe' | 'city' | 'amenity';
+  type: 'cafe' | 'city' | 'amenity' | 'article';
   id?: string;
   label: string;
   subtitle: string;

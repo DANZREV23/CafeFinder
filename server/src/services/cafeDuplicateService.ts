@@ -1,8 +1,7 @@
 // server/src/services/cafeDuplicateService.ts
-import { PrismaClient, Cafe, CafeSubmission } from '@prisma/client';
+import { Cafe, CafeSubmission } from '@prisma/client';
+import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-
-const prisma = new PrismaClient();
 
 export interface DuplicateMatch {
   id: string;

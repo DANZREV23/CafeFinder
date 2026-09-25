@@ -1,9 +1,7 @@
 // server/src/services/userDataExportService.ts
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { metricsService } from './metricsService.js';
-
-const prisma = new PrismaClient();
 
 export class UserDataExportService {
   async exportUserData(userId: string) {

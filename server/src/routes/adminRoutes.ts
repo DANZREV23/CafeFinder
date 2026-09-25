@@ -68,6 +68,8 @@ router.get('/system/deployments', adminController.getDeployments);
 router.get('/system/release', adminController.getReleaseMetadata);
 router.post('/system/maintenance', adminController.toggleMaintenanceMode);
 router.post('/system/metrics/reset', adminController.resetMetrics);
+router.post('/system/backup', adminController.runBackup);
+router.post('/system/cleanup', adminController.runCleanup);
 
 // Operational Alerts
 router.get('/system/alerts', adminController.getAlerts);

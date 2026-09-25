@@ -3,43 +3,29 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import { startLocalPostgresServer, stopLocalPostgresServer } from '../src/config/localDbServer.js';
 
 dotenv.config();
-
-// Construct PRISMA_DATABASE_URL if missing
-if (!process.env.PRISMA_DATABASE_URL) {
-  const sqlUser = process.env.SQL_USER || process.env.SQL_ADMIN_USER;
-  const sqlPass = process.env.SQL_PASSWORD || process.env.SQL_ADMIN_PASSWORD;
-  const sqlHost = process.env.SQL_HOST;
-  const sqlDb = process.env.SQL_DB_NAME || process.env.DB_NAME;
-  
-  if (sqlUser && sqlPass && sqlHost && sqlDb) {
-    // For Cloud SQL PostgreSQL, the host parameter is the directory containing the socket
-    process.env.PRISMA_DATABASE_URL = `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connection_limit=10&connect_timeout=30`;
-  } else {
-    // Fallback logic
-    const user = process.env.DB_USERNAME || process.env.DB_USER || 'root';
-    const pass = process.env.DB_PASSWORD || '';
-    const host = process.env.DATABASE_URL || process.env.DB_HOST || 'localhost';
-    const port = process.env.DB_PORT || '5432';
-    const db = process.env.DB_NAME || 'cafefinder';
-    
-    if (host && host.includes('://')) {
-      process.env.PRISMA_DATABASE_URL = host;
-    } else if (host) {
-      // Use postgresql as the default driver
-      process.env.PRISMA_DATABASE_URL = `postgresql://${user}:${encodeURIComponent(pass)}@${host}:${port}/${db}`;
-    }
-  }
-}
-
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // 1. Clean existing data
-  console.log('🧹 Cleaning database...');
+  // Ensure local DB is running
+  const databaseUrl = await startLocalPostgresServer();
+  process.env.PRISMA_DATABASE_URL = databaseUrl;
+  console.log(`[Seed]: Using database URL: ${databaseUrl.replace(/:[^@:]+@/, ':****@')}`);
+
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
+      },
+    },
+  });
+
+  try {
+    // 1. Clean existing data
+    console.log('🧹 Cleaning database...');
   await prisma.activityLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.testimonial.deleteMany();
@@ -891,14 +877,17 @@ async function main() {
     }
   });
 
-  console.log('✅ Seeding completed successfully!');
+    console.log('✅ Seeding completed successfully!');
+  } catch (error) {
+    console.error('❌ Seed failed:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+    await stopLocalPostgresServer();
+  }
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

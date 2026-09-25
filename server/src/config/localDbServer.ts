@@ -6,7 +6,7 @@ let localServerInstance: net.Server | null = null;
 let pgliteDbInstance: any = null;
 let isStarting = false;
 
-export const LOCAL_PG_PORT = 5434;
+export const LOCAL_PG_PORT = 5436;
 export const LOCAL_PG_HOST = '127.0.0.1';
 export const LOCAL_DATABASE_URL = `postgresql://postgres:postgres@${LOCAL_PG_HOST}:${LOCAL_PG_PORT}/cloud_sql_development_database?sslmode=disable`;
 
@@ -15,24 +15,6 @@ export const LOCAL_DATABASE_URL = `postgresql://postgres:postgres@${LOCAL_PG_HOS
  */
 export async function startLocalPostgresServer(): Promise<string> {
   if (localServerInstance && localServerInstance.listening) {
-    return LOCAL_DATABASE_URL;
-  }
-
-  // Check if port 5432 is already open
-  const alreadyOpen = await new Promise<boolean>((resolve) => {
-    const tester = net.createConnection({ host: LOCAL_PG_HOST, port: LOCAL_PG_PORT, timeout: 300 }, () => {
-      tester.end();
-      resolve(true);
-    });
-    tester.on('error', () => resolve(false));
-    tester.on('timeout', () => {
-      tester.destroy();
-      resolve(false);
-    });
-  });
-
-  if (alreadyOpen) {
-    console.log(`[LocalPostgres]: PostgreSQL service is already active on ${LOCAL_PG_HOST}:${LOCAL_PG_PORT}`);
     return LOCAL_DATABASE_URL;
   }
 
@@ -59,9 +41,16 @@ export async function startLocalPostgresServer(): Promise<string> {
     localServerInstance = createServer(pgliteDbInstance);
 
     await new Promise<void>((resolve, reject) => {
-      localServerInstance!.once('error', reject);
-      localServerInstance!.listen(LOCAL_PG_PORT, LOCAL_PG_HOST, () => {
-        console.log(`[LocalPostgres]: Embedded PostgreSQL service listening on ${LOCAL_PG_HOST}:${LOCAL_PG_PORT} (data: ${dataDir})`);
+      localServerInstance!.once('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          console.log(`[LocalPostgres]: Port ${LOCAL_PG_PORT} already in use, assuming active.`);
+          resolve();
+        } else {
+          reject(err);
+        }
+      });
+      localServerInstance!.listen(LOCAL_PG_PORT, '127.0.0.1', () => {
+        console.log(`[LocalPostgres]: Embedded PostgreSQL service listening on 127.0.0.1:${LOCAL_PG_PORT} (data: ${dataDir})`);
         resolve();
       });
     });

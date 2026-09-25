@@ -13,7 +13,8 @@ CafeFinder Davao is a high-performance, full-stack specialty coffee discovery an
 - **Release Manifest Generation**: Automated tracking of build artifacts (`buildId`, `gitCommit`, `buildTime`, `schemaVersion`, `environment`) exposed via `/api/admin/system/release`.
 - **Live Deployment History UI**: Dedicated administration console for viewing real-time deployment status, execution duration, migration outcomes, health verification results, and detailed stage logs.
 
-### 2. Data Integrity & Self-Healing Suite (`/admin/system/integrity`)
+### 2. Data Integrity & Reliability Suite
+- **Embedded PostgreSQL Fallback**: Automatic detection of database connectivity issues with seamless failover to an embedded PGlite service, ensuring the platform remains operational even during upstream database outages or local development without a dedicated PostgreSQL instance.
 - **Rating Recalculation Engine**: One-click administrative utility to audit and recalculate aggregate ratings and review counts across all cafes directly from verified database reviews.
 - **Orphan Cleanup**: Automated detection and resolution of orphaned reviews and broken relational foreign keys.
 - **Media Asset Audit & Cleanup**: Reconciles disk files in `uploads/` against database records, flagging missing physical files and pruning unlinked orphaned media.
@@ -205,6 +206,9 @@ npm run start
 | `npm run backup:db` | Creates a standalone PostgreSQL database dump |
 | `npm run backup:uploads`| Creates a standalone compressed archive of uploaded media |
 | `npm run system:cleanup`| Manually runs retention cleanup for expired sessions, stale logs, and notifications |
+| `npm run scrape:cafes` | Automated scraper to populate the database with Davao City cafe data |
+| `npm run test:smoke` | Runs end-to-end smoke tests against the running application |
+| `npm run db:restore-test`| Tests the integrity of database backup restoration procedures |
 
 ---
 

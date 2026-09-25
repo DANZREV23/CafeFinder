@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Search, X, Loader2, MapPin, Coffee, Zap } from "lucide-react";
+import { Search, X, Loader2, MapPin, Coffee, Zap, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchService, SearchSuggestion } from "@/services/searchService";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +10,7 @@ export interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputEle
   onSearch?: (value: string) => void;
   isLoading?: boolean;
   showSuggestions?: boolean;
-  suggestionType?: 'cafe' | 'city' | 'amenity' | 'all';
+  suggestionType?: 'cafe' | 'city' | 'amenity' | 'article' | 'all';
   onSuggestionSelect?: (suggestion: SearchSuggestion) => void;
 }
 
@@ -112,6 +112,8 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
       // Default behavior
       if (suggestion.type === 'cafe' && suggestion.slug) {
         navigate(`/cafes/${suggestion.slug}`);
+      } else if (suggestion.type === 'article' && suggestion.slug) {
+        navigate(`/blog/${suggestion.slug}`);
       } else if (suggestion.type === 'city') {
         navigate(`/explore?city=${encodeURIComponent(suggestion.label)}`);
       } else if (suggestion.type === 'amenity' && suggestion.slug) {
@@ -172,6 +174,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         case 'cafe': return <Coffee className="h-4 w-4" />;
         case 'city': return <MapPin className="h-4 w-4" />;
         case 'amenity': return <Zap className="h-4 w-4" />;
+        case 'article': return <BookOpen className="h-4 w-4" />;
         default: return <Search className="h-4 w-4" />;
       }
     };

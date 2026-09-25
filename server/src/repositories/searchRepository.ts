@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { CafeStatus } from '@prisma/client';
 
 export interface SearchSuggestion {
-  type: 'cafe' | 'city' | 'amenity';
+  type: 'cafe' | 'city' | 'amenity' | 'article';
   id?: string;
   label: string;
   subtitle: string;
@@ -10,6 +10,34 @@ export interface SearchSuggestion {
 }
 
 export class SearchRepository {
+  async getArticleSuggestions(query: string, limit: number): Promise<SearchSuggestion[]> {
+    const posts = await prisma.blogPost.findMany({
+      where: {
+        status: 'PUBLISHED',
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { category: { contains: query, mode: 'insensitive' } }
+        ]
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        slug: true
+      },
+      take: limit,
+      orderBy: { publishedAt: 'desc' }
+    });
+
+    return posts.map(post => ({
+      type: 'article',
+      id: post.id,
+      label: post.title,
+      subtitle: post.category || 'Article',
+      slug: post.slug
+    }));
+  }
+
   async getCafeSuggestions(query: string, limit: number): Promise<SearchSuggestion[]> {
     const cafes = await prisma.cafe.findMany({
       where: {

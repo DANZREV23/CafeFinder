@@ -100,6 +100,17 @@ const BlogListPage: React.FC = () => {
               <SearchInput
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onSearch={(val) => {
+                  setSearch(val);
+                  setPage(1);
+                  loadPosts();
+                }}
+                onClear={() => {
+                  setSearch('');
+                  setPage(1);
+                  loadPosts();
+                }}
+                suggestionType="article"
                 placeholder="Search articles..."
                 className="w-full"
               />

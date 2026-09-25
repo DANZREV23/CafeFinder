@@ -9,7 +9,7 @@ export interface MapConfig {
 
 export const getMapConfig = (): MapConfig => {
   const provider = (import.meta.env.VITE_MAP_PROVIDER as MapProviderType) || 'google';
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || null;
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_MAP_API_KEY || null;
 
   return {
     provider,

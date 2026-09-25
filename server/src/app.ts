@@ -129,6 +129,14 @@ export async function createApp() {
   // SEO Routes (Robots and Sitemap)
   app.use('/', seoRoutes);
 
+  // API 404 handler - if a request starts with /api but didn't match any routes
+  app.use('/api', (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: { message: `API endpoint not found: ${req.method} ${req.originalUrl}` }
+    });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     console.log('[Server]: Running in development mode with Vite middleware');
@@ -165,14 +173,6 @@ export async function createApp() {
     
     app.use(express.static(distPath));
     
-    // API 404 handler - if a request starts with /api but didn't match any routes
-    app.use('/api', (req, res) => {
-      res.status(404).json({
-        success: false,
-        error: { message: `API endpoint not found: ${req.method} ${req.originalUrl}` }
-      });
-    });
-
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
