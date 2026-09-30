@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/Badge';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { clsx } from 'clsx';
+import { fetchApi } from '@/services/api';
+import { ApiResponse } from '@/types';
 
 interface QualityIssue {
   severity: 'INFO' | 'WARNING' | 'ERROR';
@@ -35,9 +37,8 @@ export const AdminContentQualityPage: React.FC = () => {
   const fetchIssues = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/editorial/quality');
-      const data = await response.json();
-      if (data.success) {
+      const data = await fetchApi<ApiResponse<QualityIssue[]>>('/admin/editorial/quality');
+      if (data.success && data.data) {
         setIssues(data.data);
       }
     } catch (error) {

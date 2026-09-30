@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'react-hot-toast';
+import { fetchApi } from '@/services/api';
+import { ApiResponse } from '@/types';
 
 interface MediaAsset {
   id: string;
@@ -52,9 +54,8 @@ export const AdminMediaLibraryPage: React.FC = () => {
   const fetchAssets = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/media?page=${page}&search=${search}&limit=24`);
-      const data = await response.json();
-      if (data.success) {
+      const data = await fetchApi<ApiResponse<{ assets: MediaAsset[]; totalPages: number }>>(`/admin/media?page=${page}&search=${search}&limit=24`);
+      if (data.success && data.data) {
         setAssets(data.data.assets);
         setTotalPages(data.data.totalPages);
       }
@@ -73,17 +74,16 @@ export const AdminMediaLibraryPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this asset?')) return;
 
     try {
-      const response = await fetch(`/api/admin/media/${id}`, { method: 'DELETE' });
-      const data = await response.json();
+      const data = await fetchApi<ApiResponse<void>>(`/admin/media/${id}`, { method: 'DELETE' });
       if (data.success) {
         toast.success('Asset deleted');
         fetchAssets();
         if (selectedAsset?.id === id) setSelectedAsset(null);
       } else {
-        toast.error(data.message || 'Failed to delete asset');
+        toast.error(data.error?.message || 'Failed to delete asset');
       }
-    } catch (error) {
-      toast.error('Error deleting asset');
+    } catch (error: any) {
+      toast.error(error?.message || 'Error deleting asset');
     }
   };
 
@@ -295,12 +295,10 @@ export const AdminMediaLibraryPage: React.FC = () => {
                       className="w-full"
                       onClick={async () => {
                         try {
-                          const response = await fetch(`/api/admin/media/${selectedAsset.id}`, {
+                          const data = await fetchApi<ApiResponse<any>>(`/admin/media/${selectedAsset.id}`, {
                             method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ altText: selectedAsset.altText, caption: selectedAsset.caption })
                           });
-                          const data = await response.json();
                           if (data.success) {
                             toast.success('Metadata updated');
                             fetchAssets();

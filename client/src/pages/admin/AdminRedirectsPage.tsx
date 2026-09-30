@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-hot-toast';
 import { clsx } from 'clsx';
+import { fetchApi } from '@/services/api';
+import { ApiResponse } from '@/types';
 
 interface Redirect {
   id: string;
@@ -39,9 +41,8 @@ export const AdminRedirectsPage: React.FC = () => {
   const fetchRedirects = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/redirects?search=${search}`);
-      const data = await response.json();
-      if (data.success) {
+      const data = await fetchApi<ApiResponse<{ redirects: Redirect[] }>>(`/admin/redirects?search=${search}`);
+      if (data.success && data.data) {
         setRedirects(data.data.redirects);
       }
     } catch (error) {
@@ -61,22 +62,20 @@ export const AdminRedirectsPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/admin/redirects', {
+      const data = await fetchApi<ApiResponse<any>>('/admin/redirects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldPath, newPath, statusCode: 301 })
       });
-      const data = await response.json();
       if (data.success) {
         toast.success('Redirect created');
         setOldPath('');
         setNewPath('');
         fetchRedirects();
       } else {
-        toast.error(data.message || 'Failed to create redirect');
+        toast.error(data.error?.message || 'Failed to create redirect');
       }
-    } catch (error) {
-      toast.error('Error creating redirect');
+    } catch (error: any) {
+      toast.error(error?.message || 'Error creating redirect');
     } finally {
       setIsSubmitting(false);
     }
@@ -84,12 +83,11 @@ export const AdminRedirectsPage: React.FC = () => {
 
   const handleToggle = async (id: string, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/admin/redirects/${id}`, {
+      const data = await fetchApi<ApiResponse<any>>(`/admin/redirects/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentStatus })
       });
-      if (response.ok) {
+      if (data.success) {
         toast.success(`Redirect ${!currentStatus ? 'activated' : 'deactivated'}`);
         fetchRedirects();
       }
@@ -101,8 +99,8 @@ export const AdminRedirectsPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Delete this redirect?')) return;
     try {
-      const response = await fetch(`/api/admin/redirects/${id}`, { method: 'DELETE' });
-      if (response.ok) {
+      const data = await fetchApi<ApiResponse<any>>(`/admin/redirects/${id}`, { method: 'DELETE' });
+      if (data.success) {
         toast.success('Redirect deleted');
         fetchRedirects();
       }
