@@ -9,7 +9,7 @@ import { createApp } from './app.js';
 console.log('[Server]: Importing scheduler...');
 import { schedulerService } from './services/schedulerService.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const ENV = process.env.NODE_ENV || 'development';
 
 async function startServer() {

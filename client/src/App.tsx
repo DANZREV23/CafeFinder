@@ -52,6 +52,8 @@ const BlogPostPage = lazy(() => import('./pages/blog/BlogPostPage'));
 const ListsPage = lazy(() => import('./pages/lists/ListsPage'));
 const ListPage = lazy(() => import('./pages/lists/ListPage'));
 const OfflinePage = lazy(() => import('./pages/OfflinePage'));
+const TimeSensitiveDirectoryPage = lazy(() => import('./pages/TimeSensitiveDirectoryPage'));
+const TimeSensitiveDetailPage = lazy(() => import('./pages/TimeSensitiveDetailPage'));
 
 // Admin Pages
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
@@ -110,6 +112,10 @@ export default function App() {
                 <Route path="/lists/:slug" element={<ListPage />} />
 
                 <Route path="/offline" element={<OfflinePage />} />
+                <Route path="/events" element={<TimeSensitiveDirectoryPage kind="events" />} />
+                <Route path="/events/:slug" element={<TimeSensitiveDetailPage kind="events" />} />
+                <Route path="/specials" element={<TimeSensitiveDirectoryPage kind="specials" />} />
+                <Route path="/specials/:slug" element={<TimeSensitiveDetailPage kind="specials" />} />
 
                 <Route path="/submit-cafe" element={
                   <ProtectedRoute>

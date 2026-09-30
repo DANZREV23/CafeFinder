@@ -3,7 +3,7 @@ import { prisma } from '../config/database.js';
 
 const router = Router();
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const APP_URL = process.env.CLIENT_URL || `http://localhost:${PORT}`;
 
 router.get('/robots.txt', (req, res) => {
@@ -24,7 +24,7 @@ Sitemap: ${APP_URL}/sitemap.xml
 
 router.get('/sitemap.xml', async (req, res) => {
   try {
-    const [cafes, posts, lists] = await Promise.all([
+    const [cafes, posts, lists, events, specials] = await Promise.all([
       prisma.cafe.findMany({
         where: { status: 'PUBLISHED' },
         select: { slug: true, updatedAt: true }
@@ -36,7 +36,9 @@ router.get('/sitemap.xml', async (req, res) => {
       prisma.curatedList.findMany({
         where: { status: 'PUBLISHED' },
         select: { slug: true, updatedAt: true }
-      })
+      }),
+      prisma.cafeEvent.findMany({ where: { status: 'PUBLISHED', endAt: { gte: new Date() }, cafe: { status: 'PUBLISHED' } }, select: { slug: true, updatedAt: true } }),
+      prisma.cafeSpecial.findMany({ where: { status: 'PUBLISHED', endAt: { gte: new Date() }, cafe: { status: 'PUBLISHED' } }, select: { slug: true, updatedAt: true } })
     ]);
 
     const staticPages = [
@@ -44,6 +46,8 @@ router.get('/sitemap.xml', async (req, res) => {
       '/explore',
       '/blog',
       '/lists',
+      '/events',
+      '/specials',
       '/about',
       '/contact'
     ];
@@ -91,6 +95,26 @@ router.get('/sitemap.xml', async (req, res) => {
     <lastmod>${list.updatedAt.toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>`;
+    });
+
+    events.forEach(event => {
+      sitemap += `
+  <url>
+    <loc>${APP_URL}/events/${event.slug}</loc>
+    <lastmod>${event.updatedAt.toISOString()}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+    });
+
+    specials.forEach(special => {
+      sitemap += `
+  <url>
+    <loc>${APP_URL}/specials/${special.slug}</loc>
+    <lastmod>${special.updatedAt.toISOString()}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>`;
     });
 

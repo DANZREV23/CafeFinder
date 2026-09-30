@@ -24,8 +24,6 @@ import { Map, List, WifiOff } from "lucide-react";
 import { SEO } from "@/components/common/SEO";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useI18n } from "@/i18n";
-import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
-import { RecommendationItem, getRecommendations } from "@/services/recommendationService";
 
 export default function ExplorePage() {
   const { t } = useI18n();
@@ -39,7 +37,6 @@ export default function ExplorePage() {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = React.useState(false);
   const [selectedCafeId, setSelectedCafeId] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"list" | "map">("list");
-  const [recommendations, setRecommendations] = React.useState<RecommendationItem[]>([]);
   const isOnline = useOnlineStatus();
 
   // Ref for result list container to handle scrolling
@@ -51,19 +48,13 @@ export default function ExplorePage() {
   const sort = searchParams.get("sort") || "rating";
   const city = searchParams.get("city") || "";
   const priceRange = searchParams.get("priceRange") ? parseInt(searchParams.get("priceRange")!) : undefined;
-  const featured = searchParams.get("featured") === "true";
-  const trending = searchParams.get("trending") === "true";
-  const verified = searchParams.get("verified") === "true";
   const amenities = searchParams.get("amenities") ? searchParams.get("amenities")!.split(",") : [];
 
-  const hasFilters = search || city || priceRange || featured || trending || verified || amenities.length > 0;
+  const hasFilters = Boolean(search || city || priceRange || amenities.length > 0);
 
   const filters = {
     city,
     priceRange,
-    featured,
-    trending,
-    verified,
     amenities,
   };
 
@@ -78,9 +69,6 @@ export default function ExplorePage() {
         sort,
         city,
         priceRange,
-        featured,
-        trending,
-        verified,
         amenities: amenities.length > 0 ? amenities.join(",") : undefined,
       });
       if (response.success) {
@@ -100,16 +88,7 @@ export default function ExplorePage() {
   React.useEffect(() => {
     fetchCafes();
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page, search, sort, city, priceRange, featured, trending, verified, amenities.join(",")]);
-
-  React.useEffect(() => {
-    getRecommendations({
-      limit: 4,
-      context: 'explore',
-      city: city || undefined,
-      amenity: amenities[0] || undefined,
-    }).then(response => setRecommendations(response.data.items || [])).catch(() => setRecommendations([]));
-  }, [city, amenities.join(",")]);
+  }, [page, search, sort, city, priceRange, amenities.join(",")]);
 
   const updateParams = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -238,20 +217,12 @@ export default function ExplorePage() {
                 viewMode === "map" ? "hidden lg:flex" : "flex"
               )}
             >
-              {recommendations.length > 0 && (
-                <div className="border-b border-brand-border bg-brand-cream/20 p-4">
-                  <RecommendationSection items={recommendations} title="Explore recommendations" />
-                </div>
-              )}
               {/* Active Filters Bar */}
               <div className="px-6 py-3 border-b border-brand-border bg-brand-background/30 overflow-x-auto no-scrollbar">
                 <ActiveFilters 
                   search={search}
                   city={city}
                   priceRange={priceRange}
-                  featured={featured}
-                  trending={trending}
-                  verified={verified}
                   amenities={amenities}
                   onRemove={handleRemoveFilter}
                   onClearAll={handleClearAll}

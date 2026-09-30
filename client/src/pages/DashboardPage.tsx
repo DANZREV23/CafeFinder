@@ -62,8 +62,8 @@ const DashboardPage: React.FC = () => {
                 <User className="w-4 h-4" />
                 Edit Profile
               </Link>
-              <Link to="/dashboard/settings" className="flex items-center gap-2 px-4 py-2 bg-coffee-600 text-white rounded-lg hover:bg-coffee-700 transition-colors text-sm font-medium shadow-sm">
-                <Settings className="w-4 h-4" />
+              <Link to="/dashboard/settings" className="flex items-center gap-2 rounded-lg border border-brand-coffee-dark bg-brand-coffee-dark px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-coffee hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-coffee focus:ring-offset-2">
+                <Settings className="h-4 w-4 text-white" aria-hidden="true" />
                 Settings
               </Link>
             </div>

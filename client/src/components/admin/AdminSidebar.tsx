@@ -28,16 +28,16 @@ interface AdminSidebarProps {
 }
 
 const MENU_ITEMS = [
-  { id: 'dashboard', labelKey: 'admin.dashboard', icon: LayoutDashboard, path: '/admin' },
+  { id: 'dashboard', labelKey: 'admin.dashboard', icon: LayoutDashboard, path: '/admin', comingSoon: false },
   { 
     id: 'moderation', 
     labelKey: 'admin.moderation', 
     type: 'group',
     items: [
-      { id: 'submissions', labelKey: 'admin.submissions', icon: Coffee, path: '/admin/submissions' },
-      { id: 'reviews', labelKey: 'admin.reviews', icon: Star, path: '/admin/reviews' },
-          { id: 'claims', labelKey: 'admin.claims', icon: ShieldCheck, path: '/admin/claims' },
-          { id: 'change-requests', labelKey: 'admin.changeRequests', icon: FileText, path: '/admin/change-requests' },
+        { id: 'submissions', labelKey: 'admin.submissions', icon: Coffee, path: '/admin/submissions', comingSoon: false },
+        { id: 'reviews', labelKey: 'admin.reviews', icon: Star, path: '/admin/reviews', comingSoon: false },
+          { id: 'claims', labelKey: 'admin.claims', icon: ShieldCheck, path: '/admin/claims', comingSoon: false },
+          { id: 'change-requests', labelKey: 'admin.changeRequests', icon: FileText, path: '/admin/change-requests', comingSoon: false },
     ]
   },
   { 
@@ -45,7 +45,7 @@ const MENU_ITEMS = [
     labelKey: 'admin.directory', 
     type: 'group',
     items: [
-      { id: 'cafes', labelKey: 'admin.cafes', icon: MapPin, path: '/admin/cafes' },
+      { id: 'cafes', labelKey: 'admin.cafes', icon: MapPin, path: '/admin/cafes', comingSoon: false },
     ]
   },
   { 
@@ -53,7 +53,7 @@ const MENU_ITEMS = [
     labelKey: 'admin.users', 
     type: 'group',
     items: [
-      { id: 'user-list', labelKey: 'admin.userList', icon: Users, path: '/admin/users' },
+      { id: 'user-list', labelKey: 'admin.userList', icon: Users, path: '/admin/users', comingSoon: false },
     ]
   },
   { 
@@ -61,12 +61,12 @@ const MENU_ITEMS = [
     labelKey: 'admin.content', 
     type: 'group',
     items: [
-      { id: 'blog', labelKey: 'admin.blog', icon: FileText, path: '/admin/blog' },
-      { id: 'lists', labelKey: 'admin.lists', icon: LayoutGrid, path: '/admin/lists' },
-      { id: 'testimonials', labelKey: 'admin.testimonials', icon: Star, path: '/admin/testimonials' },
-      { id: 'media', labelKey: 'admin.mediaLibrary', icon: LayoutGrid, path: '/admin/media' },
-      { id: 'quality', labelKey: 'admin.contentQuality', icon: ShieldCheck, path: '/admin/content/quality' },
-      { id: 'redirects', labelKey: 'admin.redirects', icon: History, path: '/admin/redirects' },
+      { id: 'blog', labelKey: 'admin.blog', icon: FileText, path: '/admin/blog', comingSoon: false },
+      { id: 'lists', labelKey: 'admin.lists', icon: LayoutGrid, path: '/admin/lists', comingSoon: false },
+      { id: 'testimonials', labelKey: 'admin.testimonials', icon: Star, path: '/admin/testimonials', comingSoon: false },
+      { id: 'media', labelKey: 'admin.mediaLibrary', icon: LayoutGrid, path: '/admin/media', comingSoon: false },
+      { id: 'quality', labelKey: 'admin.contentQuality', icon: ShieldCheck, path: '/admin/content/quality', comingSoon: false },
+      { id: 'redirects', labelKey: 'admin.redirects', icon: History, path: '/admin/redirects', comingSoon: false },
     ]
   },
   { 
@@ -74,15 +74,15 @@ const MENU_ITEMS = [
     labelKey: 'admin.system', 
     type: 'group',
     items: [
-      { id: 'overview', labelKey: 'admin.controlCenter', icon: Activity, path: '/admin/system', end: true },
-      { id: 'alerts', labelKey: 'admin.alerts', icon: Bell, path: '/admin/system/alerts' },
-      { id: 'jobs', labelKey: 'admin.jobs', icon: Clock, path: '/admin/system/jobs' },
-      { id: 'deployments', labelKey: 'admin.deployments', icon: Rocket, path: '/admin/system/deployments' },
-      { id: 'integrity', labelKey: 'admin.integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
-      { id: 'security', labelKey: 'admin.security', icon: ShieldCheck, path: '/admin/system/security' },
-      { id: 'recommendations', labelKey: 'admin.recommendations', icon: Activity, path: '/admin/system/recommendations' },
-      { id: 'activity', labelKey: 'admin.auditLogs', icon: History, path: '/admin/activity' },
-      { id: 'settings', labelKey: 'admin.settings', icon: Settings, path: '/admin/settings' },
+      { id: 'overview', labelKey: 'admin.controlCenter', icon: Activity, path: '/admin/system', end: true, comingSoon: false },
+      { id: 'alerts', labelKey: 'admin.alerts', icon: Bell, path: '/admin/system/alerts', comingSoon: false },
+      { id: 'jobs', labelKey: 'admin.jobs', icon: Clock, path: '/admin/system/jobs', comingSoon: false },
+      { id: 'deployments', labelKey: 'admin.deployments', icon: Rocket, path: '/admin/system/deployments', comingSoon: false },
+      { id: 'integrity', labelKey: 'admin.integrity', icon: ShieldCheck, path: '/admin/system/integrity', comingSoon: false },
+      { id: 'security', labelKey: 'admin.security', icon: ShieldCheck, path: '/admin/system/security', comingSoon: false },
+      { id: 'recommendations', labelKey: 'admin.recommendations', icon: Activity, path: '/admin/system/recommendations', comingSoon: false },
+      { id: 'activity', labelKey: 'admin.auditLogs', icon: History, path: '/admin/activity', comingSoon: false },
+      { id: 'settings', labelKey: 'admin.settings', icon: Settings, path: '/admin/settings', comingSoon: false },
     ]
   }
 ];

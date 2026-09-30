@@ -48,6 +48,8 @@ import { ReviewList } from "@/components/reviews/ReviewList";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
 import { RecommendationItem, getRecommendations } from "@/services/recommendationService";
+import { timeSensitiveService, TimeSensitiveItem } from "@/services/timeSensitiveService";
+import { TimeSensitiveCard } from "@/components/time-sensitive/TimeSensitiveCard";
 
 export default function CafeProfilePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -67,6 +69,7 @@ export default function CafeProfilePage() {
   const [reviewTotal, setReviewTotal] = React.useState(0);
   const [reviewPage, setReviewPage] = React.useState(1);
   const [recommendations, setRecommendations] = React.useState<RecommendationItem[]>([]);
+  const [timelyContent, setTimelyContent] = React.useState<{ events: TimeSensitiveItem[]; specials: TimeSensitiveItem[] }>({ events: [], specials: [] });
 
   const fetchReviews = async (page = 1, append = false) => {
     if (!cafe?.id) return;
@@ -153,6 +156,15 @@ export default function CafeProfilePage() {
     getRecommendations({ limit: 4, context: 'profile', cafeId: cafe.id, excludeCafeId: cafe.id })
       .then(response => setRecommendations(response.data.items || []))
       .catch(() => setRecommendations([]));
+  }, [cafe?.id]);
+
+  React.useEffect(() => {
+    if (!cafe?.id) return;
+    timeSensitiveService.list('events', `cafeId=${encodeURIComponent(cafe.id)}&limit=3`)
+      .then(async eventsResponse => {
+        const specialsResponse = await timeSensitiveService.list('specials', `cafeId=${encodeURIComponent(cafe.id)}&limit=3`);
+        setTimelyContent({ events: eventsResponse.data.items, specials: specialsResponse.data.items });
+      }).catch(() => setTimelyContent({ events: [], specials: [] }));
   }, [cafe?.id]);
 
   const handleLoadMoreReviews = () => {
@@ -454,6 +466,17 @@ export default function CafeProfilePage() {
 
               {/* Menu Highlights */}
               <CafeMenuHighlights />
+
+              {(timelyContent.events.length > 0 || timelyContent.specials.length > 0) && (
+                <section className="space-y-8 border-t border-brand-border pt-8" aria-labelledby="timely-content-heading">
+                  <div>
+                    <h2 id="timely-content-heading" className="text-3xl font-serif font-bold text-brand-charcoal">What's happening</h2>
+                    <p className="mt-2 text-brand-muted">Upcoming events and current specials at this cafe.</p>
+                  </div>
+                  {timelyContent.events.length > 0 && <div className="grid gap-5 md:grid-cols-2">{timelyContent.events.map(item => <TimeSensitiveCard key={item.id} item={item} kind="events" />)}</div>}
+                  {timelyContent.specials.length > 0 && <div className="grid gap-5 md:grid-cols-2">{timelyContent.specials.map(item => <TimeSensitiveCard key={item.id} item={item} kind="specials" />)}</div>}
+                </section>
+              )}
 
               {/* Reviews Section */}
               <section id="reviews" className="space-y-12 pt-8 border-t border-brand-border" aria-labelledby="reviews-heading">

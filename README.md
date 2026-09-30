@@ -190,6 +190,168 @@ npm run start
 
 ## 📖 Operational Documentation
 
+## 🧭 Application Feature Guide
+
+CafeFinder is a cafe discovery directory with separate experiences for visitors, registered users, cafe owners, and administrators. Public content is served from the published PostgreSQL records; owner and administrator tools are protected by server-side authentication and role checks.
+
+### Public discovery
+
+- **Home (`/`)**: Browse the main discovery experience, featured/trending cafe content, editorial previews, curated lists, testimonials, and discovery calls to action.
+- **Explore (`/explore`)**: Browse all published cafes with server-side pagination. Search by cafe, city, address, description, or amenity; filter by city, price range, and amenities; and sort by rating, newest, name, or popularity. Published cafes appear whether or not they are verified, featured, or trending. Those flags are displayed as descriptive badges, not visibility requirements.
+- **Cafe profiles (`/cafes/:slug`)**: View cafe details, address, contact links, hours, amenities, photo galleries, map location, menus, ratings, reviews, favorites, related cafes, recommendations, upcoming events, and current specials.
+- **Maps**: Use the interactive map on Explore and cafe pages when a map provider key is configured. Select a map marker to focus the corresponding cafe card.
+- **Blog (`/blog`)**: Read published editorial posts and open individual posts at `/blog/:slug`.
+- **Curated lists (`/lists`)**: Browse published cafe collections and individual lists at `/lists/:slug`.
+- **Events (`/events`)**: Browse published, not-yet-ended cafe events. Open details at `/events/:slug`.
+- **Specials (`/specials`)**: Browse published active or upcoming cafe specials. Open details at `/specials/:slug`.
+- **PWA/offline support**: Install the app on supported devices and use the offline fallback when connectivity is unavailable.
+
+### Visitor and registered-user actions
+
+Visitors can browse public cafes, maps, blogs, lists, events, specials, menus, and public reviews. A registered user can additionally:
+
+1. Create an account at `/register` or sign in at `/login`.
+2. Save and remove cafe favorites at `/favorites`.
+3. Open `/dashboard` to view discovery activity, saved cafes, recommendations, and account shortcuts.
+4. Edit personal information at `/profile`.
+5. Set optional recommendation preferences at `/dashboard/settings`, including city, price range, amenities, coffee types, and vibes.
+6. Write one review per cafe, provide overall/category ratings, add review photos, edit the user's own review, and delete it where permitted.
+7. Submit a new cafe through `/submit-cafe` and track its status under `/my-submissions`.
+8. View and manage in-app notifications.
+
+Reviews are initially pending moderation. Only approved reviews contribute to public review lists and cafe rating aggregates. Review photos use the existing upload and authorization pipeline.
+
+### Cafe owner workspace
+
+Users with the `OWNER` role can access `/owner`. Administrators can also access owner tools when required for support. Owner capabilities include:
+
+- View the owner dashboard and owned cafes.
+- Manage cafe business information, hours, amenities, photos, cover photos, and menu content.
+- Submit ownership claims for existing directory records.
+- Submit cafe change requests for administrator review.
+- Review cafe reviews and view aggregate cafe analytics.
+- Create time-sensitive event and special drafts through the protected time-sensitive API, submit them for moderation, and view owner-scoped content.
+
+Owners are restricted to their own cafes. They cannot change protected public moderation fields, review aggregates, or another owner's cafe data.
+
+### Administrator workspace
+
+Administrators use the protected `/admin` area to manage the platform:
+
+- **Dashboard**: Review pending cafe submissions and moderation workload.
+- **Cafe submissions**: Review, approve, reject, or reopen submitted cafes.
+- **Reviews**: Moderate pending reviews, hide/restore reviews, inspect review details, and manage review photos.
+- **Owner claims**: Review and decide ownership claims.
+- **Change requests**: Approve or reject owner requests to change live cafe data.
+- **Cafe directory**: Search cafes, update lifecycle status, assign owners, and manage verified, featured, and trending flags.
+- **Users**: Review user accounts and update account status.
+- **Content**: Manage blog posts, curated lists, testimonials, redirects, media, and content-quality checks.
+- **System**: Monitor health, deployments, security, recommendations, operational alerts, scheduled jobs, backups, cleanup, and data integrity.
+- **Activity logs**: Audit administrative and important owner actions.
+
+Administrator routes are protected by both authentication and the `ADMIN` role. Moderation operations verify the current database state and are recorded in the existing activity log system.
+
+## 🧑💻 Detailed User Workflows
+
+### Find a cafe
+
+1. Open `/explore`.
+2. Enter a cafe name, city, address, amenity, or descriptive term in the search field.
+3. Apply optional city, price, or amenity filters.
+4. Select a sort order.
+5. Switch between list and map views on supported screen sizes.
+6. Select a cafe card to open its profile.
+
+Explore uses server-side queries and pagination. It does not require a cafe to be marked verified, featured, or trending to appear.
+
+### Save a favorite
+
+1. Sign in.
+2. Select the heart button on a cafe card or profile.
+3. Open `/favorites` to review saved cafes.
+4. Select the heart button again to remove a saved cafe.
+
+Favorite identities are not publicly exposed.
+
+### Write or edit a review
+
+1. Sign in and open a published cafe profile.
+2. Select **Write a review**.
+3. Provide overall, coffee, ambiance, and service ratings.
+4. Add an experience-focused comment.
+5. Optionally upload up to five supported review images within the displayed file-size limit.
+6. Submit the review and wait for moderation.
+7. Find your review in the cafe profile and use the edit or delete controls when available.
+
+Do not include private information or personal attacks. Normal negative feedback is allowed; content is moderated based on policy and evidence.
+
+### Submit a cafe
+
+1. Sign in.
+2. Open `/submit-cafe`.
+3. Complete the cafe information and upload any permitted photos.
+4. Submit the form.
+5. Track the result at `/my-submissions` and open an item for details.
+
+Submissions remain pending until an administrator reviews them.
+
+### Claim a cafe as an owner
+
+1. Sign in with an owner account or eligible account.
+2. Open a cafe profile and select the claim workflow, or use the owner claims area.
+3. Provide business and verification information.
+4. Submit the claim.
+5. Monitor its status from the claims page.
+
+Administrators verify claims before assigning ownership.
+
+### Manage a cafe as an owner
+
+1. Sign in with an authorized owner account.
+2. Open `/owner` and select a cafe.
+3. Use the cafe workspace tabs for business details, location, hours, amenities, photos, menus, reviews, analytics, and change requests.
+4. Save permitted changes or submit a change request when live data requires moderation.
+
+### Create an event or special
+
+The current Stage 38 backend supports protected owner creation and moderation workflows for events and specials. Content is created as a draft, submitted for review, and only becomes public after administrator approval. Dates are stored in UTC with an explicit IANA timezone for display. Ended content is excluded from public queries and is marked expired by the maintenance scheduler.
+
+## 🔐 Account, Privacy, and Security Rules
+
+- Roles are `USER`, `OWNER`, and `ADMIN`.
+- Authentication uses the existing session system with secure cookies and supported authorization headers.
+- Authorization is enforced on the server; frontend route guards are not security boundaries.
+- Public DTOs exclude passwords, session tokens, IP addresses, private moderation information, and private account data.
+- Public APIs return only published cafes and approved public content.
+- Uploaded files are validated and processed through the existing media pipeline.
+- User input is validated with Zod and sanitized before storage or rendering.
+- External registration links accept safe HTTP(S) protocols only.
+- Rate limiting, security headers, request correlation, logging, maintenance mode, backups, and cleanup jobs are enabled through existing backend infrastructure.
+
+## 🌐 Localization, Accessibility, and SEO
+
+- User-facing localization is provided through the existing i18n provider and locale files.
+- Forms use labels, validation feedback, keyboard-accessible controls, semantic headings, and responsive layouts.
+- Cafe, blog, list, event, and special pages use existing SEO components and canonical route conventions.
+- Public sitemap and robots routes exclude private, administrative, and unpublished content.
+- Dates, times, and currency values should be displayed using locale-aware formatting and the relevant cafe/content timezone.
+
+## 🧪 Recommended First-Run Checklist
+
+After installation:
+
+1. Copy `.env.example` to `.env` and configure PostgreSQL or the supported local fallback.
+2. Configure the map keys if map features are needed.
+3. Run `npm run db:push` for a new local schema or `npm run db:migrate` for migrations.
+4. Run `npm run db:seed` if demonstration data is needed.
+5. Run `npm run lint`.
+6. Run `npm run build`.
+7. Start the app with `npm run dev`.
+8. Verify `/`, `/explore`, `/cafes/:slug`, `/blog`, `/lists`, `/events`, `/specials`, `/login`, and `/admin` with the appropriate account.
+9. Run `npm run test:smoke` while the application is running on the configured port.
+
+If Explore appears empty, verify that cafes have `status = PUBLISHED`, the API is reachable, the frontend is using the expected API origin, and the database connection points to the intended PostgreSQL instance.
+
 For in-depth operational procedures, consult the repository architecture guides:
 - **[Database Performance & Indexing](./DATABASE_PERFORMANCE.md)**: Index strategies and query optimization.
 - **[Observability & Logging](./OBSERVABILITY.md)**: Structured log formatting, request correlation, and metric aggregation.

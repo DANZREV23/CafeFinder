@@ -3,6 +3,7 @@ import { Activity, Database, Gauge, RefreshCw } from 'lucide-react';
 import { fetchApi } from '@/services/api';
 import { ApiResponse } from '@/types';
 import { Card } from '@/components/ui/Card';
+import type { LucideIcon } from 'lucide-react';
 
 interface Diagnostics {
   totalRequests: number;
@@ -48,7 +49,7 @@ export const RecommendationDiagnostics: React.FC = () => {
           ['Average duration', `${data.averageDurationMs} ms`, Gauge],
           ['Fallbacks', data.fallbackRequests, Database],
           ['Cache hits', data.cacheHits, Activity],
-        ].map(([label, value, Icon]) => <Card key={String(label)} className="p-5"><Icon size={20} className="mb-3 text-coffee-600" /><p className="text-sm text-stone-500">{label}</p><p className="text-2xl font-bold text-stone-900">{String(value)}</p></Card>)}
+        ].map(([label, value, Icon]: [string, string | number, LucideIcon]) => <Card key={label} className="p-5"><Icon size={20} className="mb-3 text-coffee-600" /><p className="text-sm text-stone-500">{label}</p><p className="text-2xl font-bold text-stone-900">{String(value)}</p></Card>)}
       </div>}
       {data && <p className="text-sm text-stone-500">Status: <span className="font-semibold text-green-700">{data.status}</span> · Personalized requests: {data.personalizedRequests} · Anonymous requests: {data.anonymousRequests}</p>}
     </div>
