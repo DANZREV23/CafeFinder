@@ -24,6 +24,8 @@ import { Map, List, WifiOff } from "lucide-react";
 import { SEO } from "@/components/common/SEO";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useI18n } from "@/i18n";
+import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
+import { RecommendationItem, getRecommendations } from "@/services/recommendationService";
 
 export default function ExplorePage() {
   const { t } = useI18n();
@@ -37,6 +39,7 @@ export default function ExplorePage() {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = React.useState(false);
   const [selectedCafeId, setSelectedCafeId] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<"list" | "map">("list");
+  const [recommendations, setRecommendations] = React.useState<RecommendationItem[]>([]);
   const isOnline = useOnlineStatus();
 
   // Ref for result list container to handle scrolling
@@ -98,6 +101,15 @@ export default function ExplorePage() {
     fetchCafes();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page, search, sort, city, priceRange, featured, trending, verified, amenities.join(",")]);
+
+  React.useEffect(() => {
+    getRecommendations({
+      limit: 4,
+      context: 'explore',
+      city: city || undefined,
+      amenity: amenities[0] || undefined,
+    }).then(response => setRecommendations(response.data.items || [])).catch(() => setRecommendations([]));
+  }, [city, amenities.join(",")]);
 
   const updateParams = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -226,6 +238,11 @@ export default function ExplorePage() {
                 viewMode === "map" ? "hidden lg:flex" : "flex"
               )}
             >
+              {recommendations.length > 0 && (
+                <div className="border-b border-brand-border bg-brand-cream/20 p-4">
+                  <RecommendationSection items={recommendations} title="Explore recommendations" />
+                </div>
+              )}
               {/* Active Filters Bar */}
               <div className="px-6 py-3 border-b border-brand-border bg-brand-background/30 overflow-x-auto no-scrollbar">
                 <ActiveFilters 
@@ -248,7 +265,7 @@ export default function ExplorePage() {
                 {loading ? (
                   <div className="space-y-6">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-[400px] bg-brand-border/10 animate-pulse rounded-3xl" />
+                      <div key={i} className="h-[25rem] bg-brand-border/10 animate-pulse rounded-3xl" />
                     ))}
                   </div>
                 ) : error ? (

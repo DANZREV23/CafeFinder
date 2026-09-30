@@ -9,6 +9,7 @@ import { deploymentService } from '../services/deploymentService.js';
 import { cleanupService } from '../services/cleanupService.js';
 import { alertService } from '../services/alertService.js';
 import { operationalService } from '../services/operationalService.js';
+import { recommendationService } from '../services/recommendationService.js';
 import { AlertSeverity, AlertStatus, CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
 
 export class AdminController {
@@ -82,6 +83,7 @@ export class AdminController {
         email: status.email.failedJobs > 10 ? 'warning' : 'healthy',
         backups: status.backups.status.toLowerCase(),
         jobs: status.jobs.failedCount > 0 ? 'warning' : 'healthy',
+        recommendations: recommendationService.getDiagnostics(),
         timestamp: new Date().toISOString()
       };
 

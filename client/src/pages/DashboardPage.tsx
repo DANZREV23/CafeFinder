@@ -4,9 +4,10 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { CafeListSection } from '@/components/dashboard/CafeListSection';
+import { RecommendationSection } from '@/components/recommendations/RecommendationSection';
 import { getDashboardData, DashboardData } from '@/services/dashboardService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Loader2, Settings, User } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
@@ -57,14 +58,14 @@ const DashboardPage: React.FC = () => {
               <p className="text-stone-500 mt-1">Here's what's happening with your cafe discoveries.</p>
             </div>
             <div className="flex gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium">
+              <Link to="/profile" className="flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium">
                 <User className="w-4 h-4" />
                 Edit Profile
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-coffee-600 text-white rounded-lg hover:bg-coffee-700 transition-colors text-sm font-medium shadow-sm">
+              </Link>
+              <Link to="/dashboard/settings" className="flex items-center gap-2 px-4 py-2 bg-coffee-600 text-white rounded-lg hover:bg-coffee-700 transition-colors text-sm font-medium shadow-sm">
                 <Settings className="w-4 h-4" />
                 Settings
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -84,10 +85,7 @@ const DashboardPage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content (Left/Center) */}
                 <div className="lg:col-span-2 space-y-12">
-                  <CafeListSection 
-                    title="Recommendations for You" 
-                    cafes={data.recommendations} 
-                  />
+                  <RecommendationSection items={data.recommendations} />
                   
                   <CafeListSection 
                     title="Your Recently Viewed" 

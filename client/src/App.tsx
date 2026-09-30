@@ -25,6 +25,7 @@ const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const RecommendationSettingsPage = lazy(() => import('@/pages/RecommendationSettingsPage'));
 const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'));
 const CafeClaimPage = lazy(() => import('@/pages/CafeClaimPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/OwnerDashboardPage'));
@@ -68,6 +69,7 @@ const AdminDataIntegrityPage = lazy(() => import('./pages/admin/DataIntegrity').
 const AdminMaintenanceJobsPage = lazy(() => import('./pages/admin/system/MaintenanceJobs').then(m => ({ default: m.MaintenanceJobs })));
 const AdminOperationalAlertsPage = lazy(() => import('./pages/admin/system/OperationalAlerts').then(m => ({ default: m.OperationalAlerts })));
 const AdminSecurityOverviewPage = lazy(() => import('./pages/admin/system/SecurityOverview').then(m => ({ default: m.SecurityOverview })));
+const AdminRecommendationDiagnosticsPage = lazy(() => import('./pages/admin/system/RecommendationDiagnostics').then(m => ({ default: m.RecommendationDiagnostics })));
 const AdminOwnerClaimsPage = lazy(() => import('./pages/admin/AdminOwnerClaimsPage'));
 const AdminOwnerClaimDetailsPage = lazy(() => import('./pages/admin/AdminOwnerClaimDetailsPage'));
 const AdminChangeRequestsPage = lazy(() => import('./pages/admin/AdminChangeRequestsPage'));
@@ -80,6 +82,7 @@ const AdminMediaLibraryPage = lazy(() => import('./pages/admin/AdminMediaLibrary
 const AdminContentQualityPage = lazy(() => import('./pages/admin/AdminContentQualityPage').then(m => ({ default: m.AdminContentQualityPage })));
 const AdminRedirectsPage = lazy(() => import('./pages/admin/AdminRedirectsPage').then(m => ({ default: m.AdminRedirectsPage })));
 const AdminTestimonialsPage = lazy(() => import('./pages/admin/AdminTestimonialsPage').then(m => ({ default: m.AdminTestimonialsPage })));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
 
 export default function App() {
   return (
@@ -139,6 +142,11 @@ export default function App() {
                     <ProfilePage />
                   </ProtectedRoute>
                 } />
+                <Route path="/dashboard/settings" element={
+                  <ProtectedRoute>
+                    <RecommendationSettingsPage />
+                  </ProtectedRoute>
+                } />
                 
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
@@ -185,6 +193,8 @@ export default function App() {
                   <Route path="system/jobs" element={<AdminMaintenanceJobsPage />} />
                   <Route path="system/alerts" element={<AdminOperationalAlertsPage />} />
                   <Route path="system/security" element={<AdminSecurityOverviewPage />} />
+                  <Route path="system/recommendations" element={<AdminRecommendationDiagnosticsPage />} />
+                  <Route path="settings" element={<AdminSettingsPage />} />
                   <Route path="claims" element={<AdminOwnerClaimsPage />} />
                   <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                   <Route path="change-requests" element={<AdminChangeRequestsPage />} />

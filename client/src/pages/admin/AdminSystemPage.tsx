@@ -259,6 +259,7 @@ export const AdminSystemPage: React.FC = () => {
               <OpButton icon={ShieldCheck} label="Audit" sub="Data Integrity" color="purple" link="/admin/system/integrity" />
               <OpButton icon={ShieldCheck} label="Security" sub="Posture & Logs" color="stone" link="/admin/system/security" />
               <OpButton icon={Bell} label="Alert Center" sub="Manage Incidents" color="red" link="/admin/system/alerts" />
+              <OpButton icon={Activity} label="Recommendations" sub="Discovery Diagnostics" color="green" link="/admin/system/recommendations" />
               <OpButton icon={History} label="System Events" sub="Activity Logging" color="blue" link="/admin/activity" />
             </div>
           </div>

@@ -170,8 +170,25 @@ model User {
   emailJobs       EmailJob[]
   mediaAssets     MediaAsset[]
   contentRevisions ContentRevision[]
+  recommendationPreference UserRecommendationPreference?
 
   @@map("users")
+}
+
+model UserRecommendationPreference {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  preferredCity        String?
+  preferredPriceRange  Int?
+  preferredAmenities   String[] @default([])
+  preferredCoffeeTypes String[] @default([])
+  preferredVibes       String[] @default([])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_recommendation_preferences")
 }
 
 model Session {

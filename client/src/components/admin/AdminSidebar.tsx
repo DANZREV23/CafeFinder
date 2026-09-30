@@ -80,8 +80,9 @@ const MENU_ITEMS = [
       { id: 'deployments', labelKey: 'admin.deployments', icon: Rocket, path: '/admin/system/deployments' },
       { id: 'integrity', labelKey: 'admin.integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
       { id: 'security', labelKey: 'admin.security', icon: ShieldCheck, path: '/admin/system/security' },
+      { id: 'recommendations', labelKey: 'admin.recommendations', icon: Activity, path: '/admin/system/recommendations' },
       { id: 'activity', labelKey: 'admin.auditLogs', icon: History, path: '/admin/activity' },
-      { id: 'settings', labelKey: 'admin.settings', icon: Settings, path: '/admin/settings', comingSoon: true },
+      { id: 'settings', labelKey: 'admin.settings', icon: Settings, path: '/admin/settings' },
     ]
   }
 ];

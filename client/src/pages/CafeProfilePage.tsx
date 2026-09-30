@@ -46,6 +46,8 @@ import reviewService, { Review, ReviewStats } from "@/services/reviewService";
 import { ReviewSummary } from "@/components/reviews/ReviewSummary";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { RecommendationSection } from "@/components/recommendations/RecommendationSection";
+import { RecommendationItem, getRecommendations } from "@/services/recommendationService";
 
 export default function CafeProfilePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -64,6 +66,7 @@ export default function CafeProfilePage() {
   const [editingReview, setEditingReview] = React.useState<Review | null>(null);
   const [reviewTotal, setReviewTotal] = React.useState(0);
   const [reviewPage, setReviewPage] = React.useState(1);
+  const [recommendations, setRecommendations] = React.useState<RecommendationItem[]>([]);
 
   const fetchReviews = async (page = 1, append = false) => {
     if (!cafe?.id) return;
@@ -144,6 +147,13 @@ export default function CafeProfilePage() {
       fetchMyReview();
     }
   }, [cafe?.id, isAuthenticated]);
+
+  React.useEffect(() => {
+    if (!cafe?.id) return;
+    getRecommendations({ limit: 4, context: 'profile', cafeId: cafe.id, excludeCafeId: cafe.id })
+      .then(response => setRecommendations(response.data.items || []))
+      .catch(() => setRecommendations([]));
+  }, [cafe?.id]);
 
   const handleLoadMoreReviews = () => {
     const nextPage = reviewPage + 1;
@@ -238,7 +248,7 @@ export default function CafeProfilePage() {
   if (loading) {
     return (
       <MainLayout>
-        <div className="h-[400px] bg-brand-border/10 animate-pulse" />
+        <div className="h-100 bg-brand-border/10 animate-pulse" />
         <PageContainer className="py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
@@ -246,7 +256,7 @@ export default function CafeProfilePage() {
               <div className="h-4 w-1/4 bg-brand-border/10 animate-pulse rounded-full" />
               <div className="h-64 bg-brand-border/10 animate-pulse rounded-3xl" />
             </div>
-            <div className="h-[500px] bg-brand-border/10 animate-pulse rounded-3xl" />
+            <div className="h-125 bg-brand-border/10 animate-pulse rounded-3xl" />
           </div>
         </PageContainer>
       </MainLayout>
@@ -307,7 +317,7 @@ export default function CafeProfilePage() {
       )}
       <div className="bg-brand-background">
         {/* Navigation & Actions Bar */}
-        <div className="border-b border-brand-border bg-white sticky top-[64px] z-30">
+        <div className="border-b border-brand-border bg-white sticky top-16 z-30">
           <PageContainer className="h-16 flex items-center justify-between">
             <nav className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-muted overflow-hidden whitespace-nowrap" aria-label="Breadcrumb">
               <Link to="/" className="hover:text-brand-coffee transition-colors">{t("nav.home")}</Link>
@@ -488,6 +498,11 @@ export default function CafeProfilePage() {
               {cafe.relatedCafes && cafe.relatedCafes.length > 0 && (
                 <section className="pt-16 border-t border-brand-border">
                   <RelatedCafes cafes={cafe.relatedCafes} />
+                </section>
+              )}
+              {recommendations.length > 0 && (
+                <section className="pt-16 border-t border-brand-border">
+                  <RecommendationSection items={recommendations} title={isAuthenticated ? "Recommended for you" : "Similar cafes"} />
                 </section>
               )}
             </div>
