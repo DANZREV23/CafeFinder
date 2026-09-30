@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { MapProvider } from './components/map/MapProvider';
 import { Toaster } from 'react-hot-toast';
 import { MainLayout } from './components/layout/MainLayout';
+import { I18nProvider } from './i18n';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleRoute from './components/auth/RoleRoute';
 
@@ -75,16 +76,21 @@ const AdminBlogPage = lazy(() => import('./pages/admin/AdminBlogPage'));
 const AdminBlogPostEditPage = lazy(() => import('./pages/admin/AdminBlogPostEditPage'));
 const AdminListsPage = lazy(() => import('./pages/admin/AdminListsPage'));
 const AdminListEditPage = lazy(() => import('./pages/admin/AdminListEditPage'));
+const AdminMediaLibraryPage = lazy(() => import('./pages/admin/AdminMediaLibraryPage').then(m => ({ default: m.AdminMediaLibraryPage })));
+const AdminContentQualityPage = lazy(() => import('./pages/admin/AdminContentQualityPage').then(m => ({ default: m.AdminContentQualityPage })));
+const AdminRedirectsPage = lazy(() => import('./pages/admin/AdminRedirectsPage').then(m => ({ default: m.AdminRedirectsPage })));
+const AdminTestimonialsPage = lazy(() => import('./pages/admin/AdminTestimonialsPage').then(m => ({ default: m.AdminTestimonialsPage })));
 
 export default function App() {
   return (
     <HelmetProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <MapProvider>
-            <Toaster position="top-center" />
-            <Suspense fallback={<PageLoading />}>
-              <Routes>
+      <I18nProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <MapProvider>
+              <Toaster position="top-center" />
+              <Suspense fallback={<PageLoading />}>
+                <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/cafes/:slug" element={<CafeProfilePage />} />
@@ -193,6 +199,12 @@ export default function App() {
                   <Route path="lists" element={<AdminListsPage />} />
                   <Route path="lists/new" element={<AdminListEditPage />} />
                   <Route path="lists/:id/edit" element={<AdminListEditPage />} />
+
+                  {/* New Content Management */}
+                  <Route path="media" element={<AdminMediaLibraryPage />} />
+                  <Route path="content/quality" element={<AdminContentQualityPage />} />
+                  <Route path="redirects" element={<AdminRedirectsPage />} />
+                  <Route path="testimonials" element={<AdminTestimonialsPage />} />
                 </Route>
                 
                 {/* Fallback */}
@@ -202,6 +214,7 @@ export default function App() {
           </MapProvider>
         </AuthProvider>
       </BrowserRouter>
+      </I18nProvider>
     </HelmetProvider>
   );
 }

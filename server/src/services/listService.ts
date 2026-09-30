@@ -1,6 +1,11 @@
 import { CuratedListRepository, ListFilters } from '../repositories/listRepository.js';
 import { generateSlug } from '../utils/slug.js';
 import { PostStatus, Prisma } from '@prisma/client';
+import { EditorialService } from './editorialService.js';
+import { RedirectService } from './redirectService.js';
+
+const editorialService = new EditorialService();
+const redirectService = new RedirectService();
 
 export class CuratedListService {
   private listRepository: CuratedListRepository;
@@ -16,8 +21,11 @@ export class CuratedListService {
     });
   }
 
-  async getListBySlug(slug: string) {
-    return this.listRepository.findBySlug(slug, true);
+  async getListBySlug(slug: string, includeDrafts = false) {
+    const list = await this.listRepository.findBySlug(slug, true);
+    if (!list) return null;
+    if (!includeDrafts && list.status !== PostStatus.PUBLISHED) return null;
+    return list;
   }
 
   // Admin Methods
@@ -51,7 +59,10 @@ export class CuratedListService {
     });
   }
 
-  async updateList(id: string, data: any) {
+  async updateList(id: string, data: any, authorId?: string) {
+    const list = await this.listRepository.findById(id);
+    if (!list) throw new Error('List not found');
+
     const updateData: Prisma.CuratedListUpdateInput = {
       title: data.title,
       description: data.description,
@@ -60,27 +71,31 @@ export class CuratedListService {
       featured: data.featured,
       sortOrder: data.sortOrder,
       status: data.status,
-      updatedAt: new Date()
+      scheduledAt: data.scheduledAt,
+      updatedAt: new Date(),
+      coverImageAsset: data.coverImageId ? { connect: { id: data.coverImageId } } : undefined
     };
 
-    if (data.title) {
-      const list = await this.listRepository.findById(id);
-      if (list && list.status === PostStatus.DRAFT) {
-        const slug = generateSlug(data.title);
-        let finalSlug = slug;
-        let count = 1;
-        
-        // Find a unique slug that isn't the current one (though it usually won't be since title changed)
-        while (true) {
-          const existing = await this.listRepository.findBySlug(finalSlug, false);
-          if (!existing || existing.id === id) break;
-          finalSlug = `${slug}-${++count}`;
-        }
-        updateData.slug = finalSlug;
+    if (data.title && list.status === PostStatus.DRAFT) {
+      updateData.slug = generateSlug(data.title);
+    } else if (data.slug && data.slug !== list.slug) {
+      if (list.status === PostStatus.PUBLISHED) {
+        await redirectService.createRedirect(`/lists/${list.slug}`, `/lists/${data.slug}`);
       }
+      updateData.slug = data.slug;
     }
 
-    return this.listRepository.update(id, updateData);
+    const updatedList = await this.listRepository.update(id, updateData);
+
+    // Create revision
+    await editorialService.createRevision({
+      entityType: 'CuratedList',
+      entityId: id,
+      snapshot: updatedList,
+      authorId
+    });
+
+    return updatedList;
   }
 
   async updateStatus(id: string, status: PostStatus) {

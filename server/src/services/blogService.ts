@@ -2,6 +2,11 @@ import { BlogPostRepository, BlogFilters } from '../repositories/blogRepository.
 import { generateSlug } from '../utils/slug.js';
 import { PostStatus, Prisma } from '@prisma/client';
 import { sanitizeContent } from '../utils/sanitization.js';
+import { EditorialService } from './editorialService.js';
+import { RedirectService } from './redirectService.js';
+
+const editorialService = new EditorialService();
+const redirectService = new RedirectService();
 
 export class BlogPostService {
   private blogRepository: BlogPostRepository;
@@ -36,9 +41,10 @@ export class BlogPostService {
     };
   }
 
-  async getPostBySlug(slug: string) {
+  async getPostBySlug(slug: string, isAdmin: boolean = false) {
     const post = await this.blogRepository.findBySlug(slug);
-    if (!post || post.status !== PostStatus.PUBLISHED) return null;
+    if (!post) return null;
+    if (!isAdmin && post.status !== PostStatus.PUBLISHED) return null;
 
     return {
       ...post,
@@ -100,32 +106,46 @@ export class BlogPostService {
     });
   }
 
-  async updatePost(id: string, data: any) {
+  async updatePost(id: string, data: any, authorId?: string) {
+    const post = await this.blogRepository.findById(id);
+    if (!post) throw new Error('Post not found');
+
     const updateData: Prisma.BlogPostUpdateInput = {
       title: data.title,
       excerpt: data.excerpt,
+      content: data.content ? this.sanitizePostContent(data.content) : undefined,
       coverImage: data.coverImage,
       coverImageAlt: data.coverImageAlt,
       category: data.category,
       metaTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       canonicalUrl: data.canonicalUrl,
-      updatedAt: new Date()
+      scheduledAt: data.scheduledAt,
+      updatedAt: new Date(),
+      coverImageAsset: data.coverImageId ? { connect: { id: data.coverImageId } } : undefined
     };
 
-    if (data.content) {
-      updateData.content = this.sanitizePostContent(data.content);
-    }
-
-    if (data.title) {
-      // Slugs are usually stable once published, but for drafts we can update
-      const post = await this.blogRepository.findById(id);
-      if (post && post.status === PostStatus.DRAFT) {
-        updateData.slug = generateSlug(data.title);
+    if (data.title && post.status === PostStatus.DRAFT) {
+      updateData.slug = generateSlug(data.title);
+    } else if (data.slug && data.slug !== post.slug) {
+      // Create redirect if slug changes on a non-draft post
+      if (post.status === PostStatus.PUBLISHED) {
+        await redirectService.createRedirect(`/blog/${post.slug}`, `/blog/${data.slug}`);
       }
+      updateData.slug = data.slug;
     }
 
-    return this.blogRepository.update(id, updateData);
+    const updatedPost = await this.blogRepository.update(id, updateData);
+
+    // Create revision
+    await editorialService.createRevision({
+      entityType: 'BlogPost',
+      entityId: id,
+      snapshot: updatedPost,
+      authorId
+    });
+
+    return updatedPost;
   }
 
   async updateStatus(id: string, status: PostStatus) {

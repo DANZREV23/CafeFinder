@@ -1,4 +1,4 @@
-import { PrismaClient, Role, UserStatus, CafeStatus, ReviewStatus, PostStatus } from '@prisma/client';
+import { PrismaClient, Role, UserStatus, CafeStatus, ReviewStatus, PostStatus, TestimonialStatus } from '@prisma/client';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -10,8 +10,8 @@ dotenv.config();
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // Ensure local DB is running
-  const databaseUrl = await startLocalPostgresServer();
+  // Ensure local DB is running if needed
+  const databaseUrl = process.env.PRISMA_DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5442/cloud_sql_development_database?sslmode=disable&statement_cache_size=0';
   process.env.PRISMA_DATABASE_URL = databaseUrl;
   console.log(`[Seed]: Using database URL: ${databaseUrl.replace(/:[^@:]+@/, ':****@')}`);
 
@@ -706,6 +706,7 @@ async function main() {
         content: 'CafeFinder is my go-to app whenever I travel. Finding a spot with fast Wi-Fi and good coffee has never been easier.',
         rating: 5,
         avatarUrl: 'https://i.pravatar.cc/150?u=sarah',
+        status: TestimonialStatus.PUBLISHED,
       },
       {
         name: 'Marcus Tan',
@@ -713,6 +714,7 @@ async function main() {
         content: 'The detailed reviews and amenity filters are game changers. I found some hidden gems in Tiong Bahru I never knew existed.',
         rating: 5,
         avatarUrl: 'https://i.pravatar.cc/150?u=marcus',
+        status: TestimonialStatus.PUBLISHED,
       },
       {
         name: 'Elena Rodriguez',
@@ -720,6 +722,7 @@ async function main() {
         content: 'I love how I can filter by "vibe". Sometimes I need a quiet library atmosphere, other times a lively social spot. This app gets it.',
         rating: 4,
         avatarUrl: 'https://i.pravatar.cc/150?u=elena',
+        status: TestimonialStatus.PUBLISHED,
       },
     ],
   });
@@ -883,7 +886,7 @@ async function main() {
     throw error;
   } finally {
     await prisma.$disconnect();
-    await stopLocalPostgresServer();
+    // await stopLocalPostgresServer();
   }
 }
 

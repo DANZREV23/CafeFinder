@@ -355,8 +355,8 @@ const AdminListEditPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Publication Status</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['DRAFT', 'PUBLISHED'] as PostStatus[]).map(s => (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {(['DRAFT', 'PENDING_REVIEW', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'] as PostStatus[]).map(s => (
                     <button
                       key={s}
                       onClick={() => setFormData({ ...formData, status: s })}
@@ -366,10 +366,22 @@ const AdminListEditPage: React.FC = () => {
                           : 'bg-neutral-50 text-neutral-400 hover:bg-neutral-100'
                       }`}
                     >
-                      {s}
+                      {s.replace('_', ' ')}
                     </button>
                   ))}
                 </div>
+
+                {(formData.status as string) === 'SCHEDULED' && (
+                  <div className="pt-4 border-t border-neutral-50">
+                    <label className="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Schedule For</label>
+                    <input 
+                      type="datetime-local"
+                      value={formData.scheduledAt ? new Date(formData.scheduledAt).toISOString().slice(0, 16) : ''}
+                      onChange={e => setFormData({ ...formData, scheduledAt: e.target.value })}
+                      className="w-full bg-neutral-50 border border-neutral-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none font-bold"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -156,7 +156,7 @@ export class CuratedListController {
     try {
       const { id } = req.params;
       const validatedData = curatedListSchema.partial().parse(req.body);
-      const list = await this.listService.updateList(id, validatedData);
+      const list = await this.listService.updateList(id, validatedData, req.user!.id);
       
       res.json({
         success: true,

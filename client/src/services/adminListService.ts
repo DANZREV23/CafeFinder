@@ -1,5 +1,5 @@
 import { fetchApi } from './api';
-import { ApiResponse, CuratedList, ListResponse, PostStatus, CuratedListCafe } from '../types';
+import { ApiResponse, CuratedList, CuratedListsResponse, PostStatus, CuratedListCafe } from '../types';
 
 export const adminListService = {
   getAll: async (params: { page?: number; limit?: number; search?: string; status?: PostStatus } = {}) => {
@@ -9,7 +9,7 @@ export const adminListService = {
     if (params.search) query.append('search', params.search);
     if (params.status) query.append('status', params.status);
     
-    return fetchApi<ListResponse<CuratedList>>(`/admin/lists?${query.toString()}`);
+    return fetchApi<CuratedListsResponse>(`/admin/lists?${query.toString()}`);
   },
 
   getById: async (id: string) => {

@@ -1,5 +1,5 @@
 import { fetchApi } from './api';
-import { ApiResponse, BlogPost, ListResponse } from '../types';
+import { ApiResponse, BlogPost, BlogListResponse } from '../types';
 
 export const blogService = {
   getAll: async (params: { page?: number; limit?: number; search?: string; category?: string } = {}) => {
@@ -9,7 +9,7 @@ export const blogService = {
     if (params.search) query.append('search', params.search);
     if (params.category) query.append('category', params.category);
     
-    return fetchApi<ListResponse<BlogPost>>(`/blog?${query.toString()}`);
+    return fetchApi<BlogListResponse>(`/blog?${query.toString()}`);
   },
 
   getBySlug: async (slug: string) => {

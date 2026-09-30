@@ -23,8 +23,10 @@ import { CafeMap } from "@/components/map/CafeMap";
 import { Map, List, WifiOff } from "lucide-react";
 import { SEO } from "@/components/common/SEO";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useI18n } from "@/i18n";
 
 export default function ExplorePage() {
+  const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [cafes, setCafes] = React.useState<Cafe[]>([]);
@@ -182,9 +184,10 @@ export default function ExplorePage() {
                       "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
                       viewMode === "list" ? "bg-white text-brand-coffee shadow-sm" : "text-brand-muted"
                     )}
+                    aria-pressed={viewMode === "list"}
                   >
-                    <List className="w-4 h-4" />
-                    List
+                    <List className="w-4 h-4" aria-hidden="true" />
+                    {t("common.list")}
                   </button>
                   <button 
                     onClick={() => setViewMode("map")}
@@ -192,18 +195,20 @@ export default function ExplorePage() {
                       "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
                       viewMode === "map" ? "bg-white text-brand-coffee shadow-sm" : "text-brand-muted"
                     )}
+                    aria-pressed={viewMode === "map"}
                   >
-                    <Map className="w-4 h-4" />
-                    Map
+                    <Map className="w-4 h-4" aria-hidden="true" />
+                    {t("common.map")}
                   </button>
                 </div>
                 <Button
                   variant="outline"
                   className="h-10 px-4 border-brand-border flex items-center gap-2"
                   onClick={() => setIsMobileFiltersOpen(true)}
+                  aria-label={t("common.filter")}
                 >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filters
+                  <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+                  {t("common.filter")}
                 </Button>
                 <SortSelect 
                   value={sort}
@@ -250,15 +255,15 @@ export default function ExplorePage() {
                   <ErrorState onRetry={fetchCafes} />
                 ) : cafes.length === 0 ? (
                   <EmptyState 
-                    title={search ? `No results for "${search}"` : "No cafes found"}
+                    title={search ? `${t("common.noResults")} for "${search}"` : t("common.noResults")}
                     description="Try adjusting your filters to find what you're looking for."
-                    action={<Button onClick={handleClearAll} variant="outline">Clear filters</Button>}
+                    action={<Button onClick={handleClearAll} variant="outline">{t("common.clear")} filters</Button>}
                   />
                 ) : (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-brand-muted">
-                        {totalItems} Cafes Found
+                      <span className="text-xs font-bold uppercase tracking-widest text-brand-muted" aria-live="polite">
+                        {totalItems} {t("cafe.status.published")}
                       </span>
                     </div>
                     <div className="space-y-6 pb-24 lg:pb-6">

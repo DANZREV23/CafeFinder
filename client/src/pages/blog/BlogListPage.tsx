@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Search, Loader2 } from 'lucide-react';
 import { blogService } from '../../services/blogService';
-import { BlogPost, ListResponse } from '../../types';
+import { BlogPost, BlogListResponse, Pagination } from '../../types';
 import { BlogCard } from '../../components/blog/BlogCard';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { MainLayout } from '../../components/layout/MainLayout';
@@ -16,7 +16,7 @@ const BlogListPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<ListResponse<BlogPost>['pagination'] | null>(null);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
 
   useEffect(() => {
     loadPosts();

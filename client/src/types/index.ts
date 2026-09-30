@@ -1,16 +1,25 @@
+export type Role = 'USER' | 'OWNER' | 'ADMIN';
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+export type CafeStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED' | 'ARCHIVED';
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
+export type CafeSubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar?: string;
-  role: 'USER' | 'OWNER' | 'ADMIN';
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  avatarUrl?: string | null;
+  role: Role;
+  status: UserStatus;
+  createdAt?: string;
 }
 
 export interface Amenity {
   id: string;
   name: string;
   label: string;
+  slug?: string;
   icon?: string;
 }
 
@@ -24,7 +33,7 @@ export interface CafePhoto {
   id: string;
   url: string;
   thumbnailUrl?: string;
-  caption?: string;
+  caption?: string | null;
   altText?: string;
   isCover: boolean;
 }
@@ -37,6 +46,13 @@ export interface CafeHours {
   closeTime?: string;
 }
 
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface Cafe {
   id: string;
   name: string;
@@ -45,8 +61,11 @@ export interface Cafe {
   shortDescription?: string;
   address: string;
   city: string;
-  state: string;
-  country: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
   priceRange: number;
   ratingAverage: number;
   reviewCount: number;
@@ -54,33 +73,59 @@ export interface Cafe {
   trending: boolean;
   verified?: boolean;
   coffeeType?: string;
-  status: string;
+  status: string | CafeStatus;
+  ownerId?: string | null;
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  phone?: string;
+  email?: string;
+  website?: string;
+  instagram?: string;
+  facebook?: string;
   metaTitle?: string;
   metaDescription?: string;
   photos?: CafePhoto[];
   amenities?: CafeAmenity[];
   hours?: CafeHours[];
   curatedLists?: Array<{ list: { id: string; title: string; slug: string; coverImage?: string } }>;
+  reviews?: Review[];
+  relatedCafes?: Cafe[];
+  isFavorite?: boolean;
+  claimStatus?: 'AVAILABLE' | 'PENDING' | 'MANAGED' | 'OWNED';
 }
 
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
+  pagination?: Pagination;
   error?: {
     message: string;
+    details?: any;
   };
 }
+
+export interface BlogListResponse extends ApiResponse<{
+  posts: BlogPost[];
+  pagination: Pagination;
+}> {}
+
+export interface CuratedListsResponse extends ApiResponse<{
+  lists: CuratedList[];
+  pagination: Pagination;
+}> {}
 
 export interface ListResponse<T> extends ApiResponse<T[]> {
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: Pagination;
 }
 
-export type PostStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+  pagination: Pagination;
+}
+
+export type PostStatus = 'DRAFT' | 'PENDING_REVIEW' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
 
 export interface Author {
   id: string;
@@ -93,18 +138,19 @@ export interface BlogPost {
   id: string;
   title: string;
   slug: string;
-  excerpt?: string;
+  excerpt?: string | null;
   content: string;
-  coverImage?: string;
-  coverImageAlt?: string;
-  category?: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  canonicalUrl?: string;
+  coverImage?: string | null;
+  coverImageAlt?: string | null;
+  category?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  canonicalUrl?: string | null;
   author: Author;
   status: PostStatus;
-  publishedAt?: string;
-  readingTime?: string;
+  scheduledAt?: string;
+  publishedAt?: string | null;
+  readingTime?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -113,11 +159,12 @@ export interface CuratedList {
   id: string;
   title: string;
   slug: string;
-  description?: string;
-  coverImage?: string;
-  coverImageAlt?: string;
+  description?: string | null;
+  coverImage?: string | null;
+  coverImageAlt?: string | null;
   featured: boolean;
   status: PostStatus;
+  scheduledAt?: string;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -131,7 +178,7 @@ export interface CuratedListCafe {
   listId: string;
   cafeId: string;
   sortOrder: number;
-  editorialNote?: string;
+  editorialNote?: string | null;
   cafe: Cafe;
 }
 
@@ -150,8 +197,9 @@ export interface ReviewPhoto {
 
 export interface Review {
   id: string;
-  reviewer: Reviewer;
+  reviewer?: Reviewer;
   user?: Reviewer; // Backwards compatibility for some components
+  userId?: string;
   cafeId: string;
   cafe?: {
     id: string;
@@ -163,10 +211,10 @@ export interface Review {
   serviceRating: number;
   overallRating: number;
   comment: string | null;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
+  status: ReviewStatus;
   photos: ReviewPhoto[];
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export type CafeReview = Review;
@@ -174,10 +222,76 @@ export type CafeReview = Review;
 export interface Testimonial {
   id: string;
   name: string;
-  role?: string;
-  avatarUrl?: string;
+  role?: string | null;
+  avatarUrl?: string | null;
   content: string;
   rating: number;
   status: string;
   createdAt: string;
+}
+
+export interface AdminDashboardStats {
+  pendingCafeSubmissions: number;
+  pendingReviews: number;
+  publishedCafes: number;
+  rejectedSubmissions: number;
+  totalUsers: number;
+}
+
+export interface ActivityLog {
+  id: string;
+  userId: string | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  description: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  } | null;
+}
+
+export interface CafeSubmission {
+  id: string;
+  submittedById: string;
+  cafeId: string | null;
+  name: string;
+  shortDescription: string;
+  description: string;
+  address: string;
+  city: string;
+  state: string | null;
+  country: string;
+  postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  priceRange: number | null;
+  status: CafeSubmissionStatus;
+  rejectionReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  submittedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  photos: {
+    id: string;
+    url: string;
+    caption: string | null;
+  }[];
+  amenities: {
+    amenity: Amenity;
+  }[] | {
+    id: string;
+    name: string;
+  }[];
 }

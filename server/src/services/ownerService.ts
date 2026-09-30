@@ -172,6 +172,30 @@ export class OwnerService {
     return prisma.cafePhoto.findMany({ where: { cafeId: cafe.id }, orderBy: { sortOrder: 'asc' } });
   }
 
+  async updatePhotoMetadata(cafeId: string, photoId: string, userId: string, isAdmin: boolean, data: { altText?: string; caption?: string }) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const photo = await prisma.cafePhoto.findFirst({ where: { id: photoId, cafeId: cafe.id } });
+    if (!photo) throw fail('Photo not found', 404);
+    
+    const updated = await prisma.cafePhoto.update({
+      where: { id: photoId },
+      data: {
+        altText: data.altText !== undefined ? sanitizePlain(data.altText) : undefined,
+        caption: data.caption !== undefined ? sanitizePlain(data.caption) : undefined
+      }
+    });
+    
+    await this.activityLogs.logAction({ 
+      userId, 
+      action: 'OWNER_UPDATED_PHOTO_METADATA', 
+      entityType: 'CafePhoto', 
+      entityId: photoId, 
+      description: `Updated metadata for photo in ${cafe.name}` 
+    });
+    
+    return updated;
+  }
+
   // Menu Management
   private menuRepository = new MenuRepository();
 

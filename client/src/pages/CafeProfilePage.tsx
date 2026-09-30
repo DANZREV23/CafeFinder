@@ -41,6 +41,7 @@ import { MapProvider } from "@/components/map/MapProvider";
 import { CafeMap } from "@/components/map/CafeMap";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/i18n";
 import reviewService, { Review, ReviewStats } from "@/services/reviewService";
 import { ReviewSummary } from "@/components/reviews/ReviewSummary";
 import { ReviewList } from "@/components/reviews/ReviewList";
@@ -49,6 +50,7 @@ import { ReviewForm } from "@/components/reviews/ReviewForm";
 export default function CafeProfilePage() {
   const { slug } = useParams<{ slug: string }>();
   const { user, isAuthenticated } = useAuth();
+  const { t, formatTime, locale } = useI18n();
   const [cafe, setCafe] = React.useState<Cafe | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -198,16 +200,37 @@ export default function CafeProfilePage() {
     if (!cafe?.hours || cafe.hours.length === 0) return null;
     const now = new Date();
     const day = now.getDay();
-    const time = now.getHours() * 100 + now.getMinutes();
     const hours = cafe.hours.find(h => h.dayOfWeek === day);
 
-    if (!hours || hours.isClosed) return { status: 'Closed', color: 'text-red-500' };
+    if (!hours || hours.isClosed) return { status: t("cafe.closed"), color: 'text-red-500' };
 
-    const open = parseInt(hours.openTime.replace(':', ''));
-    const close = parseInt(hours.closeTime.replace(':', ''));
+    const [openH, openM] = hours.openTime?.split(':').map(Number) || [0, 0];
+    const [closeH, closeM] = hours.closeTime?.split(':').map(Number) || [0, 0];
+    
+    const openTime = new Date(now);
+    openTime.setHours(openH, openM, 0);
+    
+    const closeTime = new Date(now);
+    closeTime.setHours(closeH, closeM, 0);
+    
+    // Handle overnight hours
+    if (closeTime <= openTime) {
+      closeTime.setDate(closeTime.getDate() + 1);
+    }
 
-    if (time >= open && time < close) return { status: 'Open now', color: 'text-emerald-500' };
-    return { status: 'Closed now', color: 'text-red-500' };
+    if (now >= openTime && now < closeTime) {
+      return { status: t("cafe.openNow"), color: 'text-emerald-500' };
+    }
+    
+    return { status: t("cafe.closed"), color: 'text-red-500' };
+  };
+
+  const formatHourString = (timeStr: string) => {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m, 0);
+    return formatTime(date);
   };
 
   const currentStatus = getStatus();
@@ -286,12 +309,12 @@ export default function CafeProfilePage() {
         {/* Navigation & Actions Bar */}
         <div className="border-b border-brand-border bg-white sticky top-[64px] z-30">
           <PageContainer className="h-16 flex items-center justify-between">
-            <nav className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-muted overflow-hidden whitespace-nowrap">
-              <Link to="/" className="hover:text-brand-coffee transition-colors">Home</Link>
-              <ChevronRight className="h-3 w-3 shrink-0" />
-              <Link to="/explore" className="hover:text-brand-coffee transition-colors">Explore</Link>
-              <ChevronRight className="h-3 w-3 shrink-0" />
-              <span className="text-brand-charcoal truncate">{cafe.name}</span>
+            <nav className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-muted overflow-hidden whitespace-nowrap" aria-label="Breadcrumb">
+              <Link to="/" className="hover:text-brand-coffee transition-colors">{t("nav.home")}</Link>
+              <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+              <Link to="/explore" className="hover:text-brand-coffee transition-colors">{t("nav.explore")}</Link>
+              <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+              <span className="text-brand-charcoal truncate" aria-current="page">{cafe.name}</span>
             </nav>
             
             <div className="flex items-center gap-2 md:gap-4">
@@ -324,18 +347,18 @@ export default function CafeProfilePage() {
                 <div className="flex flex-wrap items-center gap-4">
                   {cafe.verified && (
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      Verified Listing
+                      <ShieldCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                      {t("cafe.verified")}
                     </div>
                   )}
                   {cafe.featured && (
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold border border-amber-100">
-                      Featured
+                      {t("cafe.featured")}
                     </div>
                   )}
                   {cafe.trending && (
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-cream text-brand-coffee rounded-full text-xs font-bold border border-brand-coffee/10">
-                      Trending Now
+                      {t("cafe.trending")}
                     </div>
                   )}
                   <div className="h-4 w-px bg-brand-border hidden md:block" />
@@ -344,22 +367,22 @@ export default function CafeProfilePage() {
                   {cafe.claimStatus === 'MANAGED' && (
                     <Button asChild variant="outline" size="sm" className="rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-8 px-4">
                       <Link to={`/owner/cafes/${cafe.id}`}>
-                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> You manage this cafe
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" /> {t("cafe.managed")}
                       </Link>
                     </Button>
                   )}
                   {cafe.claimStatus === 'PENDING' && (
                     <Button asChild variant="outline" size="sm" className="rounded-full border-amber-200 text-amber-700 hover:bg-amber-50 h-8 px-4">
                       <Link to="/owner/claims">
-                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim pending
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" /> {t("cafe.claimPending")}
                       </Link>
                     </Button>
                   )}
-                  {cafe.claimStatus === 'OWNED' && <span className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 text-xs font-bold">Owner claimed</span>}
+                  {cafe.claimStatus === 'OWNED' && <span className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 text-xs font-bold">{t("cafe.ownerClaimed")}</span>}
                   {cafe.claimStatus === 'AVAILABLE' && (
                     <Button asChild variant="outline" size="sm" className="rounded-full border-brand-coffee/20 text-brand-coffee hover:bg-brand-cream h-8 px-4">
                       <Link to={isAuthenticated ? `/cafes/${cafe.slug}/claim` : `/login?redirect=/cafes/${cafe.slug}/claim`}>
-                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Claim this cafe
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" /> {t("cafe.claimThis")}
                       </Link>
                     </Button>
                   )}
@@ -401,20 +424,20 @@ export default function CafeProfilePage() {
               </section>
 
               {/* Amenities */}
-              <section className="space-y-8 pt-8 border-t border-brand-border">
-                <h2 className="text-3xl font-serif font-bold text-brand-charcoal">Amenities & Vibe</h2>
+              <section className="space-y-8 pt-8 border-t border-brand-border" aria-labelledby="amenities-heading">
+                <h2 id="amenities-heading" className="text-3xl font-serif font-bold text-brand-charcoal">{t("cafe.amenitiesVibe")}</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   {cafe.amenities && cafe.amenities.length > 0 ? (
                     cafe.amenities.map((ca) => (
                       <div key={ca.amenity.id} className="flex flex-col gap-4 p-6 rounded-3xl border border-brand-border bg-white hover:border-brand-coffee/30 transition-all group">
-                         <div className="w-10 h-10 bg-brand-background rounded-2xl flex items-center justify-center text-brand-coffee group-hover:bg-brand-coffee group-hover:text-white transition-colors">
+                         <div className="w-10 h-10 bg-brand-background rounded-2xl flex items-center justify-center text-brand-coffee group-hover:bg-brand-coffee group-hover:text-white transition-colors" aria-hidden="true">
                            <Check className="w-5 h-5" />
                          </div>
                          <span className="font-bold text-brand-charcoal">{ca.amenity.name}</span>
                       </div>
                     ))
                   ) : (
-                    <p className="col-span-full text-brand-muted italic">No amenities listed yet.</p>
+                    <p className="col-span-full text-brand-muted italic">{t("cafe.noAmenities")}</p>
                   )}
                 </div>
               </section>
@@ -423,16 +446,16 @@ export default function CafeProfilePage() {
               <CafeMenuHighlights />
 
               {/* Reviews Section */}
-              <section id="reviews" className="space-y-12 pt-8 border-t border-brand-border">
+              <section id="reviews" className="space-y-12 pt-8 border-t border-brand-border" aria-labelledby="reviews-heading">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-3xl font-serif font-bold text-brand-charcoal">Customer Reviews</h2>
+                  <h2 id="reviews-heading" className="text-3xl font-serif font-bold text-brand-charcoal">{t("cafe.customerReviews")}</h2>
                   {!myReview && !isWritingReview && (
                     <Button 
                       variant="primary" 
                       onClick={() => isAuthenticated ? setIsWritingReview(true) : window.location.href = '/login'}
                       className="hidden sm:flex"
                     >
-                      Write a review
+                      {t("cafe.writeReview")}
                     </Button>
                   )}
                 </div>
@@ -476,10 +499,10 @@ export default function CafeProfilePage() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
                 
                 <div className="space-y-6 relative z-10">
-                  <h3 className="text-2xl font-serif font-bold text-brand-accent-warm">Visit Us</h3>
+                  <h3 className="text-2xl font-serif font-bold text-brand-accent-warm">{t("cafe.visitUs")}</h3>
                   <div className="space-y-5">
                     <div className="flex items-start gap-4">
-                      <MapPin className="w-5 h-5 text-brand-accent-warm mt-1 shrink-0" />
+                      <MapPin className="w-5 h-5 text-brand-accent-warm mt-1 shrink-0" aria-hidden="true" />
                       <div className="text-sm leading-relaxed text-white/80">
                         <p>{cafe.address}</p>
                         <p>{cafe.city}, {cafe.state} {cafe.postalCode}</p>
@@ -490,14 +513,19 @@ export default function CafeProfilePage() {
                         href={`tel:${cafe.phone}`} 
                         className="flex items-center gap-4 group"
                         onClick={() => cafeService.trackInteraction(cafe.id, 'PHONE_CLICK')}
+                        aria-label={`${t("common.call")} ${cafe.phone}`}
                       >
-                        <Phone className="w-5 h-5 text-brand-accent-warm shrink-0" />
+                        <Phone className="w-5 h-5 text-brand-accent-warm shrink-0" aria-hidden="true" />
                         <span className="text-sm font-medium group-hover:text-brand-accent-warm transition-colors">{cafe.phone}</span>
                       </a>
                     )}
                     {cafe.email && (
-                      <a href={`mailto:${cafe.email}`} className="flex items-center gap-4 group">
-                        <Mail className="w-5 h-5 text-brand-accent-warm shrink-0" />
+                      <a 
+                        href={`mailto:${cafe.email}`} 
+                        className="flex items-center gap-4 group"
+                        aria-label={`${t("auth.email")} ${cafe.email}`}
+                      >
+                        <Mail className="w-5 h-5 text-brand-accent-warm shrink-0" aria-hidden="true" />
                         <span className="text-sm font-medium group-hover:text-brand-accent-warm transition-colors truncate">{cafe.email}</span>
                       </a>
                     )}
@@ -505,22 +533,21 @@ export default function CafeProfilePage() {
                 </div>
 
                 <div className="space-y-6 relative z-10">
-                  <h3 className="text-2xl font-serif font-bold text-brand-accent-warm">Hours</h3>
+                  <h3 className="text-2xl font-serif font-bold text-brand-accent-warm">{t("cafe.hours")}</h3>
                   <div className="space-y-3">
-                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, idx) => {
-                      // Adjust JS Sunday (0) to match our list index if needed, but the seed uses 0=Sunday
-                      const dayMap = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
-                      const dayIdx = dayMap[idx];
+                    {Array.from({ length: 7 }, (_, i) => {
+                      const dayIdx = (i + 1) % 7; // Mon-Sun (1, 2, 3, 4, 5, 6, 0)
+                      const dayName = new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(new Date(2021, 0, 4 + i));
                       const hours = cafe.hours?.find(h => h.dayOfWeek === dayIdx);
                       const isToday = new Date().getDay() === dayIdx;
                       
                       return (
-                        <div key={day} className={cn(
+                        <div key={dayName} className={cn(
                           "flex justify-between text-sm transition-colors",
                           isToday ? "text-brand-accent-warm font-bold scale-[1.02] origin-left" : "text-white/40 font-medium"
                         )}>
-                          <span>{day}</span>
-                          <span>{hours?.isClosed ? "Closed" : `${hours?.openTime} - ${hours?.closeTime}`}</span>
+                          <span>{dayName}</span>
+                          <span>{hours?.isClosed ? t("cafe.closed") : `${formatHourString(hours?.openTime || "")} - ${formatHourString(hours?.closeTime || "")}`}</span>
                         </div>
                       );
                     })}
@@ -539,8 +566,8 @@ export default function CafeProfilePage() {
                           target="_blank" 
                           rel="noopener noreferrer" 
                         >
-                          Visit Website
-                          <ExternalLink className="w-4 h-4" />
+                          {t("common.website")}
+                          <ExternalLink className="w-4 h-4" aria-hidden="true" />
                         </a>
                       </Button>
                     )}
@@ -553,27 +580,28 @@ export default function CafeProfilePage() {
                         window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`, '_blank');
                       }}
                     >
-                      <Navigation className="w-4 h-4" />
-                      Get Directions
+                      <Navigation className="w-4 h-4" aria-hidden="true" />
+                      {t("common.directions")}
                     </Button>
                 </div>
               </div>
               
               {/* Featured In Lists */}
               {cafe.curatedLists && cafe.curatedLists.length > 0 && (
-                <div className="p-8 rounded-[40px] border border-brand-border bg-white shadow-sm space-y-6">
-                  <h3 className="text-xl font-serif font-bold text-brand-charcoal">Featured In</h3>
+                <div className="p-8 rounded-[40px] border border-brand-border bg-white shadow-sm space-y-6" aria-labelledby="featured-in-heading">
+                  <h3 id="featured-in-heading" className="text-xl font-serif font-bold text-brand-charcoal">{t("cafe.featuredIn")}</h3>
                   <div className="space-y-4">
                     {cafe.curatedLists.map(({ list }) => (
                       <Link 
                         key={list.id} 
                         to={`/lists/${list.slug}`}
                         className="flex items-center gap-4 group"
+                        aria-label={`${t("common.viewDetails")} for ${list.title}`}
                       >
                         <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-brand-border group-hover:border-brand-coffee transition-colors">
                           <img 
                             src={list.coverImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=100&q=80'} 
-                            alt={list.title}
+                            alt=""
                             className="w-full h-full object-cover transition-transform group-hover:scale-110"
                             referrerPolicy="no-referrer"
                           />
@@ -582,7 +610,7 @@ export default function CafeProfilePage() {
                           <h4 className="font-bold text-sm text-brand-charcoal group-hover:text-brand-coffee transition-colors leading-tight mb-1">
                             {list.title}
                           </h4>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-muted">View Collection</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-muted">{t("cafe.viewCollection")}</span>
                         </div>
                       </Link>
                     ))}
@@ -591,9 +619,9 @@ export default function CafeProfilePage() {
               )}
 
               {/* Location Card */}
-              <div className="p-8 rounded-[40px] border border-brand-border bg-white shadow-sm space-y-6">
+              <div className="p-8 rounded-[40px] border border-brand-border bg-white shadow-sm space-y-6" aria-labelledby="location-heading">
                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-serif font-bold text-brand-charcoal">Location</h3>
+                    <h3 id="location-heading" className="text-xl font-serif font-bold text-brand-charcoal">{t("cafe.location")}</h3>
                     <div className="flex gap-2">
                       {cafe.instagram && (
                         <a 
@@ -602,9 +630,10 @@ export default function CafeProfilePage() {
                           rel="noopener noreferrer" 
                           className="p-2 bg-brand-cream rounded-full text-brand-coffee hover:bg-brand-coffee hover:text-white transition-all"
                           onClick={() => cafeService.trackInteraction(cafe.id, 'INSTAGRAM_CLICK')}
+                          aria-label="Instagram"
                         >
                           <div className="flex gap-2">
-                            <Instagram className="w-4 h-4" />
+                            <Instagram className="w-4 h-4" aria-hidden="true" />
                           </div>
                         </a>
                       )}
@@ -615,8 +644,9 @@ export default function CafeProfilePage() {
                           rel="noopener noreferrer" 
                           className="p-2 bg-brand-cream rounded-full text-brand-coffee hover:bg-brand-coffee hover:text-white transition-all"
                           onClick={() => cafeService.trackInteraction(cafe.id, 'FACEBOOK_CLICK')}
+                          aria-label="Facebook"
                         >
-                          <Facebook className="w-4 h-4" />
+                          <Facebook className="w-4 h-4" aria-hidden="true" />
                         </a>
                       )}
                     </div>
@@ -628,12 +658,13 @@ export default function CafeProfilePage() {
                         selectedCafeId={cafe.id}
                         center={cafe.latitude && cafe.longitude ? { lat: Number(cafe.latitude), lng: Number(cafe.longitude) } : undefined}
                         zoom={15}
+                        aria-label={t("accessibility.mapLabel")}
                       />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-brand-background">
-                        <WifiOff className="h-10 w-10 text-brand-muted mb-4" />
-                        <p className="text-sm font-bold text-brand-charcoal">Map unavailable offline</p>
-                        <p className="text-xs text-brand-muted mt-2">Reconnect to view the interactive map.</p>
+                        <WifiOff className="h-10 w-10 text-brand-muted mb-4" aria-hidden="true" />
+                        <p className="text-sm font-bold text-brand-charcoal">{t("cafe.mapUnavailableOffline")}</p>
+                        <p className="text-xs text-brand-muted mt-2">{t("cafe.reconnectToViewMap")}</p>
                       </div>
                     )}
                  </div>

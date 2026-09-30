@@ -1,7 +1,13 @@
 import * as React from "react";
-import { X } from "lucide-react";
 import { Button } from "../ui/Button";
 import { FilterPanel } from "./FilterPanel";
+import { useI18n } from "@/i18n";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 
 interface MobileFilterDrawerProps {
   isOpen: boolean;
@@ -20,38 +26,15 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
   onClearAll,
   totalResults,
 }) => {
-  // Prevent scrolling when drawer is open
-  React.useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  const { t } = useI18n();
 
   return (
-    <div className="fixed inset-0 z-[100] lg:hidden">
-      {/* Overlay */}
-      <div 
-        className="absolute inset-0 bg-brand-charcoal/40 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
-      
-      {/* Drawer */}
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-xs bg-white shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="fixed right-0 top-0 bottom-0 left-auto translate-x-0 translate-y-0 h-full w-full max-w-xs rounded-none sm:rounded-none flex flex-col p-0 border-l border-brand-border">
         <div className="flex items-center justify-between p-4 border-b border-brand-border">
-          <h2 className="text-lg font-bold text-brand-charcoal">Filters</h2>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-brand-cream rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-brand-muted" />
-          </button>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-brand-charcoal">{t("common.filter")}</DialogTitle>
+          </DialogHeader>
         </div>
         
         <div className="flex-1 overflow-y-auto p-6">
@@ -67,10 +50,10 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
             className="w-full h-12 rounded-xl text-base font-bold shadow-lg shadow-brand-coffee/20"
             onClick={onClose}
           >
-            Show {totalResults} {totalResults === 1 ? 'Cafe' : 'Cafes'}
+            Show {totalResults} {t("cafe.status.published")}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

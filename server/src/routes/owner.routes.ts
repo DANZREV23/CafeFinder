@@ -20,6 +20,7 @@ router.put('/cafes/:id/amenities', submissionRateLimit, controller.updateAmeniti
 router.get('/cafes/:id/reviews', controller.getReviews);
 router.post('/cafes/:id/photos', submissionRateLimit, uploadOwnerPhoto.single('photo'), controller.uploadPhoto);
 router.delete('/cafes/:id/photos/:photoId', controller.deletePhoto);
+router.patch('/cafes/:id/photos/:photoId', submissionRateLimit, controller.updatePhotoMetadata);
 router.post('/cafes/:id/photos/:photoId/cover', controller.setCoverPhoto);
 router.get('/cafes/:id/change-requests', controller.getChangeRequests);
 router.post('/cafes/:id/change-requests', submissionRateLimit, controller.createChangeRequest);

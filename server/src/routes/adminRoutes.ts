@@ -5,6 +5,10 @@ import { ClaimController } from '../controllers/claimController.js';
 import { ChangeRequestController } from '../controllers/changeRequestController.js';
 import { BlogPostController } from '../controllers/blogController.js';
 import { CuratedListController } from '../controllers/listController.js';
+import { MediaController } from '../controllers/mediaController.js';
+import { EditorialController } from '../controllers/editorialController.js';
+import { RedirectController } from '../controllers/redirectController.js';
+import { TestimonialController } from '../controllers/testimonialController.js';
 
 const router = Router();
 const adminController = new AdminController();
@@ -12,6 +16,10 @@ const claimController = new ClaimController();
 const changeRequestController = new ChangeRequestController();
 const blogController = new BlogPostController();
 const listController = new CuratedListController();
+const mediaController = new MediaController();
+const editorialController = new EditorialController();
+const redirectController = new RedirectController();
+const testimonialController = new TestimonialController();
 
 // All admin routes require authentication and ADMIN role
 router.use(requireAuth);
@@ -100,6 +108,32 @@ router.post('/lists', listController.create);
 router.patch('/lists/:id', listController.update);
 router.delete('/lists/:id', listController.delete);
 router.patch('/lists/:id/status', listController.updateStatus);
+
+// Testimonial Management
+router.get('/testimonials', testimonialController.list);
+router.get('/testimonials/:id', testimonialController.getById);
+router.post('/testimonials', testimonialController.create);
+router.patch('/testimonials/:id', testimonialController.update);
+router.delete('/testimonials/:id', testimonialController.delete);
+
+// Media Management
+router.get('/media', mediaController.list);
+router.get('/media/orphans', mediaController.listOrphans);
+router.get('/media/:id', mediaController.getById);
+router.patch('/media/:id', mediaController.update);
+router.delete('/media/:id', mediaController.delete);
+
+// Editorial & Quality
+router.get('/editorial/quality', editorialController.runQualityChecks);
+router.post('/editorial/publish-scheduled', editorialController.triggerScheduledPublishing);
+router.get('/editorial/revisions/:entityType/:entityId', editorialController.getRevisions);
+router.post('/editorial/revisions/:revisionId/restore', editorialController.restoreRevision);
+
+// Redirects
+router.get('/redirects', redirectController.list);
+router.post('/redirects', redirectController.create);
+router.patch('/redirects/:id', redirectController.update);
+router.delete('/redirects/:id', redirectController.delete);
 
 // List Cafe Management
 router.post('/lists/:id/cafes', listController.addCafe);

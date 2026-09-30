@@ -17,7 +17,7 @@ export const cafeService = {
         query.append(key, value.toString());
       }
     });
-    return fetchApi<ApiResponse<Cafe[]>>(`/cafes?${query.toString()}`);
+    return fetchApi<PaginatedResponse<Cafe>>(`/cafes?${query.toString()}`);
   },
 
   getBySlug: async (slug: string) => {

@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "buildTime": "2026-09-24T06:04:45.642Z",
-  "commit": "rel-muf4ngeh-a4bf2b",
+  "buildTime": "2026-09-30T01:18:34.357Z",
+  "commit": "rel-munf2iyc-a7f845",
   "nodeVersion": "v22.23.2",
   "environment": "development",
-  "schemaVersion": "79e6c2fa2e6b",
+  "schemaVersion": "1b2ea1aaa291",
   "platform": "linux-x64"
 }

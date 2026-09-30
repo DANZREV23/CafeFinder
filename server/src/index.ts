@@ -1,15 +1,15 @@
-import dotenv from 'dotenv';
+import './loadEnv.js';
+console.log('[Server]: loadEnv completed');
 import path from 'path';
-
-// Load environment variables from .env file, allowing them to override system variables
-dotenv.config({ override: true });
-
 // Initialize prisma config (this will set process.env.PRISMA_DATABASE_URL if needed)
+console.log('[Server]: Importing database...');
 import { prisma, connectWithRetry, stopLocalPostgresServer } from './config/database.js';
+console.log('[Server]: Importing app...');
 import { createApp } from './app.js';
+console.log('[Server]: Importing scheduler...');
 import { schedulerService } from './services/schedulerService.js';
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
 const ENV = process.env.NODE_ENV || 'development';
 
 async function startServer() {

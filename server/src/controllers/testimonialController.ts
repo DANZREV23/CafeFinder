@@ -28,4 +28,50 @@ export class TestimonialController {
       next(error);
     }
   };
+
+  list = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await this.testimonialService.getAllTestimonials();
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await this.testimonialService.getTestimonialById(req.params.id);
+      if (!data) return res.status(404).json({ success: false, message: 'Testimonial not found' });
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  create = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await this.testimonialService.createTestimonial(req.body);
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  update = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = await this.testimonialService.updateTestimonial(req.params.id, req.body);
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  delete = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await this.testimonialService.deleteTestimonial(req.params.id);
+      res.json({ success: true, message: 'Testimonial deleted' });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

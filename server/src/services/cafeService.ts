@@ -4,6 +4,9 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { UserCafeViewRepository } from '../repositories/userCafeViewRepository.js';
 import { sanitizePlain } from '../utils/sanitization.js';
+import { EditorialService } from './editorialService.js';
+
+const editorialService = new EditorialService();
 
 export class CafeService {
   private cafeRepository: CafeRepository;
@@ -169,7 +172,7 @@ export class CafeService {
     });
   }
 
-  async updateCafe(id: string, data: Prisma.CafeUpdateInput) {
+  async updateCafe(id: string, data: Prisma.CafeUpdateInput, authorId?: string) {
     const sanitizedData = { ...data };
     if (typeof data.name === 'string') sanitizedData.name = sanitizePlain(data.name);
     if (typeof data.shortDescription === 'string') sanitizedData.shortDescription = sanitizePlain(data.shortDescription);
@@ -177,7 +180,17 @@ export class CafeService {
     if (typeof data.address === 'string') sanitizedData.address = sanitizePlain(data.address);
     if (typeof data.city === 'string') sanitizedData.city = sanitizePlain(data.city);
 
-    return this.cafeRepository.update(id, sanitizedData);
+    const updatedCafe = await this.cafeRepository.update(id, sanitizedData);
+
+    // Create revision
+    await editorialService.createRevision({
+      entityType: 'Cafe',
+      entityId: id,
+      snapshot: updatedCafe,
+      authorId
+    });
+
+    return updatedCafe;
   }
 
   async deleteCafe(id: string) {

@@ -12,6 +12,7 @@ import { globalRateLimit } from './config/security.js';
 import { cspConfig } from './config/security.js';
 import { requestCorrelation, requestLogger } from './middleware/requestLogger.js';
 import { maintenanceMiddleware } from './middleware/maintenanceMiddleware.js';
+import { redirectMiddleware } from './middleware/redirectMiddleware.js';
 import { prisma } from './config/database.js';
 
 // Routes
@@ -34,8 +35,53 @@ import recommendationRoutes from './routes/recommendation.routes.js';
 import seoRoutes from './routes/seo.routes.js';
 import searchRoutes from './routes/search.routes.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const getCurrentDir = () => {
+  if (typeof __dirname !== 'undefined') {
+    return __dirname;
+  }
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.url) {
+      return path.dirname(fileURLToPath(import.meta.url));
+    }
+  } catch {
+    // ignore
+  }
+  return process.cwd();
+};
+
+const currentDir = getCurrentDir();
+
+const resolveClientDist = (): string | null => {
+  const candidates = [
+    path.resolve(process.cwd(), 'dist'),
+    path.resolve(currentDir, 'dist'),
+    path.resolve(currentDir, '../dist'),
+    path.resolve(currentDir, '../../dist'),
+    currentDir,
+  ];
+  for (const dir of candidates) {
+    const indexPath = path.join(dir, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      return dir;
+    }
+  }
+  return null;
+};
+
+const resolveClientSourceHtml = (): string | null => {
+  const candidates = [
+    path.resolve(process.cwd(), 'client/index.html'),
+    path.resolve(currentDir, 'client/index.html'),
+    path.resolve(currentDir, '../client/index.html'),
+    path.resolve(currentDir, '../../client/index.html'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+  return null;
+};
 
 export async function createApp() {
   const app = express();
@@ -46,6 +92,9 @@ export async function createApp() {
   // Request correlation and logging
   app.use(requestCorrelation);
   app.use(requestLogger);
+
+  // Apply redirects before other logic
+  app.use(redirectMiddleware);
 
   // Apply global rate limit
   app.use(globalRateLimit);
@@ -137,27 +186,52 @@ export async function createApp() {
     });
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[Server]: Running in development mode with Vite middleware');
+  // Chrome DevTools & browser well-known endpoints handler
+  app.use('/.well-known', (req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
+
+  const clientDistPath = resolveClientDist();
+  const clientHtmlPath = resolveClientSourceHtml();
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // Vite middleware for development (or fallback if production build is missing but source exists)
+  if (!isProduction || !clientDistPath) {
+    if (isProduction && !clientDistPath) {
+      console.warn('[Server]: NODE_ENV is "production" but compiled dist/index.html was not found. Initializing Vite middleware fallback so frontend is available.');
+    } else {
+      console.log('[Server]: Running in development mode with Vite middleware');
+    }
+
+    const viteConfigCandidates = [
+      path.resolve(process.cwd(), 'vite.config.ts'),
+      path.resolve(currentDir, 'vite.config.ts'),
+      path.resolve(currentDir, '../vite.config.ts'),
+      path.resolve(currentDir, '../../vite.config.ts'),
+    ];
+    const viteConfigFile = viteConfigCandidates.find(p => fs.existsSync(p)) || path.resolve(process.cwd(), 'vite.config.ts');
+
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'custom',
-      configFile: path.resolve(process.cwd(), 'vite.config.ts'),
+      configFile: viteConfigFile,
     });
     app.use(vite.middlewares);
 
     // Explicitly handle SPA fallback in development
     app.use('*', async (req, res, next) => {
-      // Don't handle API routes here (they are handled above)
-      if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads')) {
+      // Don't handle API routes, uploads, or well-known here
+      if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads') || req.originalUrl.startsWith('/.well-known')) {
         return next();
       }
 
       const url = req.originalUrl;
       try {
-        console.log(`[Vite]: Transforming HTML for ${url}`);
-        let template = fs.readFileSync(path.resolve(process.cwd(), 'client/index.html'), 'utf-8');
+        const sourceHtml = clientHtmlPath || path.resolve(process.cwd(), 'client/index.html');
+        if (!fs.existsSync(sourceHtml)) {
+          return res.status(404).send('client/index.html not found');
+        }
+        let template = fs.readFileSync(sourceHtml, 'utf-8');
         template = await vite.transformIndexHtml(url, template);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
@@ -167,14 +241,21 @@ export async function createApp() {
       }
     });
   } else {
-    // In production, server.cjs is located inside the dist folder
-    const distPath = path.resolve(__dirname);
-    console.log(`[Server]: Running in production mode. Serving static files from: ${distPath}`);
+    console.log(`[Server]: Running in production mode. Serving static files from: ${clientDistPath}`);
     
-    app.use(express.static(distPath));
+    app.use(express.static(clientDistPath));
     
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/uploads') || req.originalUrl.startsWith('/.well-known')) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      const indexPath = path.join(clientDistPath, 'index.html');
+      res.sendFile(indexPath, (err) => {
+        if (err && !res.headersSent) {
+          res.status(404).send('Application index.html not found');
+        }
+      });
     });
   }
 

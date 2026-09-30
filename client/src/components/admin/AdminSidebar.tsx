@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
+import { useI18n } from '@/i18n';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -27,86 +28,92 @@ interface AdminSidebarProps {
 }
 
 const MENU_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { id: 'dashboard', labelKey: 'admin.dashboard', icon: LayoutDashboard, path: '/admin' },
   { 
     id: 'moderation', 
-    label: 'Moderation', 
+    labelKey: 'admin.moderation', 
     type: 'group',
     items: [
-      { id: 'submissions', label: 'Cafe Submissions', icon: Coffee, path: '/admin/submissions' },
-      { id: 'reviews', label: 'Reviews', icon: Star, path: '/admin/reviews' },
-          { id: 'claims', label: 'Owner Claims', icon: ShieldCheck, path: '/admin/claims' },
-          { id: 'change-requests', label: 'Cafe Change Requests', icon: FileText, path: '/admin/change-requests' },
+      { id: 'submissions', labelKey: 'admin.submissions', icon: Coffee, path: '/admin/submissions' },
+      { id: 'reviews', labelKey: 'admin.reviews', icon: Star, path: '/admin/reviews' },
+          { id: 'claims', labelKey: 'admin.claims', icon: ShieldCheck, path: '/admin/claims' },
+          { id: 'change-requests', labelKey: 'admin.changeRequests', icon: FileText, path: '/admin/change-requests' },
     ]
   },
   { 
     id: 'directory', 
-    label: 'Directory', 
+    labelKey: 'admin.directory', 
     type: 'group',
     items: [
-      { id: 'cafes', label: 'Cafes', icon: MapPin, path: '/admin/cafes' },
+      { id: 'cafes', labelKey: 'admin.cafes', icon: MapPin, path: '/admin/cafes' },
     ]
   },
   { 
     id: 'users', 
-    label: 'Users', 
+    labelKey: 'admin.users', 
     type: 'group',
     items: [
-      { id: 'user-list', label: 'User List', icon: Users, path: '/admin/users' },
+      { id: 'user-list', labelKey: 'admin.userList', icon: Users, path: '/admin/users' },
     ]
   },
   { 
     id: 'content', 
-    label: 'Content', 
+    labelKey: 'admin.content', 
     type: 'group',
     items: [
-      { id: 'blog', label: 'Blog Articles', icon: FileText, path: '/admin/blog' },
-      { id: 'lists', label: 'Curated Lists', icon: LayoutGrid, path: '/admin/lists' },
+      { id: 'blog', labelKey: 'admin.blog', icon: FileText, path: '/admin/blog' },
+      { id: 'lists', labelKey: 'admin.lists', icon: LayoutGrid, path: '/admin/lists' },
+      { id: 'testimonials', labelKey: 'admin.testimonials', icon: Star, path: '/admin/testimonials' },
+      { id: 'media', labelKey: 'admin.mediaLibrary', icon: LayoutGrid, path: '/admin/media' },
+      { id: 'quality', labelKey: 'admin.contentQuality', icon: ShieldCheck, path: '/admin/content/quality' },
+      { id: 'redirects', labelKey: 'admin.redirects', icon: History, path: '/admin/redirects' },
     ]
   },
   { 
     id: 'system', 
-    label: 'System', 
+    labelKey: 'admin.system', 
     type: 'group',
     items: [
-      { id: 'overview', label: 'Control Center', icon: Activity, path: '/admin/system', end: true },
-      { id: 'alerts', label: 'Operational Alerts', icon: Bell, path: '/admin/system/alerts' },
-      { id: 'jobs', label: 'Scheduled Jobs', icon: Clock, path: '/admin/system/jobs' },
-      { id: 'deployments', label: 'Deployment History', icon: Rocket, path: '/admin/system/deployments' },
-      { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
-      { id: 'security', label: 'Security & Logs', icon: ShieldCheck, path: '/admin/system/security' },
-      { id: 'activity', label: 'Audit Logs', icon: History, path: '/admin/activity' },
-      { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', comingSoon: true },
+      { id: 'overview', labelKey: 'admin.controlCenter', icon: Activity, path: '/admin/system', end: true },
+      { id: 'alerts', labelKey: 'admin.alerts', icon: Bell, path: '/admin/system/alerts' },
+      { id: 'jobs', labelKey: 'admin.jobs', icon: Clock, path: '/admin/system/jobs' },
+      { id: 'deployments', labelKey: 'admin.deployments', icon: Rocket, path: '/admin/system/deployments' },
+      { id: 'integrity', labelKey: 'admin.integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
+      { id: 'security', labelKey: 'admin.security', icon: ShieldCheck, path: '/admin/system/security' },
+      { id: 'activity', labelKey: 'admin.auditLogs', icon: History, path: '/admin/activity' },
+      { id: 'settings', labelKey: 'admin.settings', icon: Settings, path: '/admin/settings', comingSoon: true },
     ]
   }
 ];
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
+  const { t } = useI18n();
   const sidebarContent = (
     <div className="flex flex-col h-full bg-stone-900 text-stone-100 w-64 shadow-xl">
       <div className="p-6 flex items-center justify-between border-b border-stone-800">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center" aria-hidden="true">
             <Coffee className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg tracking-tight">Admin Panel</span>
+          <span className="font-bold text-lg tracking-tight">{t("admin.panel")}</span>
         </div>
         <button 
           onClick={onClose}
           className="lg:hidden p-2 text-stone-400 hover:text-white transition-colors"
+          aria-label={t("common.close")}
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar" aria-label="Admin sidebar">
         <ul className="space-y-6">
           {MENU_ITEMS.map((section) => (
             <li key={section.id}>
               {section.type === 'group' ? (
                 <>
                   <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2 px-3">
-                    {section.label}
+                    {t(section.labelKey)}
                   </h3>
                   <ul className="space-y-1">
                     {section.items?.map((item) => (
@@ -125,8 +132,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                             <item.icon className={clsx(
                               "w-5 h-5",
                               !item.comingSoon && "group-hover:text-amber-500 transition-colors"
-                            )} />
-                            <span className="text-sm font-medium">{item.label}</span>
+                            )} aria-hidden="true" />
+                            <span className="text-sm font-medium">{t(item.labelKey)}</span>
                           </div>
                           {item.comingSoon && (
                             <span className="text-[10px] bg-stone-800 text-stone-500 px-1.5 py-0.5 rounded uppercase font-bold">
@@ -134,7 +141,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                             </span>
                           )}
                           {!item.comingSoon && (
-                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                           )}
                         </NavLink>
                       </li>
@@ -151,8 +158,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                     isActive ? "bg-amber-600 text-white" : "text-stone-400 hover:bg-stone-800 hover:text-stone-100"
                   )}
                 >
-                  <section.icon className="w-5 h-5" />
-                  <span className="text-sm font-medium">{section.label}</span>
+                  <section.icon className="w-5 h-5" aria-hidden="true" />
+                  <span className="text-sm font-medium">{t(section.labelKey)}</span>
                 </NavLink>
               )}
             </li>

@@ -20,14 +20,14 @@ export const adminService = {
   },
 
   // Cafe Submissions
-  async getSubmissions(params: { status?: string; search?: string; page?: number; limit?: number }): Promise<ApiResponse<CafeSubmission[]>> {
+  async getSubmissions(params: { status?: string; search?: string; page?: number; limit?: number }): Promise<PaginatedResponse<CafeSubmission>> {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
     if (params.search) query.append('search', params.search);
     if (params.page) query.append('page', params.page.toString());
     if (params.limit) query.append('limit', params.limit.toString());
 
-    return fetchApi<ApiResponse<CafeSubmission[]>>(`/admin/cafe-submissions?${query.toString()}`);
+    return fetchApi<PaginatedResponse<CafeSubmission>>(`/admin/cafe-submissions?${query.toString()}`);
   },
 
   async getSubmissionById(id: string): Promise<ApiResponse<CafeSubmission>> {
@@ -54,14 +54,14 @@ export const adminService = {
   },
 
   // Reviews
-  async getReviews(params: { status?: string; search?: string; page?: number; limit?: number }): Promise<ApiResponse<CafeReview[]>> {
+  async getReviews(params: { status?: string; search?: string; page?: number; limit?: number }): Promise<PaginatedResponse<CafeReview>> {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
     if (params.search) query.append('search', params.search);
     if (params.page) query.append('page', params.page.toString());
     if (params.limit) query.append('limit', params.limit.toString());
 
-    return fetchApi<ApiResponse<CafeReview[]>>(`/admin/reviews?${query.toString()}`);
+    return fetchApi<PaginatedResponse<CafeReview>>(`/admin/reviews?${query.toString()}`);
   },
 
   async getReviewById(id: string): Promise<ApiResponse<CafeReview>> {
@@ -109,7 +109,7 @@ export const adminService = {
     sortBy?: string;
     page?: number; 
     limit?: number 
-  }): Promise<ApiResponse<Cafe[]>> {
+  }): Promise<PaginatedResponse<Cafe>> {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
     if (params.verified !== undefined) query.append('verified', params.verified.toString());
@@ -121,7 +121,7 @@ export const adminService = {
     if (params.page) query.append('page', params.page.toString());
     if (params.limit) query.append('limit', params.limit.toString());
 
-    return fetchApi<ApiResponse<Cafe[]>>(`/admin/cafes?${query.toString()}`);
+    return fetchApi<PaginatedResponse<Cafe>>(`/admin/cafes?${query.toString()}`);
   },
 
   async getCafeById(id: string): Promise<ApiResponse<Cafe>> {
@@ -150,7 +150,7 @@ export const adminService = {
   },
 
   // Users
-  async getUsers(params: { role?: string; status?: string; search?: string; page?: number; limit?: number }): Promise<ApiResponse<User[]>> {
+  async getUsers(params: { role?: string; status?: string; search?: string; page?: number; limit?: number }): Promise<PaginatedResponse<User>> {
     const query = new URLSearchParams();
     if (params.role) query.append('role', params.role);
     if (params.status) query.append('status', params.status);
@@ -158,7 +158,7 @@ export const adminService = {
     if (params.page) query.append('page', params.page.toString());
     if (params.limit) query.append('limit', params.limit.toString());
 
-    return fetchApi<ApiResponse<User[]>>(`/admin/users?${query.toString()}`);
+    return fetchApi<PaginatedResponse<User>>(`/admin/users?${query.toString()}`);
   },
 
   async updateUserStatus(id: string, status: UserStatus): Promise<ApiResponse<User>> {
@@ -177,7 +177,7 @@ export const adminService = {
     search?: string; 
     page?: number; 
     limit?: number 
-  }): Promise<ApiResponse<ActivityLog[]>> {
+  }): Promise<PaginatedResponse<ActivityLog>> {
     const query = new URLSearchParams();
     if (params.userId) query.append('userId', params.userId);
     if (params.action) query.append('action', params.action);
@@ -187,7 +187,7 @@ export const adminService = {
     if (params.page) query.append('page', params.page.toString());
     if (params.limit) query.append('limit', params.limit.toString());
 
-    return fetchApi<ApiResponse<ActivityLog[]>>(`/admin/activity-logs?${query.toString()}`);
+    return fetchApi<PaginatedResponse<ActivityLog>>(`/admin/activity-logs?${query.toString()}`);
   },
 
   // System

@@ -1,5 +1,5 @@
 import { fetchApi } from './api';
-import { ApiResponse, CuratedList, ListResponse } from '../types';
+import { ApiResponse, CuratedList, CuratedListsResponse } from '../types';
 
 export const listService = {
   getAll: async (params: { page?: number; limit?: number; search?: string; featured?: boolean } = {}) => {
@@ -9,7 +9,7 @@ export const listService = {
     if (params.search) query.append('search', params.search);
     if (params.featured !== undefined) query.append('featured', params.featured.toString());
     
-    return fetchApi<ListResponse<CuratedList>>(`/lists?${query.toString()}`);
+    return fetchApi<CuratedListsResponse>(`/lists?${query.toString()}`);
   },
 
   getBySlug: async (slug: string) => {

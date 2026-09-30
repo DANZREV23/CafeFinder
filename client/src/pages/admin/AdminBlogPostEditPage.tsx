@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Eye, Layout, Type, Image, Search as SearchIcon, Globe, Bold, Italic, List, ListOrdered, Heading, Link2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Eye, Layout, Type, Image, Search as SearchIcon, Globe, Bold, Italic, List, ListOrdered, Heading, Link2, History } from 'lucide-react';
 import { adminBlogService } from '../../services/adminBlogService';
 import { BlogPost, PostStatus } from '../../types';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { RevisionHistoryDialog } from '../../components/admin/RevisionHistoryDialog';
+import { ApiError } from '../../services/api';
+import { toast } from 'react-hot-toast';
 
 const CATEGORIES = ['Coffee Culture', 'Brewing Guides', 'Cafe Reviews', 'Industry News', 'Lifestyle'];
 
@@ -78,6 +82,8 @@ const AdminBlogPostEditPage: React.FC = () => {
   const [loading, setLoading] = useState(isEdit ? true : false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'seo'>('content');
+  const [showRevisions, setShowRevisions] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState<Partial<BlogPost>>({
     title: '',
@@ -112,15 +118,28 @@ const AdminBlogPostEditPage: React.FC = () => {
 
   const handleSave = async () => {
     setSaving(true);
+    setErrors({});
     try {
       if (isEdit) {
         await adminBlogService.update(id!, formData);
       } else {
         await adminBlogService.create(formData);
       }
+      toast.success('Article saved successfully');
       navigate('/admin/blog');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save post:', error);
+      if (error instanceof ApiError && error.code === 'VALIDATION_ERROR') {
+        const validationErrors: Record<string, string> = {};
+        error.details?.forEach((issue: any) => {
+          const path = issue.path.join('.');
+          validationErrors[path] = issue.message;
+        });
+        setErrors(validationErrors);
+        toast.error('Please fix the validation errors before saving.');
+      } else {
+        toast.error(error.message || 'Failed to save post');
+      }
     } finally {
       setSaving(false);
     }
@@ -148,6 +167,15 @@ const AdminBlogPostEditPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-3">
+          {isEdit && (
+            <Button
+              variant="outline"
+              onClick={() => setShowRevisions(true)}
+            >
+              <History className="w-4 h-4 mr-2" />
+              History
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => window.open(`/blog/${formData.slug}`, '_blank')}
@@ -200,8 +228,9 @@ const AdminBlogPostEditPage: React.FC = () => {
                     value={formData.title || ''}
                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                     placeholder="Enter a catchy title..."
-                    className="w-full text-2xl font-bold bg-transparent border-none focus:ring-0 placeholder:text-neutral-200"
+                    className={`w-full text-2xl font-bold bg-transparent border-none focus:ring-0 placeholder:text-neutral-200 ${errors.title ? 'text-red-500' : ''}`}
                   />
+                  {errors.title && <p className="text-xs text-red-500 mt-1 font-bold">{errors.title}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Short Excerpt</label>
@@ -210,8 +239,9 @@ const AdminBlogPostEditPage: React.FC = () => {
                     onChange={e => setFormData({ ...formData, excerpt: e.target.value })}
                     placeholder="A brief summary for cards and search results..."
                     rows={3}
-                    className="w-full bg-neutral-50 border border-neutral-100 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none resize-none"
+                    className={`w-full bg-neutral-50 border rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none resize-none ${errors.excerpt ? 'border-red-500' : 'border-neutral-100'}`}
                   />
+                  {errors.excerpt && <p className="text-xs text-red-500 mt-1 font-bold">{errors.excerpt}</p>}
                 </div>
               </div>
 
@@ -223,6 +253,7 @@ const AdminBlogPostEditPage: React.FC = () => {
                   onChange={value => setFormData({ ...formData, content: value })}
                   placeholder="Write your story here..."
                 />
+                {errors.content && <p className="text-xs text-red-500 mt-2 font-bold">{errors.content}</p>}
               </div>
             </div>
 
@@ -274,7 +305,7 @@ const AdminBlogPostEditPage: React.FC = () => {
               <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm space-y-4">
                 <label className="block text-xs font-black uppercase tracking-widest text-neutral-400">Status</label>
                 <div className="flex flex-col gap-2">
-                  {(['DRAFT', 'PUBLISHED', 'ARCHIVED'] as PostStatus[]).map(s => (
+                  {(['DRAFT', 'PENDING_REVIEW', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'] as PostStatus[]).map(s => (
                     <button
                       key={s}
                       onClick={() => setFormData({ ...formData, status: s })}
@@ -284,10 +315,22 @@ const AdminBlogPostEditPage: React.FC = () => {
                           : 'bg-neutral-50 text-neutral-400 hover:bg-neutral-100'
                       }`}
                     >
-                      {s}
+                      {s.replace('_', ' ')}
                     </button>
                   ))}
                 </div>
+
+                {(formData.status as string) === 'SCHEDULED' && (
+                  <div className="pt-4 border-t border-neutral-50">
+                    <label className="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Schedule For</label>
+                    <input 
+                      type="datetime-local"
+                      value={formData.scheduledAt ? new Date(formData.scheduledAt).toISOString().slice(0, 16) : ''}
+                      onChange={e => setFormData({ ...formData, scheduledAt: e.target.value })}
+                      className="w-full bg-neutral-50 border border-neutral-100 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary-500 outline-none font-bold"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -343,6 +386,16 @@ const AdminBlogPostEditPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isEdit && (
+        <RevisionHistoryDialog 
+          entityType="BlogPost"
+          entityId={id!}
+          isOpen={showRevisions}
+          onClose={() => setShowRevisions(false)}
+          onRestore={(snapshot) => setFormData(snapshot)}
+        />
+      )}
     </div>
   );
 };

@@ -22,6 +22,8 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/Tabs";
+
 export const AdminSubmissionsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [submissions, setSubmissions] = useState<CafeSubmission[]>([]);
@@ -83,32 +85,31 @@ export const AdminSubmissionsPage: React.FC = () => {
 
       {/* Filters & Search */}
       <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <div className="flex flex-wrap gap-2">
-            {['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'ALL'].map((s) => (
-              <button
-                key={s}
-                onClick={() => handleStatusChange(s)}
-                className={clsx(
-                  "px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
-                  status === s 
-                    ? "bg-amber-600 text-white shadow-md shadow-amber-600/20" 
-                    : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+          <Tabs value={status} onValueChange={handleStatusChange} className="w-full md:w-auto">
+            <TabsList className="w-full flex-wrap justify-start h-auto bg-stone-100 p-1.5 gap-1">
+              {['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'ALL'].map((s) => (
+                <TabsTrigger 
+                  key={s} 
+                  value={s}
+                  className="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-brand-coffee data-[state=active]:shadow-sm"
+                >
+                  {s}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
           <form onSubmit={handleSearch} className="relative max-w-md w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" aria-hidden="true" />
+            <label htmlFor="search-submissions" className="sr-only">Search submissions</label>
             <input
+              id="search-submissions"
               type="text"
               name="search"
               defaultValue={search}
               placeholder="Search by name, city, or submitter..."
-              className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all focus:outline-none"
             />
           </form>
         </div>

@@ -48,6 +48,19 @@ export function clearStoredAuth(): void {
   } catch {}
 }
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  details?: any;
+  constructor(message: string, status: number, code?: string, details?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers = { ...options.headers } as Record<string, string>;
   
@@ -80,7 +93,8 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   }
 
   if (!response.ok) {
-    throw new Error(result.error?.message || result.message || 'Something went wrong');
+    const message = result.error?.message || result.message || 'Something went wrong';
+    throw new ApiError(message, response.status, result.error?.code, result.error?.details);
   }
 
   return result;

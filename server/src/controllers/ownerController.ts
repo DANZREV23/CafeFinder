@@ -79,6 +79,26 @@ export class OwnerController {
   uploadPhoto = async (req: AuthRequest, res: Response) => { try { if (!req.file) return res.status(422).json({ success: false, error: { message: 'Photo is required' } }); res.status(201).json({ success: true, data: await this.service.uploadPhoto(req.params.id, req.user!.id, this.isAdmin(req), req.file) }); } catch (e) { sendError(res, e); } };
   deletePhoto = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.deletePhoto(req.params.id, req.params.photoId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
   setCoverPhoto = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.setCoverPhoto(req.params.id, req.params.photoId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  updatePhotoMetadata = async (req: AuthRequest, res: Response) => {
+    try {
+      const schema = z.object({
+        altText: z.string().trim().max(255).optional(),
+        caption: z.string().trim().max(1000).optional()
+      }).strict();
+      res.json({
+        success: true,
+        data: await this.service.updatePhotoMetadata(
+          req.params.id,
+          req.params.photoId,
+          req.user!.id,
+          this.isAdmin(req),
+          schema.parse(req.body)
+        )
+      });
+    } catch (e) {
+      sendError(res, e);
+    }
+  };
 
   // Menus
   getMenus = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getMenus(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };

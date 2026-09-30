@@ -9,8 +9,19 @@ import { toast } from 'react-hot-toast';
 
 import { MainLayout } from '../components/layout/MainLayout';
 
+import { useI18n } from '../i18n';
+import { Label } from '../components/ui/Label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/Select";
+
 const ProfilePage: React.FC = () => {
   const { user, logout, refreshUser } = useAuth();
+  const { t, locale, setLocale, timezone, setTimezone, formatDate } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -86,9 +97,9 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString?: string) => {
+  const displayDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatDate(dateString, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -276,11 +287,47 @@ const ProfilePage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-brand-muted uppercase tracking-wider">Member Since</p>
-                      <p className="text-brand-black font-medium">September 2026</p>
+                      <p className="text-brand-black font-medium">{displayDate(user.createdAt)}</p>
                     </div>
                   </div>
                 </div>
               )}
+            </Card>
+
+            <Card className="p-8">
+              <div className="flex items-center justify-between mb-6 border-b pb-4">
+                <h3 className="text-lg font-bold text-brand-black">{t("common.regionalSettings")}</h3>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="language-select">{t("common.language")}</Label>
+                  <Select value={locale} onValueChange={(val: any) => setLocale(val)}>
+                    <SelectTrigger id="language-select">
+                      <SelectValue placeholder={t("common.selectLanguage")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en-PH">English (Philippines)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timezone-select">{t("common.timezone")}</Label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger id="timezone-select">
+                      <SelectValue placeholder={t("common.selectTimezone")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Asia/Manila">Manila (PHT)</SelectItem>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-brand-muted italic mt-1">
+                    Dates and times will be displayed according to this selection.
+                  </p>
+                </div>
+              </div>
             </Card>
           </div>
         </div>

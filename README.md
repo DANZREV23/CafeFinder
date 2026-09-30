@@ -6,43 +6,44 @@ CafeFinder Davao is a high-performance, full-stack specialty coffee discovery an
 
 ## 🚀 Recent Feature Additions & Platform Enhancements
 
-### 1. Automated Deployment & Release Management (`/admin/system/deployments`)
+### 1. Advanced Content Management & Editorial Workflow (Stage 35)
+- **Granular Editorial Controls**: Support for multi-stage content lifecycles including `DRAFT`, `PENDING_REVIEW`, `SCHEDULED`, `PUBLISHED`, and `ARCHIVED` statuses for blog posts and curated lists.
+- **Automated Scheduled Publishing**: Integrated background job runner that automatically transitions content from `SCHEDULED` to `PUBLISHED` based on precise timestamps.
+- **Full Revision History & Snapshots**: Automated tracking of all content changes. Administrators can view historical versions, compare changes, and instantly restore previous versions (Snapshots) with a single click.
+- **Admin Editorial Preview**: Secure preview mode allowing administrators to view non-published content directly via public slugs before they go live.
+- **Metadata-Driven SEO & Accessibility**: Direct editing of `Alt Text` and `Captions` for all visual assets within the Admin Media Library and Owner Photo galleries to ensure AA/AAA accessibility compliance and optimized SEO indexing.
+
+### 2. Media Library & Visual Asset Governance
+- **Centralized Media Dashboard (`/admin/media`)**: Comprehensive management interface for all application assets with support for MIME-type filtering, usage tracking, and search by metadata.
+- **Usage & Dependency Tracking**: Real-time tracking of media asset usage across cafes, blog posts, and curated lists to prevent data corruption and identify orphaned assets.
+- **Enhanced Cafe Gallery Management**: Overhauled owner UI with high-fidelity grid layouts, cover photo selection, and integrated accessibility metadata editing.
+
+### 3. Automated Deployment & Release Management (`/admin/system/deployments`)
 - **Automated Pipeline Runner**: Full deployment automation via `npm run deploy` and `npm run rollback` with sequential stage transitions: `PENDING` → `BUILDING` → `MIGRATING` → `RESTARTING` → `VERIFYING` → `SUCCEEDED`.
-- **Preflight Verification Engine (`npm run deploy:check`)**: Automated validation of Node.js engine compatibility, production environment variables, database connectivity and query latency, filesystem permissions (`uploads/`, `backups/`, `logs/`), migration safety, and source directory integrity before any deployment proceeds.
-- **Migration Safety Checks (`npm run migration:check`)**: AST and regex scanning of Prisma migrations to detect destructive operations (e.g., dropping columns/tables, modifying columns without defaults) before application to production.
-- **Release Manifest Generation**: Automated tracking of build artifacts (`buildId`, `gitCommit`, `buildTime`, `schemaVersion`, `environment`) exposed via `/api/admin/system/release`.
-- **Live Deployment History UI**: Dedicated administration console for viewing real-time deployment status, execution duration, migration outcomes, health verification results, and detailed stage logs.
+- **Preflight Verification Engine (`npm run deploy:check`)**: Automated validation of Node.js engine compatibility, production environment variables, database connectivity, filesystem permissions, and migration safety.
+- **Migration Safety Checks**: AST and regex scanning of Prisma migrations to detect destructive operations before application to production.
 
-### 2. Data Integrity & Reliability Suite
-- **Embedded PostgreSQL Fallback**: Automatic detection of database connectivity issues with seamless failover to an embedded PGlite service, ensuring the platform remains operational even during upstream database outages or local development without a dedicated PostgreSQL instance.
-- **Rating Recalculation Engine**: One-click administrative utility to audit and recalculate aggregate ratings and review counts across all cafes directly from verified database reviews.
-- **Orphan Cleanup**: Automated detection and resolution of orphaned reviews and broken relational foreign keys.
-- **Media Asset Audit & Cleanup**: Reconciles disk files in `uploads/` against database records, flagging missing physical files and pruning unlinked orphaned media.
-- **Cafe Duplicate Detection**: Intelligent multi-parameter duplicate scanner comparing name similarity, geographic proximity, address matching, and contact phone numbers.
-- **Iframe-Resilient Confirmation Dialogs**: Replaced native browser `window.confirm` dialogs with tailored in-app modal components, ensuring consistent execution across sandboxed iframe preview environments.
+### 4. Data Integrity & Reliability Suite
+- **Embedded PostgreSQL Fallback**: Automatic detection of database connectivity issues with seamless failover to an embedded PGlite service, ensuring zero-downtime development and testing.
+- **Rating Recalculation Engine**: One-click administrative utility to audit and recalculate aggregate ratings and review counts directly from verified database reviews.
+- **Validation Resilience**: Enhanced API error handling with granular Zod validation message reporting, providing users with precise feedback on form submission errors.
 
-### 3. Dual-Layer Persistent Authentication & Role-Based Access Control
+### 5. Dual-Layer Persistent Authentication & RBAC
 - **Hybrid Session Persistence**: Dual authentication architecture supporting both HTTP-only secure cookies and `Authorization: Bearer <token>` / `x-auth-token` headers. This prevents third-party cookie blocking from dropping active sessions inside sandboxed iframe containers.
-- **Client Token Synchronization**: Synchronous session hydration from `localStorage` on page refresh, eliminating unauthenticated flash states during client-side navigation.
-- **Granular RBAC (`RoleRoute`)**: Route guards enforcing permissions across three distinct user tiers:
-  - **`USER`**: Public discovery, favorites management, cafe submissions, and review writing.
-  - **`OWNER`**: Multi-cafe management workspace, operational hours, photo gallery management, and change requests.
-  - **`ADMIN`**: Platform-wide moderation, user role administration, data integrity tools, system telemetry, and deployment pipelines.
+- **Granular RBAC (`RoleRoute`)**: Route guards enforcing permissions across three distinct user tiers: `USER`, `OWNER`, and `ADMIN`.
 - **Seamless Login Redirection**: Preserves intended destination routes during login, returning users automatically to their requested page upon successful authentication.
 
-### 4. Cafe Owner Workspace & Change Request Workflow
+### 6. Cafe Owner Workspace & Change Request Workflow
 - **Ownership Verification & Claims (`/admin/claims`)**: Legal verification workflow enabling legitimate cafe owners to claim existing directory listings with document review.
-- **Cafe Change Request System (`/owner/cafes/:id/change-requests`)**: Dedicated owner interface to propose updates to business information, geolocation coordinates, hours, amenities, and photo galleries without corrupting live public directory data until reviewed and approved by administrators.
-- **Advanced Operating Hours**: Granular schedule manager supporting standard hours, split shifts, overnight closing times, and special holiday hours.
+- **Cafe Change Request System**: Dedicated owner interface to propose updates to business information, geolocation coordinates, hours, amenities, and photo galleries without corrupting live public directory data until reviewed and approved by administrators.
 - **Cafe Performance Analytics**: Visual graphs tracking page views, directions clicks, website taps, phone inquiries, and favorite additions.
 
-### 5. System Telemetry & Operational Health (`/admin/system`)
-- **Real-Time Telemetry Dashboard**: Live monitoring of server uptime, Node.js version, memory usage (RSS, Heap, ArrayBuffers), Cloud SQL latency, storage disk consumption (Uploads & Backups), and recent HTTP route latency and error rates.
-- **Maintenance Mode Switch**: Immediate system-wide maintenance gate with bypass options for administrators, returning standard `503 Service Unavailable` responses with custom messaging to regular users.
-- **Automated Background Prune**: Scheduled cleanup jobs for expired sessions, stale notifications, and activity logs older than retention thresholds (`npm run system:cleanup`).
+### 7. System Telemetry & Operational Health (`/admin/system`)
+- **Real-Time Telemetry Dashboard**: Live monitoring of server uptime, Node.js version, memory usage, Cloud SQL latency, storage disk consumption, and recent HTTP route latency and error rates.
+- **Maintenance Mode Switch**: Immediate system-wide maintenance gate with bypass options for administrators.
 - **Database & Upload Backups**: Automated snapshot scripts (`npm run backup:all`) archiving database dumps and upload directories with optional compression and retention policies.
 
-### 6. Progressive Web App (PWA) & Offline Resilience
+### 8. Progressive Web App (PWA) & Offline Resilience
 - **Offline Fallback State**: Seamless client handling with responsive private offline notifications when internet connectivity drops.
 - **Web App Manifest**: Installable PWA support with desktop and mobile shortcuts, caching strategies, and asset preloading.
 
@@ -54,9 +55,9 @@ CafeFinder Davao is a high-performance, full-stack specialty coffee discovery an
 | :--- | :--- |
 | **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, `motion/react`, Recharts, `lucide-react` |
 | **Backend** | Node.js (v20+ / v22+), Express 4, TypeScript, Prisma ORM 6, PostgreSQL |
+| **Embedded DB** | PGlite (PostgreSQL implementation for Node.js) |
 | **Mapping & Location** | Google Maps Platform (`@react-google-maps/api`, `@vis.gl/react-google-maps`) |
 | **Operations & Storage** | Nodemailer, Multer, Sharp (Image processing), Zod (Validation), UUID |
-| **Build & Tooling** | `tsx`, `esbuild`, Vite PWA Plugin, ESLint, TypeScript Compiler |
 
 ---
 
@@ -64,7 +65,7 @@ CafeFinder Davao is a high-performance, full-stack specialty coffee discovery an
 
 ### Prerequisites
 - **Node.js**: `v20.x` or `v22.x` (LTS recommended)
-- **Database**: PostgreSQL `14+` or Google Cloud SQL (PostgreSQL)
+- **Database**: PostgreSQL `14+` OR simply use the built-in **Embedded PostgreSQL (PGlite)** for zero-config local setup.
 - **Package Manager**: `npm` (v10+)
 - **API Key**: Google Maps Platform API Key (with Places and Maps JavaScript API enabled)
 
@@ -88,84 +89,59 @@ Create your local environment file from `.env.example`:
 cp .env.example .env
 ```
 
-Open `.env` and configure the following required variables:
+Open `.env` and configure the following required variables. **Note**: If you want to use the zero-config embedded database, you can leave the `PRISMA_DATABASE_URL` empty or point it to a local file.
 
 ```env
-# Database Connection (Local PostgreSQL or Cloud SQL)
-PRISMA_DATABASE_URL="postgresql://ai_studio_admin:your_password@localhost:5432/cafefinder?schema=public"
+# Database Connection
+# Leave empty or use localhost:5432 for standard PG.
+# The app will automatically failover to PGlite if unreachable.
+PRISMA_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/cafefinder?schema=public"
 
 # Server Configuration
 PORT=3000
 NODE_ENV=development
-APP_VERSION=1.0.0
-
-# Storage & Backups
-BACKUP_ENABLED=true
-BACKUP_DIR=./backups
-BACKUP_RETENTION_DAYS=14
-BACKUP_COMPRESS=true
-UPLOAD_BACKUP_ENABLED=true
-
-# Logging & Monitoring
-LOG_LEVEL=info
-LOG_RETENTION_DAYS=14
 
 # Google Maps Platform (Required for Map UI and Location Picker)
 VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
 GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
-
-# Email Configuration (Optional for development; defaults to console logger)
-EMAIL_ENABLED=false
-EMAIL_PROVIDER=console
-EMAIL_FROM_NAME="CafeFinder Davao"
-EMAIL_FROM_ADDRESS="noreply@cafefinder.local"
-EMAIL_BASE_URL="http://localhost:3000"
 ```
 
 ---
 
-### Step 3: Database Initialization & Seeding
+### Step 3: Database Initialization
 
-Run the database preparation sequence to apply migrations, generate the Prisma client, and seed initial test accounts and cafes:
+Initialize the database schema and seed initial demonstration data. If using PGlite, ensure no other process is holding the port specified in `LOCAL_PG_PORT` (default 5442).
 
 ```bash
-# 1. Apply database migrations
-npx prisma migrate dev
+# 1. Sync database schema (Safe for initial setup)
+npm run db:push
 
-# 2. Generate Prisma Client bindings
-npm run db:generate
-
-# 3. Seed demonstration cafes, users, reviews, and amenities
+# 2. Seed demonstration cafes, users, reviews, and amenities
 npm run db:seed
 ```
 
 ---
 
-### Step 4: Run Preflight Health Checks
-Validate your environment, database connectivity, and required writable storage directories before launching:
-```bash
-npm run deploy:check
-```
-
----
-
-### Step 5: Start Development Server
+### Step 4: Start Development
 ```bash
 npm run dev
 ```
-The application will boot up at **`http://localhost:3000`** (serving both the Express API and Vite React frontend concurrently).
+The application will boot at **`http://localhost:3000`**. The development server handles:
+1.  **Backend API**: Express server running on port 3000.
+2.  **Frontend**: Vite middleware serving the React SPA.
+3.  **Database**: Embedded PostgreSQL (PGlite) server running on port 5442 (if external PG is not configured).
 
 ---
 
 ## 🔑 Default Demonstration Accounts
 
-After running `npm run db:seed`, the database includes pre-configured accounts with standard credentials:
+After running `npm run db:seed`, use these credentials to explore the platform:
 
-| Role | Email | Password | Access / Permissions |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin@cafefinder.local` | `password123` | Full Administrative Suite, Deployments, Data Integrity, Telemetry |
-| **Cafe Owner** | `owner@cafefinder.local` | `password123` | Cafe Management Hub, Menu, Hours, Change Requests |
-| **Regular User** | `user@cafefinder.local` | `password123` | Directory Discovery, Reviews, Submissions, Favorites |
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Administrator** | `admin@cafefinder.local` | `password123` |
+| **Cafe Owner** | `owner@cafefinder.local` | `password123` |
+| **Regular User** | `user@cafefinder.local` | `password123` |
 
 ---
 

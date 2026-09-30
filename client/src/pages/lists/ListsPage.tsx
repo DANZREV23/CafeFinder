@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Coffee, Search, Loader2 } from 'lucide-react';
 import { listService } from '../../services/listService';
-import { CuratedList, ListResponse } from '../../types';
+import { CuratedList, CuratedListsResponse, Pagination } from '../../types';
 import { ListCard } from '../../components/lists/ListCard';
 import { SearchInput } from '../../components/ui/SearchInput';
 import { MainLayout } from '../../components/layout/MainLayout';
@@ -13,7 +13,7 @@ const ListsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<ListResponse<CuratedList>['pagination'] | null>(null);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
 
   useEffect(() => {
     loadLists();

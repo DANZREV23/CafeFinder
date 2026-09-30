@@ -1,5 +1,5 @@
 import { fetchApi } from './api';
-import { ApiResponse, BlogPost, ListResponse, PostStatus } from '../types';
+import { ApiResponse, BlogPost, BlogListResponse, PostStatus } from '../types';
 
 export const adminBlogService = {
   getAll: async (params: { page?: number; limit?: number; search?: string; status?: PostStatus; category?: string } = {}) => {
@@ -10,7 +10,7 @@ export const adminBlogService = {
     if (params.status) query.append('status', params.status);
     if (params.category) query.append('category', params.category);
     
-    return fetchApi<ListResponse<BlogPost>>(`/admin/blog?${query.toString()}`);
+    return fetchApi<BlogListResponse>(`/admin/blog?${query.toString()}`);
   },
 
   getById: async (id: string) => {

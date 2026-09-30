@@ -3,6 +3,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import { getCanonicalUrl, PUBLIC_SITE_URL } from '@/utils/seoUtils';
+import { useI18n } from '@/i18n';
 
 interface SEOProps {
   title?: string;
@@ -28,6 +29,7 @@ export const SEO: React.FC<SEOProps> = ({
   jsonLd
 }) => {
   const location = useLocation();
+  const { locale } = useI18n();
   
   const siteTitle = 'CafeFinder';
   const fullTitle = title ? `${title} | ${siteTitle}` : 'Find Your Next Favorite Cafe | CafeFinder';
@@ -40,9 +42,11 @@ export const SEO: React.FC<SEOProps> = ({
   return (
     <Helmet>
       {/* Basic Meta Tags */}
+      <html lang={locale} />
       <title>{fullTitle}</title>
       <meta name="description" content={metaDescription} />
       <link rel="canonical" href={currentCanonical} />
+      <link rel="alternate" href={currentCanonical} hrefLang={locale} />
       
       {/* Robots */}
       {noindex ? (
@@ -58,6 +62,7 @@ export const SEO: React.FC<SEOProps> = ({
       <meta property="og:url" content={currentCanonical} />
       <meta property="og:type" content={ogType} />
       <meta property="og:image" content={currentOgImage} />
+      <meta property="og:locale" content={locale.replace('-', '_')} />
 
       {/* Twitter */}
       <meta name="twitter:card" content={twitterCard} />

@@ -26,6 +26,7 @@ function normalizeRoute(path: string): string {
   // Replace common slug patterns (more than 3 characters with hyphens/numbers)
   // This is a heuristic and might need refinement based on actual routes
   normalized = normalized.split('/').map(segment => {
+    if (segment.startsWith('.')) return segment;
     if (segment.includes('-') && segment.length > 5) return ':slug';
     return segment;
   }).join('/');

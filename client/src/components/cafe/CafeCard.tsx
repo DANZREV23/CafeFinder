@@ -11,6 +11,8 @@ import { CafeAmenities } from "./CafeAmenities";
 import { Cafe } from "@/types";
 import { FavoriteButton } from "./FavoriteButton";
 
+import { useI18n } from "@/i18n";
+
 interface CafeCardProps {
   cafe: Cafe;
   className?: string;
@@ -18,13 +20,15 @@ interface CafeCardProps {
 }
 
 export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured = false }) => {
+  const { t } = useI18n();
+
   return (
     <Card 
       variant="interactive" 
       className={cn("group flex flex-col h-full bg-white", className)}
     >
       <div className="relative overflow-hidden">
-        <Link to={`/cafes/${cafe.slug}`}>
+        <Link to={`/cafes/${cafe.slug}`} aria-label={`${t("common.viewDetails")} for ${cafe.name}`}>
           <CafeImage 
             src={cafe.photos?.find(p => p.isCover)?.url} 
             alt={cafe.name}
@@ -37,12 +41,12 @@ export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured 
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {cafe.featured && (
             <Badge variant="accent" className="shadow-sm uppercase tracking-wider px-2 py-0.5">
-              Featured
+              {t("cafe.featured")}
             </Badge>
           )}
           {cafe.trending && (
             <Badge variant="green" className="shadow-sm uppercase tracking-wider px-2 py-0.5">
-              Trending
+              {t("cafe.trending")}
             </Badge>
           )}
         </div>
@@ -88,15 +92,15 @@ export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured 
           <CafeAmenities amenities={cafe.amenities?.map(a => a.amenity) || []} max={2} />
           
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-brand-success animate-pulse" />
+            <div className="flex items-center gap-1.5" aria-live="polite">
+              <div className="h-1.5 w-1.5 rounded-full bg-brand-success animate-pulse" aria-hidden="true" />
               <span className="text-[10px] font-bold text-brand-success uppercase tracking-widest">
-                Open Now
+                {t("cafe.openNow")}
               </span>
             </div>
             {cafe.verified && (
               <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-brand-border/50 text-brand-muted font-medium">
-                Verified
+                {t("cafe.verified")}
               </Badge>
             )}
           </div>

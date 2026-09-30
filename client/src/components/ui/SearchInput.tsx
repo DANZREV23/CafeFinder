@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { searchService, SearchSuggestion } from "@/services/searchService";
 import { useNavigate } from "react-router-dom";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useI18n } from "@/i18n";
 
 export interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   onClear?: () => void;
@@ -16,6 +17,7 @@ export interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputEle
 
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
   ({ className, onClear, onSearch, isLoading: externalLoading, value, defaultValue, showSuggestions = true, suggestionType = 'all', onSuggestionSelect, ...props }, ref) => {
+    const { t } = useI18n();
     const [inputValue, setInputValue] = React.useState(defaultValue || value || "");
     const [suggestions, setSuggestions] = React.useState<SearchSuggestion[]>([]);
     const [isSuggestionsLoading, setIsSuggestionsLoading] = React.useState(false);
@@ -203,6 +205,8 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
             aria-expanded={showDropdown}
             aria-haspopup="listbox"
             aria-autocomplete="list"
+            aria-controls="search-results-listbox"
+            aria-activedescendant={activeIndex >= 0 ? `suggestion-${activeIndex}` : undefined}
           />
           <div className="absolute right-2 flex items-center gap-1">
             {inputValue && onClear && !externalLoading && !isSuggestionsLoading && (
@@ -210,6 +214,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                 type="button"
                 onClick={handleClear}
                 className="rounded-full p-2 hover:bg-brand-cream text-brand-muted transition-colors"
+                aria-label={t("common.clear")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -217,6 +222,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
             {(externalLoading || isSuggestionsLoading) ? (
               <div className="p-2">
                 <Loader2 className="h-5 w-5 animate-spin text-brand-coffee" />
+                <span className="sr-only">{t("common.loading")}</span>
               </div>
             ) : (
               <button
@@ -224,7 +230,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                 onClick={handleSearch}
                 className="hidden md:flex h-10 px-4 items-center justify-center bg-brand-coffee text-white rounded-xl text-sm font-bold hover:bg-brand-coffee/90 transition-all shadow-md shadow-brand-coffee/10 ml-1"
               >
-                Search
+                {t("common.search")}
               </button>
             )}
           </div>
@@ -234,12 +240,17 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         {showDropdown && (
           <div 
             className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-brand-border shadow-xl z-50 overflow-hidden"
-            role="listbox"
           >
-            <ul className="py-2 max-h-80 overflow-y-auto">
+            <ul 
+              id="search-results-listbox"
+              className="py-2 max-h-80 overflow-y-auto"
+              role="listbox"
+              aria-label="Search suggestions"
+            >
               {suggestions.map((suggestion, index) => (
                 <li 
                   key={`${suggestion.type}-${suggestion.id || suggestion.label}`}
+                  id={`suggestion-${index}`}
                   role="option"
                   aria-selected={index === activeIndex}
                   className={cn(

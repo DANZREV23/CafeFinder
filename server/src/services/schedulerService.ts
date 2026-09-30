@@ -123,6 +123,23 @@ export class SchedulerService {
     }, 5 * 60 * 1000);
     this.intervals.push(healthInterval);
 
+    // Scheduled Content Publication: Every 5 minutes
+    const publicationInterval = setInterval(async () => {
+      await jobRunnerService.runJob('publish-scheduled-content', async (): Promise<JobResult> => {
+        const { EditorialService } = await import('./editorialService.js');
+        const editorialService = new EditorialService();
+        const results = await editorialService.publishScheduledContent();
+        const totalPublished = results.blogPosts + results.curatedLists;
+        return {
+          processedCount: totalPublished,
+          successCount: totalPublished,
+          failureCount: results.errors.length,
+          message: results.errors.length > 0 ? `Errors: ${results.errors.join(', ')}` : undefined
+        };
+      });
+    }, 5 * 60 * 1000);
+    this.intervals.push(publicationInterval);
+
     // Release Cleanup: Weekly
     const releaseInterval = setInterval(async () => {
       await jobRunnerService.runJob('release-cleanup', async (): Promise<JobResult> => {

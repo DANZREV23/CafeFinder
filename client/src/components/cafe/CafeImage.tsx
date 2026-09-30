@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useI18n } from "@/i18n";
 
 interface CafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src?: string;
@@ -19,6 +20,7 @@ export const CafeImage: React.FC<CafeImageProps> = ({
   fallback = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800&auto=format&fit=crop",
   ...props 
 }) => {
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState(false);
 
@@ -30,14 +32,16 @@ export const CafeImage: React.FC<CafeImageProps> = ({
     auto: "aspect-auto",
   };
 
+  const finalAlt = alt ? t("accessibility.imageAlt", { name: alt }) : "Cafe image";
+
   return (
     <div className={cn("relative overflow-hidden bg-brand-cream/50", aspectRatios[aspectRatio], className)}>
-      {isLoading && <Skeleton className="absolute inset-0 h-full w-full rounded-none" />}
+      {isLoading && <Skeleton className="absolute inset-0 h-full w-full rounded-none" aria-hidden="true" />}
       
       {!error ? (
         <img
           src={src || fallback}
-          alt={alt || "Cafe image"}
+          alt={finalAlt}
           loading="lazy"
           className={cn(
             "h-full w-full object-cover transition-all duration-300",
@@ -52,8 +56,8 @@ export const CafeImage: React.FC<CafeImageProps> = ({
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-brand-muted">
-          <ImageIcon className="h-8 w-8 opacity-20" />
-          <span className="text-xs">Image unavailable</span>
+          <ImageIcon className="h-8 w-8 opacity-20" aria-hidden="true" />
+          <span className="text-xs">{t("common.noResults")}</span>
         </div>
       )}
     </div>

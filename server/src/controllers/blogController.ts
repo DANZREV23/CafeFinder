@@ -66,7 +66,8 @@ export class BlogPostController {
   getBySlug = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { slug } = req.params;
-      const post = await this.blogService.getPostBySlug(slug);
+      const isAdmin = (req as AuthRequest).user?.role === 'ADMIN';
+      const post = await this.blogService.getPostBySlug(slug, isAdmin);
       
       if (!post) {
         return res.status(404).json({
@@ -159,7 +160,7 @@ export class BlogPostController {
     try {
       const { id } = req.params;
       const validatedData = blogPostSchema.partial().parse(req.body);
-      const post = await this.blogService.updatePost(id, validatedData);
+      const post = await this.blogService.updatePost(id, validatedData, req.user!.id);
       
       res.json({
         success: true,

@@ -41,8 +41,74 @@ enum ReviewStatus {
 
 enum PostStatus {
   DRAFT
+  PENDING_REVIEW
+  SCHEDULED
   PUBLISHED
   ARCHIVED
+}
+
+enum TestimonialStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model MediaAsset {
+  id              String   @id @default(cuid())
+  filename        String
+  originalName    String
+  mimeType        String
+  size            Int
+  width           Int?
+  height          Int?
+  url             String   @db.Text
+  thumbnailUrl    String?  @db.Text
+  altText         String?
+  caption         String?  @db.Text
+  uploadedById    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  uploadedBy      User?    @relation(fields: [uploadedById], references: [id])
+  
+  // Back-references for usage tracking (optional but helpful)
+  // These will be used for usage tracking in the Media Library
+  cafePhotos      CafePhoto[]
+  blogPosts       BlogPost[] @relation("BlogPostCover")
+  curatedLists    CuratedList[] @relation("CuratedListCover")
+
+  @@index([uploadedById])
+  @@index([mimeType])
+  @@map("media_assets")
+}
+
+model ContentRevision {
+  id              String   @id @default(cuid())
+  entityType      String   // e.g., "BlogPost", "Cafe", "CuratedList"
+  entityId        String
+  revisionNumber  Int
+  snapshot        Json
+  authorId        String?
+  createdAt       DateTime @default(now())
+
+  author          User?    @relation(fields: [authorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([authorId])
+  @@map("content_revisions")
+}
+
+model ContentRedirect {
+  id              String   @id @default(cuid())
+  oldPath         String   @unique
+  newPath         String
+  statusCode      Int      @default(301)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([oldPath])
+  @@map("content_redirects")
 }
 
 enum ClaimStatus {
@@ -102,6 +168,8 @@ model User {
   cafeViews       UserCafeView[]
   analyticsEvents CafeAnalyticsEvent[]
   emailJobs       EmailJob[]
+  mediaAssets     MediaAsset[]
+  contentRevisions ContentRevision[]
 
   @@map("users")
 }
@@ -289,12 +357,15 @@ model CafePhoto {
   altText      String?
   sortOrder    Int      @default(0)
   isCover      Boolean  @default(false)
+  mediaAssetId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  cafe Cafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  cafe       Cafe        @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id])
 
   @@index([cafeId])
+  @@index([mediaAssetId])
   @@map("cafe_photos")
 }
 
@@ -422,15 +493,19 @@ model BlogPost {
   canonicalUrl     String?
   authorId         String
   status           PostStatus @default(DRAFT)
+  scheduledAt      DateTime?
   publishedAt      DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  author User @relation(fields: [authorId], references: [id])
+  author          User        @relation(fields: [authorId], references: [id])
+  coverImageAsset MediaAsset? @relation("BlogPostCover", fields: [coverImageId], references: [id])
+  coverImageId    String?
 
   @@index([slug])
   @@index([status])
   @@index([publishedAt])
+  @@index([scheduledAt])
   @@index([category])
   @@index([authorId])
   @@map("blog_posts")
@@ -443,17 +518,21 @@ model CuratedList {
   description     String?     @db.Text
   coverImage      String?     @db.Text
   coverImageAlt   String?
+  coverImageId    String?
   featured        Boolean     @default(false)
   status          PostStatus  @default(DRAFT)
+  scheduledAt     DateTime?
   sortOrder       Int         @default(0)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  cafes CuratedListCafe[]
+  cafes           CuratedListCafe[]
+  coverImageAsset MediaAsset? @relation("CuratedListCover", fields: [coverImageId], references: [id])
 
   @@index([slug])
   @@index([status])
   @@index([featured])
+  @@index([scheduledAt])
   @@index([sortOrder])
   @@map("curated_lists")
 }
@@ -479,7 +558,7 @@ model Testimonial {
   avatarUrl String?  @db.Text
   content   String   @db.Text
   rating    Int      @default(5)
-  status    String   @default("ACTIVE")
+  status    TestimonialStatus @default(DRAFT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
