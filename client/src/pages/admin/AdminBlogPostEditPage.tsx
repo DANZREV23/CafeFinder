@@ -11,6 +11,25 @@ import { toast } from 'react-hot-toast';
 
 const CATEGORIES = ['Coffee Culture', 'Brewing Guides', 'Cafe Reviews', 'Industry News', 'Lifestyle'];
 
+const formatDateTimeInput = (dateVal?: string | Date | null): string => {
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(dateVal)) {
+    return dateVal.slice(0, 16);
+  }
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch {
+    return '';
+  }
+};
+
 const RichTextEditor: React.FC<{ value: string; onChange: (value: string) => void; placeholder?: string }> = ({ value, onChange, placeholder }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
 
@@ -120,12 +139,26 @@ const AdminBlogPostEditPage: React.FC = () => {
     setSaving(true);
     setErrors({});
     try {
+      const payload: any = {
+        title: formData.title,
+        excerpt: formData.excerpt,
+        content: formData.content,
+        coverImage: formData.coverImage,
+        coverImageAlt: formData.coverImageAlt,
+        category: formData.category,
+        metaTitle: formData.metaTitle,
+        metaDescription: formData.metaDescription,
+        canonicalUrl: formData.canonicalUrl,
+        status: formData.status || 'DRAFT',
+        scheduledAt: formData.status === 'SCHEDULED' ? (formData.scheduledAt || null) : null,
+      };
+
       if (isEdit) {
-        await adminBlogService.update(id!, formData);
+        await adminBlogService.update(id!, payload);
       } else {
-        await adminBlogService.create(formData);
+        await adminBlogService.create(payload);
       }
-      toast.success('Article saved successfully');
+      toast.success(`Article saved successfully as ${payload.status}`);
       navigate('/admin/blog');
     } catch (error: any) {
       console.error('Failed to save post:', error);
@@ -303,21 +336,48 @@ const AdminBlogPostEditPage: React.FC = () => {
 
               {/* Status */}
               <div className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm space-y-4">
-                <label className="block text-xs font-black uppercase tracking-widest text-neutral-400">Status</label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-widest text-neutral-400">Status</label>
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                    Current: <span className="text-primary-600 font-black">{formData.status?.replace(/_/g, ' ') || 'DRAFT'}</span>
+                  </span>
+                </div>
                 <div className="flex flex-col gap-2">
-                  {(['DRAFT', 'PENDING_REVIEW', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'] as PostStatus[]).map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setFormData({ ...formData, status: s })}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-left ${
-                        formData.status === s 
-                          ? 'bg-neutral-900 text-white' 
-                          : 'bg-neutral-50 text-neutral-400 hover:bg-neutral-100'
-                      }`}
-                    >
-                      {s.replace('_', ' ')}
-                    </button>
-                  ))}
+                  {(['DRAFT', 'PENDING_REVIEW', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED'] as PostStatus[]).map(s => {
+                    const isSelected = formData.status === s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            status: s,
+                            scheduledAt: s === 'SCHEDULED' ? (prev.scheduledAt || new Date(Date.now() + 86400000).toISOString()) : prev.scheduledAt
+                          }));
+                        }}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-left flex items-center justify-between border ${
+                          isSelected 
+                            ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm' 
+                            : 'bg-neutral-50 text-neutral-500 border-neutral-100 hover:bg-neutral-100 hover:text-neutral-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${
+                            s === 'PUBLISHED' ? (isSelected ? 'bg-emerald-400' : 'bg-emerald-500') :
+                            s === 'DRAFT' ? (isSelected ? 'bg-amber-400' : 'bg-amber-500') :
+                            s === 'SCHEDULED' ? (isSelected ? 'bg-blue-400' : 'bg-blue-500') :
+                            s === 'PENDING_REVIEW' ? (isSelected ? 'bg-purple-400' : 'bg-purple-500') :
+                            'bg-neutral-400'
+                          }`} />
+                          <span>{s.replace(/_/g, ' ')}</span>
+                        </div>
+                        {isSelected && (
+                          <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-white">Selected</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {(formData.status as string) === 'SCHEDULED' && (
@@ -325,10 +385,11 @@ const AdminBlogPostEditPage: React.FC = () => {
                     <label className="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Schedule For</label>
                     <input 
                       type="datetime-local"
-                      value={formData.scheduledAt ? new Date(formData.scheduledAt).toISOString().slice(0, 16) : ''}
-                      onChange={e => setFormData({ ...formData, scheduledAt: e.target.value })}
-                      className="w-full bg-neutral-50 border border-neutral-100 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary-500 outline-none font-bold"
+                      value={formatDateTimeInput(formData.scheduledAt)}
+                      onChange={e => setFormData(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                      className="w-full bg-neutral-50 border border-neutral-100 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary-500 outline-none font-bold text-neutral-900"
                     />
+                    <p className="text-[11px] text-neutral-400 mt-1">Post will automatically publish on this date and time.</p>
                   </div>
                 )}
               </div>

@@ -89,8 +89,13 @@ export class BlogPostService {
     }
 
     const sanitizedContent = this.sanitizePostContent(data.content);
+    const status: PostStatus = data.status || PostStatus.DRAFT;
+    const publishedAt = status === PostStatus.PUBLISHED ? new Date() : null;
+    const scheduledAt = status === PostStatus.SCHEDULED && data.scheduledAt
+      ? new Date(data.scheduledAt)
+      : (data.scheduledAt ? new Date(data.scheduledAt) : null);
 
-    return this.blogRepository.create({
+    const post = await this.blogRepository.create({
       title: data.title,
       slug: finalSlug,
       excerpt: data.excerpt,
@@ -102,13 +107,31 @@ export class BlogPostService {
       metaDescription: data.metaDescription,
       canonicalUrl: data.canonicalUrl,
       author: { connect: { id: authorId } },
-      status: PostStatus.DRAFT
+      status,
+      publishedAt,
+      scheduledAt
     });
+
+    // Create initial revision
+    await editorialService.createRevision({
+      entityType: 'BlogPost',
+      entityId: post.id,
+      snapshot: post,
+      authorId
+    });
+
+    return post;
   }
 
   async updatePost(id: string, data: any, authorId?: string) {
     const post = await this.blogRepository.findById(id);
     if (!post) throw new Error('Post not found');
+
+    const status = data.status !== undefined ? (data.status as PostStatus) : undefined;
+    let scheduledAt = undefined;
+    if (data.scheduledAt !== undefined) {
+      scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
+    }
 
     const updateData: Prisma.BlogPostUpdateInput = {
       title: data.title,
@@ -120,10 +143,15 @@ export class BlogPostService {
       metaTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       canonicalUrl: data.canonicalUrl,
-      scheduledAt: data.scheduledAt,
+      status: status !== undefined ? status : undefined,
+      scheduledAt: scheduledAt !== undefined ? scheduledAt : undefined,
       updatedAt: new Date(),
       coverImageAsset: data.coverImageId ? { connect: { id: data.coverImageId } } : undefined
     };
+
+    if (status === PostStatus.PUBLISHED && !post.publishedAt) {
+      updateData.publishedAt = new Date();
+    }
 
     if (data.title && post.status === PostStatus.DRAFT) {
       updateData.slug = generateSlug(data.title);
@@ -148,12 +176,24 @@ export class BlogPostService {
     return updatedPost;
   }
 
-  async updateStatus(id: string, status: PostStatus) {
+  async updateStatus(id: string, status: PostStatus, authorId?: string) {
+    const post = await this.blogRepository.findById(id);
+    if (!post) throw new Error('Post not found');
+
     const data: Prisma.BlogPostUpdateInput = { status };
-    if (status === PostStatus.PUBLISHED) {
+    if (status === PostStatus.PUBLISHED && !post.publishedAt) {
       data.publishedAt = new Date();
     }
-    return this.blogRepository.update(id, data);
+    const updated = await this.blogRepository.update(id, data);
+
+    await editorialService.createRevision({
+      entityType: 'BlogPost',
+      entityId: id,
+      snapshot: updated,
+      authorId
+    });
+
+    return updated;
   }
 
   async deletePost(id: string) {

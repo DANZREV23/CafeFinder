@@ -6,6 +6,13 @@ import { PostStatus } from '@prisma/client';
 
 const emptyToUndefined = (val: any) => (val === '' || val === null ? undefined : val);
 
+const parseDateOrNull = (val: any) => {
+  if (val === undefined) return undefined;
+  if (val === '' || val === null) return null;
+  const d = new Date(val as string);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 const getBlogQuerySchema = z.object({
   limit: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : 12))),
   page: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : 1))),
@@ -15,15 +22,17 @@ const getBlogQuerySchema = z.object({
 });
 
 const blogPostSchema = z.object({
-  title: z.string().min(2).max(200),
+  title: z.string().min(2, 'Title must be at least 2 characters').max(200),
   excerpt: z.preprocess(emptyToUndefined, z.string().max(500).optional()),
-  content: z.string().min(10),
+  content: z.string().min(10, 'Content must be at least 10 characters'),
   coverImage: z.preprocess(emptyToUndefined, z.string().optional()),
   coverImageAlt: z.preprocess(emptyToUndefined, z.string().optional()),
   category: z.preprocess(emptyToUndefined, z.string().max(100).optional()),
   metaTitle: z.preprocess(emptyToUndefined, z.string().max(70).optional()),
   metaDescription: z.preprocess(emptyToUndefined, z.string().max(160).optional()),
   canonicalUrl: z.preprocess(emptyToUndefined, z.string().optional()),
+  status: z.preprocess(emptyToUndefined, z.nativeEnum(PostStatus).optional()),
+  scheduledAt: z.preprocess(parseDateOrNull, z.date().nullable().optional()),
 });
 
 export class BlogPostController {
@@ -176,7 +185,7 @@ export class BlogPostController {
       const { id } = req.params;
       const { status } = z.object({ status: z.nativeEnum(PostStatus) }).parse(req.body);
       
-      const post = await this.blogService.updateStatus(id, status);
+      const post = await this.blogService.updateStatus(id, status, req.user?.id);
       
       res.json({
         success: true,

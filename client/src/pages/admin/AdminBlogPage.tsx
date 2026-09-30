@@ -105,6 +105,8 @@ const AdminBlogPage: React.FC = () => {
             >
               <option value="">All Status</option>
               <option value="DRAFT">Draft</option>
+              <option value="PENDING_REVIEW">Pending Review</option>
+              <option value="SCHEDULED">Scheduled</option>
               <option value="PUBLISHED">Published</option>
               <option value="ARCHIVED">Archived</option>
             </select>
@@ -164,12 +166,16 @@ const AdminBlogPage: React.FC = () => {
                         className={`text-xs font-bold px-2 py-1 rounded-full border-none focus:ring-0 cursor-pointer ${
                           post.status === 'PUBLISHED' ? 'bg-green-50 text-green-700' :
                           post.status === 'DRAFT' ? 'bg-yellow-50 text-yellow-700' :
+                          post.status === 'SCHEDULED' ? 'bg-blue-50 text-blue-700' :
+                          post.status === 'PENDING_REVIEW' ? 'bg-purple-50 text-purple-700' :
                           'bg-neutral-100 text-neutral-600'
                         }`}
                         value={post.status}
                         onChange={(e) => handleStatusChange(post.id, e.target.value as PostStatus)}
                       >
                         <option value="DRAFT">Draft</option>
+                        <option value="PENDING_REVIEW">Pending Review</option>
+                        <option value="SCHEDULED">Scheduled</option>
                         <option value="PUBLISHED">Published</option>
                         <option value="ARCHIVED">Archived</option>
                       </select>
