@@ -23,6 +23,11 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum CollectionVisibility {
+  PRIVATE
+  PUBLIC
+}
+
 enum CafeStatus {
   DRAFT
   PENDING_REVIEW
@@ -260,6 +265,7 @@ model User {
   createdEvents CafeEvent[] @relation("CafeEventCreator")
   createdSpecials CafeSpecial[] @relation("CafeSpecialCreator")
   createdAnnouncements CafeAnnouncement[] @relation("CafeAnnouncementCreator")
+  collections UserCollection[]
 
   @@map("users")
 }
@@ -327,6 +333,8 @@ model Cafe {
   events         CafeEvent[]
   specials       CafeSpecial[]
   announcements  CafeAnnouncement[]
+  collectionCovers UserCollection[] @relation("CollectionCoverCafe")
+  collectionItems UserCollectionItem[]
 
   @@index([status])
   @@index([city])
@@ -763,6 +771,49 @@ model CafeFavorite {
   @@index([userId, createdAt])
   @@index([cafeId, createdAt])
   @@map("cafe_favorites")
+}
+
+model UserCollection {
+  id          String              @id @default(cuid())
+  userId      String
+  name        String              @db.VarChar(100)
+  slug        String              @db.VarChar(120)
+  description String?             @db.VarChar(500)
+  visibility  CollectionVisibility @default(PRIVATE)
+  coverCafeId String?
+  sortOrder   Int                 @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  user  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coverCafe Cafe?            @relation("CollectionCoverCafe", fields: [coverCafeId], references: [id], onDelete: SetNull)
+  items UserCollectionItem[]
+
+  @@unique([slug])
+  @@index([userId])
+  @@index([userId, visibility])
+  @@index([visibility, updatedAt])
+  @@index([coverCafeId])
+  @@map("user_collections")
+}
+
+model UserCollectionItem {
+  id           String   @id @default(cuid())
+  collectionId String
+  cafeId       String
+  note         String?  @db.VarChar(500)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  collection UserCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  cafe       Cafe           @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, cafeId])
+  @@index([collectionId, sortOrder])
+  @@index([cafeId])
+  @@map("user_collection_items")
 }
 
 model BlogPost {

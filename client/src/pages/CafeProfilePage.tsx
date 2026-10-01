@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FavoriteButton } from "@/components/cafe/FavoriteButton";
+import { CollectionSaveButton } from "@/components/cafe/CollectionSaveButton";
 import { ShareButtons } from "@/components/common/ShareButtons";
 import { SEO } from "@/components/common/SEO";
 import { generateCafeJsonLd, generateBreadcrumbJsonLd } from "@/utils/seoUtils";
@@ -326,6 +327,7 @@ export default function CafeProfilePage() {
                 variant="outline"
                 className="h-9 px-4 rounded-xl border-brand-border hover:bg-rose-50 hover:border-rose-200"
               />
+              {isAuthenticated && <CollectionSaveButton cafeId={cafe.id} />}
               <ShareButtons 
                 url={window.location.href}
                 title={cafe.name}

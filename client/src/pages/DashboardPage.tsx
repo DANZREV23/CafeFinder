@@ -58,6 +58,12 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               <Link 
+                to="/dashboard/collections" 
+                className="flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium"
+              >
+                Collections
+              </Link>
+              <Link 
                 to="/profile" 
                 className="flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium"
               >

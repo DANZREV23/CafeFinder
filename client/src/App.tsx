@@ -26,6 +26,9 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'));
+const CollectionsPage = lazy(() => import('@/pages/CollectionsPage'));
+const CollectionDetailPage = lazy(() => import('@/pages/CollectionDetailPage'));
+const PublicCollectionPage = lazy(() => import('@/pages/PublicCollectionPage'));
 const CafeClaimPage = lazy(() => import('@/pages/CafeClaimPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/OwnerDashboardPage'));
 const OwnerCafesPage = lazy(() => import('@/pages/OwnerCafesPage'));
@@ -109,6 +112,7 @@ export default function App() {
                 {/* Curated Lists Routes */}
                 <Route path="/lists" element={<ListsPage />} />
                 <Route path="/lists/:slug" element={<ListPage />} />
+                <Route path="/collections/:slug" element={<PublicCollectionPage />} />
                 <Route path="/events" element={<TimeSensitiveDirectoryPage kind="events" />} />
                 <Route path="/events/:cafeSlug/:slug" element={<TimeSensitiveDetailPage kind="events" />} />
                 <Route path="/specials" element={<TimeSensitiveDirectoryPage kind="specials" />} />
@@ -144,6 +148,8 @@ export default function App() {
                     <FavoritesPage />
                   </ProtectedRoute>
                 } />
+                <Route path="/dashboard/collections" element={<ProtectedRoute><CollectionsPage /></ProtectedRoute>} />
+                <Route path="/dashboard/collections/:slug" element={<ProtectedRoute><CollectionDetailPage /></ProtectedRoute>} />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <ProfilePage />

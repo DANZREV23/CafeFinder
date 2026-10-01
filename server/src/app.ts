@@ -35,6 +35,7 @@ import recommendationRoutes from './routes/recommendation.routes.js';
 import seoRoutes from './routes/seo.routes.js';
 import searchRoutes from './routes/search.routes.js';
 import timeSensitiveRoutes from './routes/timeSensitive.routes.js';
+import collectionRoutes from './routes/collection.routes.js';
 
 const getCurrentDir = () => {
   if (typeof __dirname !== 'undefined') {
@@ -175,6 +176,7 @@ export async function createApp() {
   app.use('/api/menu', menuRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/recommendations', recommendationRoutes);
+  app.use('/api/collections', collectionRoutes);
   app.use('/api/search', searchRoutes);
   app.use('/api', timeSensitiveRoutes);
 
