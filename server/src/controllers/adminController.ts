@@ -9,7 +9,7 @@ import { deploymentService } from '../services/deploymentService.js';
 import { cleanupService } from '../services/cleanupService.js';
 import { alertService } from '../services/alertService.js';
 import { operationalService } from '../services/operationalService.js';
-import { recommendationService } from '../services/recommendationService.js';
+import { expireTimeSensitiveContent } from '../services/timeSensitiveMaintenanceService.js';
 import { AlertSeverity, AlertStatus, CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
 
 export class AdminController {
@@ -83,7 +83,6 @@ export class AdminController {
         email: status.email.failedJobs > 10 ? 'warning' : 'healthy',
         backups: status.backups.status.toLowerCase(),
         jobs: status.jobs.failedCount > 0 ? 'warning' : 'healthy',
-        recommendations: recommendationService.getDiagnostics(),
         timestamp: new Date().toISOString()
       };
 
@@ -250,6 +249,37 @@ export class AdminController {
       const { reviewId, photoId } = req.params;
       await this.adminService.deleteReviewPhoto(reviewId, photoId, req.user!.id);
       res.json({ success: true, message: 'Photo deleted' });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getReviewReports = async (req: AuthRequest, res: Response) => {
+    try {
+      const filters = {
+        status: req.query.status as string,
+        search: req.query.search as string,
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50),
+      };
+
+      const result = await this.adminService.getReviewReports(filters);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  resolveReviewReport = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status, actionTaken, resolutionNotes } = req.body || {};
+      const result = await this.adminService.resolveReviewReport(id, req.user!.id, {
+        status,
+        actionTaken,
+        resolutionNotes,
+      });
+      res.json({ success: true, data: result });
     } catch (error: any) {
       res.status(400).json({ success: false, error: { message: error.message } });
     }
@@ -579,6 +609,9 @@ export class AdminController {
              const report = await dataIntegrityService.getIntegrityReport();
              return { processedCount: 1, successCount: 1, failureCount: 0, message: 'Scan complete' };
           });
+          break;
+        case 'expire_time_sensitive_content':
+          executionId = await jobRunnerService.runJob('expire_time_sensitive_content', expireTimeSensitiveContent);
           break;
         case 'recalculate-ratings':
           executionId = await jobRunnerService.runJob('recalculate-ratings', () => dataIntegrityService.recalculateAllCafeRatings());

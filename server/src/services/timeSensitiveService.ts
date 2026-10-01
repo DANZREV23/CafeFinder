@@ -1,153 +1,249 @@
-import { CafeEventType, CafeSpecialType, Prisma, TimeSensitiveStatus } from '@prisma/client';
+import { AnnouncementPriority, CafeAnnouncementType, CafeEventType, CafeSpecialType, TimeSensitiveStatus } from '@prisma/client';
+import { randomBytes } from 'crypto';
 import { prisma } from '../config/database.js';
-import { generateSlug } from '../utils/slug.js';
-import { sanitizePlain } from '../utils/sanitization.js';
 import { ActivityLogService } from './activityLogService.js';
+import { NotificationService } from './notificationService.js';
+import { sanitizeContent, sanitizePlain } from '../utils/sanitization.js';
+import { logger } from '../utils/logger.js';
 
-type ContentKind = 'events' | 'specials';
+export type TimeSensitiveKind = 'events' | 'specials' | 'announcements';
+type ContentData = Record<string, any>;
 
-const publicWhere = (now: Date, extra: Prisma.CafeEventWhereInput = {}): Prisma.CafeEventWhereInput => ({
-  ...extra,
-  status: TimeSensitiveStatus.PUBLISHED,
-  cafe: { status: 'PUBLISHED' },
-  endAt: { gte: now },
-});
-
-const normalizeDate = (value: string | Date) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) throw new Error('Invalid date');
-  return date;
+const delegates: Record<TimeSensitiveKind, string> = {
+  events: 'cafeEvent',
+  specials: 'cafeSpecial',
+  announcements: 'cafeAnnouncement'
 };
 
-const ensureSchedule = (startAt: string | Date, endAt: string | Date) => {
-  const start = normalizeDate(startAt);
-  const end = normalizeDate(endAt);
-  if (end < start) throw new Error('End date must be on or after the start date');
-  return { startAt: start, endAt: end };
+const slugify = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 150) || 'content';
+const fail = (message: string, status = 400) => Object.assign(new Error(message), { status });
+const includePublic = {
+  cafe: { select: { id: true, name: true, slug: true, address: true, city: true, state: true, country: true } },
+  coverPhoto: { select: { url: true, thumbnailUrl: true, altText: true } }
 };
-
-const publicSelect = {
-  id: true, title: true, slug: true, shortDescription: true, description: true,
-  eventType: true, status: true, startAt: true, endAt: true, timezone: true,
-  allDay: true, location: true, capacity: true, registrationUrl: true,
-  price: true, currency: true, isFeatured: true, publishedAt: true,
-  cafe: { select: { id: true, name: true, slug: true, address: true, city: true } },
-} as const;
-
-const specialSelect = {
-  id: true, title: true, slug: true, shortDescription: true, description: true,
-  specialType: true, status: true, startAt: true, endAt: true, timezone: true,
-  terms: true, redemptionInstructions: true, price: true, discountPercent: true,
-  currency: true, isFeatured: true, publishedAt: true,
-  cafe: { select: { id: true, name: true, slug: true, address: true, city: true } },
-} as const;
 
 export class TimeSensitiveService {
   private activityLogs = new ActivityLogService();
-  private async verifyOwner(cafeId: string, userId: string) {
-    const cafe = await prisma.cafe.findFirst({ where: { id: cafeId, ownerId: userId, status: { not: 'ARCHIVED' } }, select: { id: true, name: true } });
-    if (!cafe) throw new Error('Cafe ownership could not be verified');
-    return cafe;
+  private notifications = new NotificationService();
+
+  private model(kind: TimeSensitiveKind): any {
+    return (prisma as any)[delegates[kind]];
   }
 
-  async listForOwner(userId: string, kind: ContentKind, page = 1, limit = 20) {
-    const cafes = await prisma.cafe.findMany({ where: { ownerId: userId }, select: { id: true } });
-    const cafeIds = cafes.map(cafe => cafe.id);
-    const skip = (Math.max(page, 1) - 1) * Math.min(Math.max(limit, 1), 50);
-    const take = Math.min(Math.max(limit, 1), 50);
-    if (kind === 'events') {
-      const [items, total] = await prisma.$transaction([
-        prisma.cafeEvent.findMany({ where: { cafeId: { in: cafeIds } }, include: { cafe: { select: { id: true, name: true, slug: true } } }, orderBy: { startAt: 'desc' }, skip, take }),
-        prisma.cafeEvent.count({ where: { cafeId: { in: cafeIds } } }),
-      ]);
-      return { items, pagination: { page, limit: take, total, totalPages: Math.ceil(total / take) } };
+  private validateSchedule(data: ContentData) {
+    const startAt = new Date(data.startAt);
+    const endAt = new Date(data.endAt);
+    if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt < startAt) throw fail('A valid end date on or after the start date is required');
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: data.timezone }).format(startAt);
+    } catch {
+      throw fail('A valid IANA timezone is required');
     }
-    const [items, total] = await prisma.$transaction([
-      prisma.cafeSpecial.findMany({ where: { cafeId: { in: cafeIds } }, include: { cafe: { select: { id: true, name: true, slug: true } } }, orderBy: { startAt: 'desc' }, skip, take }),
-      prisma.cafeSpecial.count({ where: { cafeId: { in: cafeIds } } }),
-    ]);
-    return { items, pagination: { page, limit: take, total, totalPages: Math.ceil(total / take) } };
+    return { startAt, endAt };
   }
 
-  async submit(kind: ContentKind, id: string, userId: string) {
-    if (kind === 'events') {
-      const item = await prisma.cafeEvent.findFirst({ where: { id, createdById: userId } });
-      if (!item || !['DRAFT', 'REJECTED'].includes(item.status)) throw new Error('Event cannot be submitted in its current state');
-      const updated = await prisma.cafeEvent.update({ where: { id, status: item.status }, data: { status: TimeSensitiveStatus.PENDING_REVIEW } });
-      await this.activityLogs.logAction({ userId, action: 'OWNER_SUBMITTED_EVENT', entityType: 'CafeEvent', entityId: id, description: 'Submitted event for moderation' });
-      return updated;
+  private async uniqueSlug(kind: TimeSensitiveKind, cafeId: string, title: string) {
+    const base = slugify(title);
+    let slug = base;
+    let suffix = 2;
+    while (await this.model(kind).findUnique({ where: { cafeId_slug: { cafeId, slug } }, select: { id: true } })) {
+      slug = `${base.slice(0, 140)}-${suffix++}`;
     }
-    const item = await prisma.cafeSpecial.findFirst({ where: { id, createdById: userId } });
-    if (!item || !['DRAFT', 'REJECTED'].includes(item.status)) throw new Error('Special cannot be submitted in its current state');
-    const updated = await prisma.cafeSpecial.update({ where: { id, status: item.status }, data: { status: TimeSensitiveStatus.PENDING_REVIEW } });
-    await this.activityLogs.logAction({ userId, action: 'OWNER_SUBMITTED_SPECIAL', entityType: 'CafeSpecial', entityId: id, description: 'Submitted special for moderation' });
-    return updated;
+    return slug;
   }
 
-  async moderate(kind: ContentKind, id: string, status: TimeSensitiveStatus, _adminId: string) {
-    if (!['PUBLISHED', 'REJECTED', 'CANCELLED', 'ARCHIVED'].includes(status)) throw new Error('Invalid moderation status');
-    if (kind === 'events') {
-      const item = await prisma.cafeEvent.findUnique({ where: { id } });
-      if (!item) throw new Error('Event not found');
-      const updated = await prisma.cafeEvent.update({ where: { id, status: item.status }, data: { status, publishedAt: status === 'PUBLISHED' ? (item.publishedAt || new Date()) : item.publishedAt } });
-      await this.activityLogs.logAction({ userId: _adminId, action: `ADMIN_${status}_EVENT`, entityType: 'CafeEvent', entityId: id, description: `Moderated event as ${status}` });
-      return updated;
-    }
-    const item = await prisma.cafeSpecial.findUnique({ where: { id } });
-    if (!item) throw new Error('Special not found');
-    const updated = await prisma.cafeSpecial.update({ where: { id, status: item.status }, data: { status, publishedAt: status === 'PUBLISHED' ? (item.publishedAt || new Date()) : item.publishedAt } });
-    await this.activityLogs.logAction({ userId: _adminId, action: `ADMIN_${status}_SPECIAL`, entityType: 'CafeSpecial', entityId: id, description: `Moderated special as ${status}` });
-    return updated;
-  }
-
-  async listPublic(kind: ContentKind, filters: { page?: number; limit?: number; search?: string; cafeId?: string; type?: string; active?: boolean }) {
-    const page = Math.max(filters.page || 1, 1);
-    const limit = Math.min(Math.max(filters.limit || 12, 1), 50);
+  async listPublic(kind: TimeSensitiveKind, options: ContentData = {}) {
     const now = new Date();
-    const search = filters.search?.trim();
-    const base = {
-      ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' as const } }, { description: { contains: search, mode: 'insensitive' as const } }] } : {}),
-      ...(filters.cafeId ? { cafeId: filters.cafeId } : {}),
-      ...(filters.type ? kind === 'events' ? { eventType: filters.type as CafeEventType } : { specialType: filters.type as CafeSpecialType } : {}),
+    const page = Math.min(Math.max(Number(options.page) || 1, 1), 100000);
+    const limit = Math.min(Math.max(Number(options.limit) || 20, 1), 50);
+    const scope = options.scope === 'upcoming' ? 'upcoming' : 'active';
+    const where: ContentData = {
+      status: TimeSensitiveStatus.PUBLISHED,
+      cafe: { status: 'PUBLISHED' },
+      endAt: { gte: now }
     };
-    if (kind === 'events') {
-      const where = publicWhere(now, { ...base, ...(filters.active === false ? { startAt: { gt: now } } : {}) });
-      const [items, total] = await prisma.$transaction([
-        prisma.cafeEvent.findMany({ where, select: publicSelect, orderBy: [{ startAt: 'asc' }, { id: 'asc' }], skip: (page - 1) * limit, take: limit }),
-        prisma.cafeEvent.count({ where }),
-      ]);
-      return { items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    where.startAt = scope === 'upcoming' ? { gt: now } : { lte: now };
+    if (options.cafeId) where.cafeId = String(options.cafeId);
+    if (options.city) where.cafe = { ...where.cafe, city: { contains: String(options.city).slice(0, 100), mode: 'insensitive' } };
+    if (options.from && !Number.isNaN(Date.parse(String(options.from)))) where.startAt = { ...where.startAt, gte: new Date(String(options.from)) };
+    if (options.to && !Number.isNaN(Date.parse(String(options.to)))) where.endAt = { ...where.endAt, lte: new Date(String(options.to)) };
+    if (options.minPrice !== undefined && !Number.isNaN(Number(options.minPrice))) where.price = { gte: Number(options.minPrice) };
+    if (options.maxPrice !== undefined && !Number.isNaN(Number(options.maxPrice))) where.price = { ...where.price, lte: Number(options.maxPrice) };
+    const typeField = kind === 'events' ? 'eventType' : kind === 'specials' ? 'specialType' : 'type';
+    if (options.type) {
+      const allowedTypes = kind === 'events' ? Object.values(CafeEventType) : kind === 'specials' ? Object.values(CafeSpecialType) : Object.values(CafeAnnouncementType);
+      if (!allowedTypes.includes(options.type as never)) throw fail('Invalid content type filter');
+      where[typeField] = options.type;
     }
-    const where: Prisma.CafeSpecialWhereInput = { ...base, status: TimeSensitiveStatus.PUBLISHED, cafe: { status: 'PUBLISHED' }, endAt: { gte: now }, ...(filters.active === false ? { startAt: { gt: now } } : {}) };
-    const [items, total] = await prisma.$transaction([
-      prisma.cafeSpecial.findMany({ where, select: specialSelect, orderBy: [{ startAt: 'asc' }, { id: 'asc' }], skip: (page - 1) * limit, take: limit }),
-      prisma.cafeSpecial.count({ where }),
+    if (options.q) {
+      const q = String(options.q).trim().slice(0, 100);
+      if (q) where.OR = [{ title: { contains: q, mode: 'insensitive' } }, { [kind === 'announcements' ? 'content' : 'description']: { contains: q, mode: 'insensitive' } }, { cafe: { name: { contains: q, mode: 'insensitive' } } }, { cafe: { city: { contains: q, mode: 'insensitive' } } }];
+    }
+    const [data, total] = await Promise.all([
+      this.model(kind).findMany({ where, include: includePublic, orderBy: [{ startAt: 'asc' }, { createdAt: 'desc' }], skip: (page - 1) * limit, take: limit }),
+      this.model(kind).count({ where })
     ]);
-    return { items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async getPublic(kind: ContentKind, slug: string) {
-    const now = new Date();
-    if (kind === 'events') return prisma.cafeEvent.findFirst({ where: publicWhere(now, { slug }), select: publicSelect });
-    return prisma.cafeSpecial.findFirst({ where: { slug, status: TimeSensitiveStatus.PUBLISHED, cafe: { status: 'PUBLISHED' }, endAt: { gte: now } }, select: specialSelect });
+  async getPublic(kind: TimeSensitiveKind, cafeSlug: string, slug: string) {
+    const record = await this.model(kind).findFirst({
+      where: { slug, cafe: { slug: cafeSlug, status: 'PUBLISHED' }, status: TimeSensitiveStatus.PUBLISHED, endAt: { gte: new Date() } },
+      include: includePublic
+    });
+    if (!record) throw fail('Content not found', 404);
+    return record;
   }
 
-  async listForCafe(cafeId: string) {
-    const now = new Date();
-    const [events, specials] = await prisma.$transaction([
-      prisma.cafeEvent.findMany({ where: publicWhere(now, { cafeId }), select: publicSelect, orderBy: { startAt: 'asc' }, take: 3 }),
-      prisma.cafeSpecial.findMany({ where: { cafeId, status: TimeSensitiveStatus.PUBLISHED, cafe: { status: 'PUBLISHED' }, endAt: { gte: now } }, select: specialSelect, orderBy: { startAt: 'asc' }, take: 3 }),
+  async listOwned(kind: TimeSensitiveKind, userId: string, isAdmin: boolean, options: ContentData = {}) {
+    const page = Math.max(Number(options.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(options.limit) || 20, 1), 50);
+    const where: ContentData = { cafe: isAdmin ? {} : { ownerId: userId } };
+    if (options.cafeId) where.cafeId = String(options.cafeId);
+    if (options.status && Object.values(TimeSensitiveStatus).includes(options.status)) where.status = options.status;
+    const [data, total] = await Promise.all([
+      this.model(kind).findMany({ where, include: includePublic, orderBy: { updatedAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+      this.model(kind).count({ where })
     ]);
-    return { events, specials };
+    return { data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  async create(kind: ContentKind, cafeId: string, userId: string, data: any) {
-    await this.verifyOwner(cafeId, userId);
-    const schedule = ensureSchedule(data.startAt, data.endAt);
-    const common = { cafeId, createdById: userId, title: data.title.trim(), slug: generateSlug(data.title), shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : null, description: sanitizePlain(data.description), status: TimeSensitiveStatus.DRAFT, ...schedule, timezone: data.timezone || 'UTC' };
-    if (kind === 'events') return prisma.cafeEvent.create({ data: { ...common, eventType: data.eventType || CafeEventType.OTHER, allDay: Boolean(data.allDay), location: data.location ? sanitizePlain(data.location) : null, capacity: data.capacity ?? null, registrationUrl: data.registrationUrl ?? null, price: data.price ?? null, currency: data.currency ?? null } });
-    return prisma.cafeSpecial.create({ data: { ...common, specialType: data.specialType || CafeSpecialType.OTHER, terms: data.terms ? sanitizePlain(data.terms) : null, redemptionInstructions: data.redemptionInstructions ? sanitizePlain(data.redemptionInstructions) : null, price: data.price ?? null, discountPercent: data.discountPercent ?? null, currency: data.currency ?? null } });
+  private async ownedRecord(kind: TimeSensitiveKind, id: string, userId: string, isAdmin: boolean) {
+    const record = await this.model(kind).findFirst({ where: { id, cafe: isAdmin ? {} : { ownerId: userId } } });
+    if (!record) throw fail('Content not found or access denied', 404);
+    return record;
+  }
+
+  async create(kind: TimeSensitiveKind, userId: string, isAdmin: boolean, input: ContentData) {
+    const cafe = await prisma.cafe.findFirst({ where: { id: input.cafeId, ...(isAdmin ? {} : { ownerId: userId }) }, select: { id: true } });
+    if (!cafe) throw fail('Cafe not found or access denied', 404);
+    this.validateSchedule(input);
+    if (input.coverPhotoId && !isAdmin) {
+      const asset = await prisma.mediaAsset.findFirst({ where: { id: input.coverPhotoId, uploadedById: userId }, select: { id: true } });
+      if (!asset) throw fail('Cover image not found or access denied', 404);
+    }
+    let slug = await this.uniqueSlug(kind, cafe.id, input.title);
+    const data: ContentData = {
+      ...input,
+      cafeId: cafe.id,
+      slug,
+      title: sanitizePlain(input.title),
+      description: input.description ? sanitizeContent(input.description) : undefined,
+      content: input.content ? sanitizeContent(input.content) : undefined,
+      shortDescription: input.shortDescription ? sanitizePlain(input.shortDescription) : undefined,
+      terms: input.terms ? sanitizeContent(input.terms) : undefined,
+      redemptionInstructions: input.redemptionInstructions ? sanitizeContent(input.redemptionInstructions) : undefined,
+      startAt: new Date(input.startAt),
+      endAt: new Date(input.endAt),
+      createdById: userId,
+      status: TimeSensitiveStatus.DRAFT,
+      publishedAt: null,
+      ...(kind === 'announcements' ? {} : { isFeatured: false })
+    };
+    let record;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        record = await this.model(kind).create({ data, include: includePublic });
+        break;
+      } catch (error: any) {
+        if (error.code !== 'P2002' || attempt >= 2) throw error;
+        slug = `${slugify(input.title).slice(0, 140)}-${randomBytes(4).toString('hex')}`;
+        data.slug = slug;
+      }
+    }
+    await this.activityLogs.logAction({ userId, action: 'OWNER_CREATED_TIME_SENSITIVE_CONTENT', entityType: kind, entityId: record.id, description: `Created ${kind} content` });
+    return record;
+  }
+
+  async update(kind: TimeSensitiveKind, id: string, userId: string, isAdmin: boolean, input: ContentData) {
+    const current = await this.ownedRecord(kind, id, userId, isAdmin);
+    const data: ContentData = { ...input };
+    if (data.coverPhotoId && !isAdmin) {
+      const asset = await prisma.mediaAsset.findFirst({ where: { id: data.coverPhotoId, uploadedById: userId }, select: { id: true } });
+      if (!asset) throw fail('Cover image not found or access denied', 404);
+    }
+    if (data.startAt || data.endAt || data.timezone) this.validateSchedule({ ...current, ...data });
+    if (data.title) data.title = sanitizePlain(data.title);
+    for (const field of ['description', 'content', 'terms', 'redemptionInstructions']) if (data[field]) data[field] = sanitizeContent(data[field]);
+    if (data.shortDescription) data.shortDescription = sanitizePlain(data.shortDescription);
+    if (data.startAt) data.startAt = new Date(data.startAt);
+    if (data.endAt) data.endAt = new Date(data.endAt);
+    if (!isAdmin && current.status === TimeSensitiveStatus.PUBLISHED) {
+      data.status = TimeSensitiveStatus.PENDING_REVIEW;
+      data.publishedAt = null;
+    }
+    if (!isAdmin) delete data.isFeatured;
+    const result = await this.model(kind).updateMany({ where: { id, cafe: isAdmin ? {} : { ownerId: userId }, status: current.status }, data });
+    if (!result.count) throw fail('Content changed during update; reload and try again', 409);
+    const record = await this.model(kind).findUnique({ where: { id }, include: includePublic });
+    await this.activityLogs.logAction({ userId, action: 'OWNER_UPDATED_TIME_SENSITIVE_CONTENT', entityType: kind, entityId: id, description: `Updated ${kind} content` });
+    return record;
+  }
+
+  async submit(kind: TimeSensitiveKind, id: string, userId: string, isAdmin: boolean) {
+    const current = await this.ownedRecord(kind, id, userId, isAdmin);
+    if (![TimeSensitiveStatus.DRAFT, TimeSensitiveStatus.REJECTED].includes(current.status)) throw fail('Only drafts or rejected content can be submitted', 409);
+    const result = await this.model(kind).updateMany({ where: { id, status: current.status }, data: { status: TimeSensitiveStatus.PENDING_REVIEW } });
+    if (!result.count) throw fail('Content changed during submission; reload and try again', 409);
+    await this.activityLogs.logAction({ userId, action: 'OWNER_SUBMITTED_TIME_SENSITIVE_CONTENT', entityType: kind, entityId: id, description: `Submitted ${kind} content for review` });
+    return this.model(kind).findUnique({ where: { id }, include: includePublic });
+  }
+
+  async cancel(kind: TimeSensitiveKind, id: string, userId: string, isAdmin: boolean) {
+    const current = await this.ownedRecord(kind, id, userId, isAdmin);
+    if (![TimeSensitiveStatus.PUBLISHED, TimeSensitiveStatus.PENDING_REVIEW].includes(current.status)) throw fail('This content cannot be cancelled', 409);
+    const result = await this.model(kind).updateMany({ where: { id, status: current.status }, data: { status: TimeSensitiveStatus.CANCELLED } });
+    if (!result.count) throw fail('Content changed during cancellation; reload and try again', 409);
+    await this.activityLogs.logAction({ userId, action: 'OWNER_CANCELLED_TIME_SENSITIVE_CONTENT', entityType: kind, entityId: id, description: `Cancelled ${kind} content` });
+    return this.model(kind).findUnique({ where: { id }, include: includePublic });
+  }
+
+  async archive(kind: TimeSensitiveKind, id: string, userId: string, isAdmin: boolean) {
+    const current = await this.ownedRecord(kind, id, userId, isAdmin);
+    if (![TimeSensitiveStatus.DRAFT, TimeSensitiveStatus.REJECTED, TimeSensitiveStatus.CANCELLED, TimeSensitiveStatus.EXPIRED].includes(current.status)) throw fail('This content cannot be archived in its current state', 409);
+    const result = await this.model(kind).updateMany({ where: { id, status: current.status }, data: { status: TimeSensitiveStatus.ARCHIVED } });
+    if (!result.count) throw fail('Content changed during archiving; reload and try again', 409);
+    await this.activityLogs.logAction({ userId, action: 'OWNER_ARCHIVED_TIME_SENSITIVE_CONTENT', entityType: kind, entityId: id, description: `Archived ${kind} content` });
+    return this.model(kind).findUnique({ where: { id }, include: includePublic });
+  }
+
+  async listForModeration(kind: TimeSensitiveKind, options: ContentData = {}) {
+    const page = Math.max(Number(options.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(options.limit) || 20, 1), 50);
+    const where: ContentData = {};
+    if (options.status && Object.values(TimeSensitiveStatus).includes(options.status)) where.status = options.status;
+    if (options.q) where.OR = [{ title: { contains: String(options.q).slice(0, 100), mode: 'insensitive' } }, { cafe: { name: { contains: String(options.q).slice(0, 100), mode: 'insensitive' } } }];
+    const [data, total] = await Promise.all([
+      this.model(kind).findMany({ where, include: { ...includePublic, createdBy: { select: { id: true, name: true, email: true } } }, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+      this.model(kind).count({ where })
+    ]);
+    return { data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async moderate(kind: TimeSensitiveKind, id: string, adminId: string, status: TimeSensitiveStatus, isFeatured?: boolean) {
+    const current = await this.model(kind).findUnique({ where: { id } });
+    if (!current) throw fail('Content not found', 404);
+    if (status === TimeSensitiveStatus.PUBLISHED && ![TimeSensitiveStatus.PENDING_REVIEW, TimeSensitiveStatus.PUBLISHED].includes(current.status)) throw fail('Only pending or published content can be approved', 409);
+    if (isFeatured !== undefined && current.status !== TimeSensitiveStatus.PUBLISHED) throw fail('Only published content can be featured', 409);
+    const data: ContentData = { status, publishedAt: status === TimeSensitiveStatus.PUBLISHED ? new Date() : current.publishedAt };
+    if (kind !== 'announcements' && status !== TimeSensitiveStatus.PUBLISHED) data.isFeatured = false;
+    if (isFeatured !== undefined && kind !== 'announcements') data.isFeatured = isFeatured;
+    const result = await this.model(kind).updateMany({ where: { id, status: current.status }, data });
+    if (!result.count) throw fail('Content changed during moderation; reload and try again', 409);
+    await this.activityLogs.logAction({ userId: adminId, action: 'ADMIN_MODERATED_TIME_SENSITIVE_CONTENT', entityType: kind, entityId: id, description: `Changed ${kind} lifecycle to ${status}` });
+    if (current.status !== status && (status === TimeSensitiveStatus.PUBLISHED || status === TimeSensitiveStatus.REJECTED || status === TimeSensitiveStatus.CANCELLED)) {
+      try {
+        await this.notifications.createNotification(current.createdById, {
+          title: `${kind === 'events' ? 'Event' : kind === 'specials' ? 'Special' : 'Announcement'} ${status.toLowerCase().replace('_', ' ')}`,
+          message: `Your "${current.title}" ${kind} content was ${status.toLowerCase().replace('_', ' ')} by CafeFinder moderation.`,
+          type: `TIME_SENSITIVE_${status}`
+        });
+      } catch (error) {
+        logger.error('Failed to notify time-sensitive content owner', error);
+      }
+    }
+    return this.model(kind).findUnique({ where: { id }, include: includePublic });
   }
 }
 
-export const timeSensitiveService = new TimeSensitiveService();
+export const timeSensitiveEnumValues = { CafeEventType, CafeSpecialType, CafeAnnouncementType, AnnouncementPriority };

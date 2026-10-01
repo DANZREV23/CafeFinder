@@ -1,6 +1,6 @@
 import { ReviewRepository, ReviewFilters } from '../repositories/reviewRepository.js';
 import { CafeRepository } from '../repositories/cafeRepository.js';
-import { ReviewStatus, Prisma, CafeStatus } from '@prisma/client';
+import { ReviewStatus, Prisma, CafeStatus, ReportStatus } from '@prisma/client';
 import { emailService } from './email/email.service.js';
 import { prisma } from '../config/database.js';
 import { sanitizePlain } from '../utils/sanitization.js';
@@ -104,16 +104,37 @@ export class ReviewService {
     return true;
   }
 
+  private validateReviewStatusTransition(current: ReviewStatus, next: ReviewStatus) {
+    const allowedTransitions: Record<ReviewStatus, ReviewStatus[]> = {
+      [ReviewStatus.PENDING]: [ReviewStatus.APPROVED, ReviewStatus.REJECTED],
+      [ReviewStatus.APPROVED]: [ReviewStatus.HIDDEN, ReviewStatus.REMOVED],
+      [ReviewStatus.REJECTED]: [ReviewStatus.PENDING, ReviewStatus.REMOVED],
+      [ReviewStatus.HIDDEN]: [ReviewStatus.APPROVED, ReviewStatus.REMOVED],
+      [ReviewStatus.REMOVED]: [],
+    };
+
+    if (current === next) {
+      return;
+    }
+
+    if (!allowedTransitions[current]?.includes(next)) {
+      throw new Error(`Invalid review status transition: ${current} -> ${next}`);
+    }
+  }
+
   async updateReviewStatus(reviewId: string, status: ReviewStatus) {
     const review = await this.reviewRepository.findById(reviewId);
     if (!review) {
       throw new Error('Review not found');
     }
 
+    this.validateReviewStatusTransition(review.status, status);
+
     const updated = await this.reviewRepository.update(reviewId, { status });
     
-    // Recalculate aggregates
-    await this.recalculateCafeRatings(review.cafeId);
+    if (status === ReviewStatus.APPROVED || status === ReviewStatus.REJECTED || status === ReviewStatus.HIDDEN || status === ReviewStatus.REMOVED) {
+      await this.recalculateCafeRatings(review.cafeId);
+    }
 
     // Send notification email (non-blocking)
     const user = await prisma.user.findUnique({ where: { id: review.userId } });
@@ -193,5 +214,119 @@ export class ReviewService {
 
     await this.reviewRepository.deletePhoto(photoId);
     return true;
+  }
+
+  async toggleHelpfulReaction(userId: string, reviewId: string) {
+    const review = await this.reviewRepository.findById(reviewId);
+    if (!review) {
+      throw new Error('Review not found');
+    }
+
+    const existingReaction = await prisma.cafeReviewHelpful.findUnique({
+      where: { reviewId_userId: { reviewId, userId } },
+    });
+
+    if (existingReaction) {
+      const [, updatedReview] = await prisma.$transaction([
+        prisma.cafeReviewHelpful.delete({ where: { id: existingReaction.id } }),
+        prisma.cafeReview.update({
+          where: { id: reviewId },
+          data: { helpfulCount: { decrement: 1 } },
+        }),
+      ]);
+
+      return {
+        helpful: false,
+        helpfulCount: Math.max((updatedReview.helpfulCount ?? 0), 0),
+      };
+    }
+
+    const [, updatedReview] = await prisma.$transaction([
+      prisma.cafeReviewHelpful.create({
+        data: { reviewId, userId },
+      }),
+      prisma.cafeReview.update({
+        where: { id: reviewId },
+        data: { helpfulCount: { increment: 1 } },
+      }),
+    ]);
+
+    return {
+      helpful: true,
+      helpfulCount: updatedReview.helpfulCount,
+    };
+  }
+
+  async reportReview(userId: string, reviewId: string, reason: string, description?: string) {
+    const review = await this.reviewRepository.findById(reviewId);
+    if (!review) {
+      throw new Error('Review not found');
+    }
+
+    if (review.userId === userId) {
+      throw new Error('You cannot report your own review');
+    }
+
+    const existing = await prisma.cafeReviewReport.findUnique({
+      where: { reviewId_reporterId: { reviewId, reporterId: userId } },
+    });
+
+    if (existing) {
+      if (existing.status === ReportStatus.PENDING || existing.status === ReportStatus.RESOLVED) {
+        throw new Error('You have already reported this review');
+      }
+    }
+
+    return prisma.cafeReviewReport.create({
+      data: {
+        reviewId,
+        reporterId: userId,
+        reason: reason as any,
+        description: description ? sanitizePlain(description) : null,
+        status: ReportStatus.PENDING,
+      },
+    });
+  }
+
+  async getReviewResponse(reviewId: string) {
+    return prisma.cafeReviewResponse.findUnique({
+      where: { reviewId },
+      include: { owner: { select: { id: true, name: true, avatarUrl: true } } },
+    });
+  }
+
+  async upsertReviewResponse(userId: string, reviewId: string, content: string) {
+    const review = await this.reviewRepository.findById(reviewId);
+    if (!review) {
+      throw new Error('Review not found');
+    }
+
+    const cafe = await prisma.cafe.findUnique({ where: { id: review.cafeId }, select: { ownerId: true } });
+    if (!cafe || cafe.ownerId !== userId) {
+      throw new Error('Only the cafe owner can respond to a review');
+    }
+
+    const cleanedContent = sanitizePlain(content).trim();
+    if (!cleanedContent || cleanedContent.length < 10 || cleanedContent.length > 2000) {
+      throw new Error('Review response must be between 10 and 2000 characters');
+    }
+
+    const existing = await prisma.cafeReviewResponse.findUnique({ where: { reviewId } });
+
+    if (existing) {
+      return prisma.cafeReviewResponse.update({
+        where: { id: existing.id },
+        data: { content: cleanedContent, status: ReviewStatus.APPROVED },
+      });
+    }
+
+    return prisma.cafeReviewResponse.create({
+      data: {
+        reviewId,
+        ownerId: userId,
+        content: cleanedContent,
+        status: ReviewStatus.APPROVED,
+      },
+    });
   }
 }

@@ -24,11 +24,11 @@ export const getCafesQuerySchema = z.object({
     const parsed = v ? parseInt(v) : undefined;
     return parsed === undefined || isNaN(parsed) ? undefined : parsed;
   })),
-  featured: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
-  trending: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
-  verified: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
+  featured: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v === 'true' ? true : undefined))),
+  trending: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v === 'true' ? true : undefined))),
+  verified: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v === 'true' ? true : undefined))),
   amenities: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v ? v.split(',') : undefined)),
-  sort: z.preprocess(emptyToUndefined, z.enum(['rating', 'latest', 'name', 'popular']).optional()),
+  sort: z.preprocess(emptyToUndefined, z.enum(['rating', 'latest', 'name', 'popular', 'recommended']).optional()),
 });
 
 export class CafeController {

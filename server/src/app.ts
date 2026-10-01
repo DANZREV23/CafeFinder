@@ -166,6 +166,7 @@ export async function createApp() {
   app.use('/api/blog', blogRoutes);
   app.use('/api/reviews', reviewRoutes);
   app.use('/api/users', userRoutes);
+  app.use('/api/user', userRoutes);
   app.use('/api', claimRoutes);
   app.use('/api/cafe-submissions', submissionRoutes);
   app.use('/api/amenities', amenityRoutes);
@@ -175,7 +176,7 @@ export async function createApp() {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api/search', searchRoutes);
-  app.use('/api/time-sensitive', timeSensitiveRoutes);
+  app.use('/api', timeSensitiveRoutes);
 
   // SEO Routes (Robots and Sitemap)
   app.use('/', seoRoutes);

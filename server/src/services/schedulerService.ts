@@ -9,6 +9,7 @@ import { EmailJobStatus } from '@prisma/client';
 import { jobRunnerService, JobResult } from './jobRunnerService.js';
 import { dataIntegrityService } from './dataIntegrityService.js';
 import { backupService } from './backupService.js';
+import { expireTimeSensitiveContent } from './timeSensitiveMaintenanceService.js';
 import os from 'os';
 
 export class SchedulerService {
@@ -140,19 +141,11 @@ export class SchedulerService {
     }, 5 * 60 * 1000);
     this.intervals.push(publicationInterval);
 
-    const expirationInterval = setInterval(async () => {
-      await jobRunnerService.runJob('expire-time-sensitive-content', async (): Promise<JobResult> => {
-        const now = new Date();
-        const [events, specials, announcements] = await prisma.$transaction([
-          prisma.cafeEvent.updateMany({ where: { status: 'PUBLISHED', endAt: { lt: now } }, data: { status: 'EXPIRED' } }),
-          prisma.cafeSpecial.updateMany({ where: { status: 'PUBLISHED', endAt: { lt: now } }, data: { status: 'EXPIRED' } }),
-          prisma.cafeAnnouncement.updateMany({ where: { status: 'PUBLISHED', endAt: { lt: now } }, data: { status: 'EXPIRED' } }),
-        ]);
-        const count = events.count + specials.count + announcements.count;
-        return { processedCount: count, successCount: count, failureCount: 0, message: `Expired ${count} time-sensitive records` };
-      });
+    // Time-sensitive content expiration: every 5 minutes, in bounded batches
+    const timeSensitiveInterval = setInterval(async () => {
+      await jobRunnerService.runJob('expire_time_sensitive_content', expireTimeSensitiveContent);
     }, 5 * 60 * 1000);
-    this.intervals.push(expirationInterval);
+    this.intervals.push(timeSensitiveInterval);
 
     // Release Cleanup: Weekly
     const releaseInterval = setInterval(async () => {

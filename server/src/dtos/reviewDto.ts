@@ -19,6 +19,7 @@ export interface ReviewDto {
   overallRating: number;
   comment: string | null;
   status: string;
+  helpfulCount: number;
   photos: ReviewPhotoDto[];
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +39,7 @@ export const mapToReviewDto = (review: any): ReviewDto => {
     overallRating: review.overallRating,
     comment: review.comment,
     status: review.status,
+    helpfulCount: review.helpfulCount ?? 0,
     photos: review.photos.map((p: any) => ({
       id: p.id,
       url: p.url,

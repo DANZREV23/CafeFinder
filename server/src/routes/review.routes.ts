@@ -17,6 +17,12 @@ router.get('/me', requireAuth, reviewController.getMyReviews);
 router.post('/cafe/:cafeId', requireAuth, submissionRateLimit, reviewController.create);
 router.patch('/:id', requireAuth, reviewController.update);
 router.delete('/:id', requireAuth, reviewController.delete);
+router.post('/:id/helpful', requireAuth, reviewController.toggleHelpful);
+router.delete('/:id/helpful', requireAuth, reviewController.toggleHelpful);
+router.post('/:id/report', requireAuth, reviewController.report);
+router.get('/:id/response', reviewController.getResponse);
+router.post('/:id/response', requireAuth, reviewController.upsertResponse);
+router.patch('/:id/response', requireAuth, reviewController.upsertResponse);
 
 // Photo routes
 router.post('/:id/photos', requireAuth, uploadReviewPhoto.single('photo'), reviewController.uploadPhoto);

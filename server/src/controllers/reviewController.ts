@@ -14,7 +14,16 @@ const reviewSchema = z.object({
 });
 
 const updateReviewStatusSchema = z.object({
-  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'HIDDEN']),
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'HIDDEN', 'REMOVED']),
+});
+
+const reportReviewSchema = z.object({
+  reason: z.enum(['SPAM', 'HARASSMENT', 'OFFENSIVE_CONTENT', 'FALSE_INFORMATION', 'DUPLICATE', 'IRRELEVANT', 'OTHER']),
+  description: z.string().trim().max(1000).optional(),
+});
+
+const responseSchema = z.object({
+  content: z.string().trim().min(10).max(2000),
 });
 
 export class ReviewController {
@@ -230,6 +239,57 @@ export class ReviewController {
         message: 'Photo deleted successfully',
       });
     } catch (error) {
+      next(error);
+    }
+  };
+
+  toggleHelpful = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const result = await this.reviewService.toggleHelpfulReaction(req.user!.id, id);
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  report = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { reason, description } = reportReviewSchema.parse(req.body);
+      const report = await this.reviewService.reportReview(req.user!.id, id, reason, description);
+
+      res.status(201).json({ success: true, data: report });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ success: false, error: { message: 'Validation failed', details: error.issues } });
+      }
+      next(error);
+    }
+  };
+
+  getResponse = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const response = await this.reviewService.getReviewResponse(id);
+      res.json({ success: true, data: response });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  upsertResponse = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { content } = responseSchema.parse(req.body);
+      const response = await this.reviewService.upsertReviewResponse(req.user!.id, id, content);
+
+      res.json({ success: true, data: response });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ success: false, error: { message: 'Validation failed', details: error.issues } });
+      }
       next(error);
     }
   };

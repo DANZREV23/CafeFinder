@@ -4,10 +4,9 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { CafeListSection } from '@/components/dashboard/CafeListSection';
-import { RecommendationSection } from '@/components/recommendations/RecommendationSection';
 import { getDashboardData, DashboardData } from '@/services/dashboardService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Loader2, Settings, User } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
@@ -57,14 +56,20 @@ const DashboardPage: React.FC = () => {
               <h1 className="text-3xl font-bold text-stone-900 font-serif">Welcome back, {user.name}!</h1>
               <p className="text-stone-500 mt-1">Here's what's happening with your cafe discoveries.</p>
             </div>
-            <div className="flex gap-3">
-              <Link to="/profile" className="flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium">
-                <User className="w-4 h-4" />
-                Edit Profile
+            <div className="flex items-center gap-3">
+              <Link 
+                to="/profile" 
+                className="flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium"
+              >
+                <User className="w-4 h-4 text-stone-600" />
+                <span>Edit Profile</span>
               </Link>
-              <Link to="/dashboard/settings" className="flex items-center gap-2 rounded-lg border border-brand-coffee-dark bg-brand-coffee-dark px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-coffee hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-coffee focus:ring-offset-2">
-                <Settings className="h-4 w-4 text-white" aria-hidden="true" />
-                Settings
+              <Link 
+                to="/profile" 
+                className="flex items-center gap-2 px-4 py-2 bg-brand-coffee text-white hover:bg-brand-coffee-dark rounded-lg transition-colors text-sm font-semibold shadow-sm"
+              >
+                <Settings className="w-4 h-4 text-white shrink-0" />
+                <span className="text-white">Discovery Preferences</span>
               </Link>
             </div>
           </div>
@@ -85,7 +90,12 @@ const DashboardPage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content (Left/Center) */}
                 <div className="lg:col-span-2 space-y-12">
-                  <RecommendationSection items={data.recommendations} />
+                  <CafeListSection 
+                    title="Recommendations for You" 
+                    subtitle="Matched from your coffee taste, saved spots, and amenities"
+                    cafes={data.recommendations} 
+                    actionLink={{ href: '/profile', label: 'Preferences' }}
+                  />
                   
                   <CafeListSection 
                     title="Your Recently Viewed" 
@@ -113,9 +123,12 @@ const DashboardPage: React.FC = () => {
                       <p className="text-cream-200 text-sm mb-4">
                         Can't find your favorite cafe? Submit it to our curated database and help the community.
                       </p>
-                      <button className="bg-white text-coffee-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-cream-100 transition-colors">
+                      <Link 
+                        to="/submit-cafe" 
+                        className="inline-block bg-white text-coffee-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-cream-100 transition-colors shadow-sm"
+                      >
                         Submit a Cafe
-                      </button>
+                      </Link>
                     </div>
                     {/* Decorative element */}
                     <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />

@@ -88,4 +88,47 @@ export class UserController {
       next(error);
     }
   }
+
+  async getPreferences(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: { message: 'Not authenticated' } });
+      }
+
+      const { userPreferenceService } = await import('../services/userPreferenceService.js');
+      const preferences = await userPreferenceService.getPreferences(req.user.id);
+      res.json({ success: true, data: preferences });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updatePreferences(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: { message: 'Not authenticated' } });
+      }
+
+      const { userPreferenceService, userPreferenceSchema } = await import('../services/userPreferenceService.js');
+      const validated = userPreferenceSchema.parse(req.body);
+      const preferences = await userPreferenceService.updatePreferences(req.user.id, validated);
+      res.json({ success: true, data: preferences });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resetPreferences(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: { message: 'Not authenticated' } });
+      }
+
+      const { userPreferenceService } = await import('../services/userPreferenceService.js');
+      const result = await userPreferenceService.resetPreferences(req.user.id);
+      res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

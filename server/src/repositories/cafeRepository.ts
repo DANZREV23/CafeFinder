@@ -12,7 +12,7 @@ export interface CafeFilters {
   trending?: boolean;
   verified?: boolean;
   amenities?: string[];
-  sort?: 'rating' | 'latest' | 'name' | 'popular';
+  sort?: 'rating' | 'latest' | 'name' | 'popular' | 'recommended';
   status?: string;
   currentUserId?: string;
 }
@@ -75,16 +75,16 @@ export class CafeRepository {
       where.priceRange = priceRange;
     }
 
-    if (featured !== undefined) {
-      where.featured = featured;
+    if (featured === true) {
+      where.featured = true;
     }
 
-    if (trending !== undefined) {
-      where.trending = trending;
+    if (trending === true) {
+      where.trending = true;
     }
 
-    if (verified !== undefined) {
-      where.verified = verified;
+    if (verified === true) {
+      where.verified = true;
     }
 
     if (amenities && amenities.length > 0) {
@@ -100,9 +100,16 @@ export class CafeRepository {
       ];
     }
 
-    let orderBy: Prisma.CafeOrderByWithRelationInput = { createdAt: 'desc' };
+    let orderBy: Prisma.CafeOrderByWithRelationInput | Prisma.CafeOrderByWithRelationInput[] = { createdAt: 'desc' };
 
-    if (sort === 'rating') {
+    if (sort === 'recommended') {
+      orderBy = [
+        { featured: 'desc' },
+        { trending: 'desc' },
+        { ratingAverage: 'desc' },
+        { reviewCount: 'desc' }
+      ];
+    } else if (sort === 'rating') {
       orderBy = { ratingAverage: 'desc' };
     } else if (sort === 'name') {
       orderBy = { name: 'asc' };

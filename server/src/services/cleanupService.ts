@@ -17,7 +17,6 @@ export class CleanupService {
       this.cleanupLogs(),
       this.cleanupActivityLogs(),
       this.cleanupAnalytics(),
-      this.cleanupUserCafeViews(),
       this.cleanupJobHistory(),
       this.cleanupTempFiles(),
     ]);
@@ -212,19 +211,6 @@ export class CleanupService {
       return { processedCount: count, successCount: count, failureCount: 0 };
     } catch (err: any) {
       logger.error('Failed to cleanup analytics', err);
-      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
-    }
-  }
-
-  async cleanupUserCafeViews(): Promise<JobResult> {
-    try {
-      const retentionDays = parseInt(process.env.USER_VIEW_RETENTION_DAYS || '180', 10);
-      const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
-      const result = await prisma.userCafeView.deleteMany({ where: { viewedAt: { lt: cutoff } } });
-      if (result.count > 0) logger.info(`Cleaned up ${result.count} old user cafe views.`);
-      return { processedCount: result.count, successCount: result.count, failureCount: 0 };
-    } catch (err: any) {
-      logger.error('Failed to cleanup user cafe views', err);
       return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }

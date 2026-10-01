@@ -24,7 +24,7 @@ CafeFinder Davao is a high-performance, full-stack specialty coffee discovery an
 - **Migration Safety Checks**: AST and regex scanning of Prisma migrations to detect destructive operations before application to production.
 
 ### 4. Data Integrity & Reliability Suite
-- **Embedded PostgreSQL Fallback**: Automatic detection of database connectivity issues with seamless failover to an embedded PGlite service, ensuring zero-downtime development and testing.
+- **Local PGlite Fallback**: Development can use a persistent PGlite database when an external PostgreSQL connection is unavailable. This is a separate local data store, not replication, failover protection, or a backup of the configured PostgreSQL database. Confirm the active connection before writes or migrations.
 - **Rating Recalculation Engine**: One-click administrative utility to audit and recalculate aggregate ratings and review counts directly from verified database reviews.
 - **Validation Resilience**: Enhanced API error handling with granular Zod validation message reporting, providing users with precise feedback on form submission errors.
 
@@ -47,6 +47,44 @@ CafeFinder Davao is a high-performance, full-stack specialty coffee discovery an
 - **Offline Fallback State**: Seamless client handling with responsive private offline notifications when internet connectivity drops.
 - **Web App Manifest**: Installable PWA support with desktop and mobile shortcuts, caching strategies, and asset preloading.
 
+## Application Feature Guide
+
+CafeFinder has distinct public, signed-in user, cafe-owner, and administrator workflows. Public APIs expose published records; private owner and admin operations use server-side session and role checks.
+
+### Public discovery
+
+- **Home (`/`)**: Search and discovery entry point with recommendations, trending cafes, curated lists, editorial content, and currently relevant events or specials.
+- **Explore (`/explore`)**: Browse published cafes with server-side search, pagination, filters, sorting, and map/list discovery. Cafe visibility is based on publication status, not on being verified, featured, or trending.
+- **Cafe profiles (`/cafes/:slug`)**: View address, contact links, hours, amenities, photos, map, menus, ratings, approved reviews, related cafes, recommendations, upcoming events, active specials, and relevant announcements.
+- **Events (`/events`), specials (`/specials`), and announcements (`/announcements`)**: Browse published, time-relevant cafe content. Details use cafe-scoped URLs such as `/events/:cafeSlug/:slug` and `/specials/:cafeSlug/:slug`.
+- **Editorial**: Read published posts at `/blog` and curated cafe collections at `/lists`.
+- **PWA**: Installable web app with an offline fallback. Private drafts and admin data are not public discovery content.
+
+### Signed-in users
+
+Registered users can manage a profile, favorite cafes, write and edit their own reviews, submit cafes for review, track submission status, view notifications, and use recommendation preferences. Reviews pass through moderation before appearing publicly or contributing to cafe rating aggregates.
+
+### Cafe owners
+
+The protected `/owner` workspace provides cafe management and performance summaries. Owners can manage cafe details, hours, amenities, photos, menus, review responses where enabled, and analytics; submit ownership claims and cafe change requests; and manage events, specials, and announcements. Time-sensitive content starts as a draft, must be submitted for review, and becomes public only after approval. Owners can manage content only for cafes they own.
+
+### Administrators
+
+The protected `/admin` workspace includes cafe submissions, reviews and reports, owner claims, change requests, user status, cafe directory controls, activity logs, and content management for blog posts, curated lists, testimonials, redirects, media, and time-sensitive content. System tools cover health, deployments, backups, scheduled jobs, security, alerts, recommendations, and data-integrity diagnostics. Administrative changes use the existing audit log.
+
+### Platform capabilities
+
+- Session authentication and role-based authorization for `USER`, `OWNER`, and `ADMIN`.
+- Validated cafe, review, menu, media, and content workflows; image processing and upload checks.
+- Aggregate cafe analytics and explainable discovery recommendations.
+- Notifications and queued email for existing transactional workflows; no automatic bulk promotional email.
+- Localization hooks, accessible controls, responsive layouts, canonical metadata, sitemap/robots endpoints, and PWA support.
+- Operational logging, health endpoints, maintenance mode, rate limits, scheduled cleanup, backups, migration checks, deployment verification, and rollback tooling.
+
+### Time-sensitive content (Stage 38)
+
+Events, specials, and announcements belong to a cafe and use cafe-scoped slugs. Public queries enforce publication status and active/upcoming time windows in the database. Date values are stored as UTC instants with an IANA timezone retained for display. Owner edits to published content return it to review; admins can approve, reject, cancel, archive, restore eligible items, and feature events or specials. Expiration hides content in public queries independently of the scheduled expiration job; historical records are retained.
+
 ---
 
 ## 🛠️ Technology Stack
@@ -65,13 +103,12 @@ CafeFinder Davao is a high-performance, full-stack specialty coffee discovery an
 
 ### Prerequisites
 - **Node.js**: `v20.x` or `v22.x` (LTS recommended)
-- **Database**: PostgreSQL `14+` OR simply use the built-in **Embedded PostgreSQL (PGlite)** for zero-config local setup.
+- **Database**: PostgreSQL `14+` is recommended. For local development, the app can start a persistent PGlite database if neither `PRISMA_DATABASE_URL` nor `DATABASE_URL` is configured or the configured database is unavailable.
 - **Package Manager**: `npm` (v10+)
-- **API Key**: Google Maps Platform API Key (with Places and Maps JavaScript API enabled)
+- **Optional map key**: Google Maps Platform key for interactive maps.
+- **Backup tools**: PostgreSQL `pg_dump` and `psql` client tools are recommended for complete logical backups and restore verification.
 
----
-
-### Step 1: Clone and Install Dependencies
+### Step 1: Obtain the source and install dependencies
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -82,53 +119,63 @@ npm install
 ```
 
 ---
+### Step 2: Create or preserve environment configuration
 
-### Step 2: Environment Configuration
-Create your local environment file from `.env.example`:
-```bash
+For a new checkout with no `.env`, copy the template. Do not overwrite an existing `.env`; it identifies the database and contains secrets.
+
+PowerShell:
 cp .env.example .env
-```
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 Open `.env` and configure the following required variables. **Note**: If you want to use the zero-config embedded database, you can leave the `PRISMA_DATABASE_URL` empty or point it to a local file.
+macOS/Linux:
+```bash
+test -e .env || cp .env.example .env
+```
 
+Review `.env` before starting. `PRISMA_DATABASE_URL` takes precedence over `DATABASE_URL`; confirm the host, port, and database name point to the intended data. The template contains placeholders that must be replaced for PostgreSQL. Never commit `.env` or expose credentials in logs or support requests.
 ```env
 # Database Connection
-# Leave empty or use localhost:5432 for standard PG.
-# The app will automatically failover to PGlite if unreachable.
-PRISMA_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/cafefinder?schema=public"
-
-# Server Configuration
-PORT=3000
+# Keep the URLs consistent if both are set.
+PRISMA_DATABASE_URL="postgresql://<user>:<password>@127.0.0.1:5432/<database>?schema=public"
+DATABASE_URL="postgresql://<user>:<password>@127.0.0.1:5432/<database>?schema=public"
 NODE_ENV=development
 
-# Google Maps Platform (Required for Map UI and Location Picker)
-VITE_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
-GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
-```
+SESSION_SECRET="use-a-long-random-secret"
+VITE_GOOGLE_MAPS_API_KEY="optional-map-key"
+GOOGLE_MAPS_API_KEY="optional-map-key"
 
 ---
-
+If neither database URL is configured, CafeFinder uses PGlite at `prisma/pgdata_v9` on port `5442`. This is a separate persistent database, not replication or a backup of PostgreSQL. A connection failure can cause the app to use local PGlite data; verify startup logs and the active database target before important writes or migrations.
 ### Step 3: Database Initialization
-
+### Step 3: Establish the database schema
 Initialize the database schema and seed initial demonstration data. If using PGlite, ensure no other process is holding the port specified in `LOCAL_PG_PORT` (default 5442).
-
+For a **new, empty development database**, apply the repository migrations:
 ```bash
 # 1. Sync database schema (Safe for initial setup)
-npm run db:push
-
-# 2. Seed demonstration cafes, users, reviews, and amenities
-npm run db:seed
+npm run db:migrate
 ```
+# 2. Seed demonstration cafes, users, reviews, and amenities
+For an existing database, read [Existing Data Safety](#existing-data-safety) first, confirm the target, and take verified backups before applying migrations. Do not use `db:push` as a substitute for migrations on a migration-managed database. Production deployments should use `npm run deploy`, which performs preflight, backup, migration-safety checks, migration, and health verification.
 
----
+> **Destructive command:** `npm run db:seed` deletes existing users, cafes, reviews, and related records before inserting demo data. Use it only on a disposable database that contains nothing you need. Never run it against an existing, shared, staging-with-real-data, or production database.
 
-### Step 4: Start Development
+### Step 4: Start development
+
 ```bash
 npm run dev
+
+---
+Open `http://localhost:<PORT>` (default `3000`; `.env` may set a different port). Express serves the API and Vite serves the React app. If Prisma generation reports `EPERM` for `query_engine-windows.dll.node` on Windows, stop the existing CafeFinder server gracefully with `Ctrl+C` and retry. Do not kill unrelated Node processes.
+
+### Step 5: Verify the installation
+
+```bash
+npm run lint
+npm run build
 ```
-The application will boot at **`http://localhost:3000`**. The development server handles:
-1.  **Backend API**: Express server running on port 3000.
-2.  **Frontend**: Vite middleware serving the React SPA.
+
+With the app running, check `/api/ready`, `/explore`, `/events`, and `/specials`. `npm run test:smoke` uses `APP_URL` or `http://localhost:<PORT>`. Maps require the optional Google Maps key. Do not seed the database simply to populate an empty screen if the current database contains data you want to keep.
 3.  **Database**: Embedded PostgreSQL (PGlite) server running on port 5442 (if external PG is not configured).
 
 ---
@@ -153,12 +200,34 @@ To compile, bundle, and run in production mode:
 # 1. Full Production Build (Compiles Prisma, Vite client, and bundles Node.js backend)
 npm run build
 
-# 2. Run Smoke Tests & Preflight Check
+# 2. Run type checking and deployment preflight
 npm run test
 
-# 3. Launch Production Server
+# 3. Apply production deployment workflow (backup, migration checks, migrations, restart, health checks)
+npm run deploy
+
+# Or, when managing build/migration/service steps yourself, launch the built server
 npm run start
 ```
+
+With the server running, execute HTTP smoke tests separately using `npm run test:smoke` (set `APP_URL` if it is not on the default local URL).
+
+## 🛡️ Existing Data Safety
+
+Use this checklist before upgrading an existing installation, changing database settings, applying migrations, restoring a backup, or troubleshooting missing cafes. The most common cause of an apparently empty app is connecting to a different database than the one that contains the expected data.
+
+1. **Confirm the active data source.** Review `PRISMA_DATABASE_URL` first, then `DATABASE_URL`; the former takes precedence. Confirm host, port, and database name locally without posting credentials. Check startup logs for the connection target. If neither URL is configured, the app uses persistent PGlite data under `prisma/pgdata_v9` on port `5442`. If a configured database is unreachable, the app may fall back to this separate local database; it does not copy or synchronize records between them.
+2. **Preserve configuration and persistent files.** Do not overwrite `.env`. Do not delete or replace `prisma/pgdata_v9`, `uploads/`, `backups/`, or any PostgreSQL data directory to fix an empty page or startup issue. If moving an installation, preserve the active database and the complete upload directory, not just the source code or `dist/` build.
+3. **Check migration state and review SQL.** Before applying changes, run `npx prisma migrate status` and `npm run migration:check`; inspect pending migration SQL and confirm it targets the intended database. For production, use the deployment workflow rather than `db:push`. Do not proceed if the target database or migration effects are unclear.
+4. **Create and verify backups before migration or restore.** Confirm `BACKUP_DIR` is writable and has enough free space. Install PostgreSQL client tools and verify `pg_dump --version`. Then run `npm run backup:all` and confirm fresh, non-empty database and uploads archives were created. Copy backups off the application host before proceeding.
+
+	**Important backup limitations:** Without `pg_dump`, the database backup command falls back to a Prisma JSON export. That fallback does not currently include every model, including the Stage 38 time-sensitive content models, so it is not a complete upgrade backup. Do not treat it as sufficient; install/use `pg_dump` and verify a full SQL dump before upgrading. The uploads backup script archives the project-root `uploads/` directory; if your deployment stores uploads elsewhere (for example, via `UPLOAD_DIR`), back up and verify that actual directory separately.
+
+5. **Verify restore in an isolated database.** Use the restore-test script with a specific backup file, for example `npm run db:restore-test -- backups/cafefinder-db-<timestamp>.sql.gz`. It creates and drops a temporary database; ensure the configured DB account has permission to do that. Never test restoration against the live database. Keep original backups unchanged.
+6. **Apply migrations, not demo setup.** In local development, run `npm run db:migrate` only after confirming the target and backups. In a configured production deployment, use `npm run deploy` and review each preflight/backup/migration/health-check result. **Never run `npm run db:seed` on an existing database:** the seed script deletes users, cafes, reviews, and related records before inserting demo data. `npm run db:push` bypasses migration history and is for disposable databases only, not a normal upgrade procedure.
+7. **Verify data after changes.** Check `/api/ready`, sign-in, cafes, reviews, menus, and uploaded images. Confirm the app still points to the intended database and that backup archives are retained until post-upgrade verification and a new backup succeed.
+
+For a PGlite file copy, first stop CafeFinder gracefully (`Ctrl+C` in its terminal, or the configured service manager), then copy the entire `prisma/pgdata_v9` directory. Never copy a live PostgreSQL server's data directory as a substitute for `pg_dump`. When stopping or restarting on Windows, stop only CafeFinder processes; do not terminate unrelated Node processes.
 
 ---
 
@@ -166,7 +235,7 @@ npm run start
 
 | Script | Purpose |
 | :--- | :--- |
-| `npm run dev` | Starts development server with hot reload via `tsx` on port 3000 |
+| `npm run dev` | Generates Prisma Client and starts Express/Vite development server on `PORT` (default 3000); stop an older CafeFinder process first if Prisma reports a locked query-engine DLL |
 | `npm run build` | Builds Prisma client, Vite assets, bundles `dist/server.cjs` via `esbuild`, and generates release manifest |
 | `npm run start` | Boots the bundled CommonJS production server from `dist/server.cjs` |
 | `npm run lint` | Runs TypeScript type checking (`tsc --noEmit`) |
@@ -176,181 +245,21 @@ npm run start
 | `npm run deploy:verify` | Performs end-to-end smoke verification against the active running release |
 | `npm run migration:check`| Scans Prisma SQL migrations for destructive DDL commands |
 | `npm run db:migrate` | Applies Prisma migrations in development mode (`prisma migrate dev`) |
+| `npm run db:push` | Pushes schema directly without migration history; disposable local databases only |
 | `npm run db:generate`| Generates the latest Prisma Client TypeScript definitions |
-| `npm run db:seed` | Seeds initial demonstration users, cafes, tags, and reviews |
-| `npm run backup:all` | Executes full backup of both PostgreSQL database and `uploads/` directory |
+| `npm run db:seed` | **Destructive:** deletes existing application records, then inserts demo data; disposable databases only |
+| `npm run backup:all` | Runs database and project-root `uploads/` backups; use `pg_dump` for a complete PostgreSQL backup and verify both archives |
 | `npm run backup:db` | Creates a standalone PostgreSQL database dump |
 | `npm run backup:uploads`| Creates a standalone compressed archive of uploaded media |
 | `npm run system:cleanup`| Manually runs retention cleanup for expired sessions, stale logs, and notifications |
 | `npm run scrape:cafes` | Automated scraper to populate the database with Davao City cafe data |
-| `npm run test:smoke` | Runs end-to-end smoke tests against the running application |
-| `npm run db:restore-test`| Tests the integrity of database backup restoration procedures |
+| `npm run test` | Runs TypeScript checking and deployment preflight |
+| `npm run test:smoke` | Runs HTTP smoke tests against the running application at `APP_URL` or `http://localhost:<PORT>` |
+| `npm run db:restore-test -- <backup-file>`| Restores a specified SQL backup into a temporary database for verification; requires PostgreSQL client tools and database create/drop permissions |
 
 ---
 
 ## 📖 Operational Documentation
-
-## 🧭 Application Feature Guide
-
-CafeFinder is a cafe discovery directory with separate experiences for visitors, registered users, cafe owners, and administrators. Public content is served from the published PostgreSQL records; owner and administrator tools are protected by server-side authentication and role checks.
-
-### Public discovery
-
-- **Home (`/`)**: Browse the main discovery experience, featured/trending cafe content, editorial previews, curated lists, testimonials, and discovery calls to action.
-- **Explore (`/explore`)**: Browse all published cafes with server-side pagination. Search by cafe, city, address, description, or amenity; filter by city, price range, and amenities; and sort by rating, newest, name, or popularity. Published cafes appear whether or not they are verified, featured, or trending. Those flags are displayed as descriptive badges, not visibility requirements.
-- **Cafe profiles (`/cafes/:slug`)**: View cafe details, address, contact links, hours, amenities, photo galleries, map location, menus, ratings, reviews, favorites, related cafes, recommendations, upcoming events, and current specials.
-- **Maps**: Use the interactive map on Explore and cafe pages when a map provider key is configured. Select a map marker to focus the corresponding cafe card.
-- **Blog (`/blog`)**: Read published editorial posts and open individual posts at `/blog/:slug`.
-- **Curated lists (`/lists`)**: Browse published cafe collections and individual lists at `/lists/:slug`.
-- **Events (`/events`)**: Browse published, not-yet-ended cafe events. Open details at `/events/:slug`.
-- **Specials (`/specials`)**: Browse published active or upcoming cafe specials. Open details at `/specials/:slug`.
-- **PWA/offline support**: Install the app on supported devices and use the offline fallback when connectivity is unavailable.
-
-### Visitor and registered-user actions
-
-Visitors can browse public cafes, maps, blogs, lists, events, specials, menus, and public reviews. A registered user can additionally:
-
-1. Create an account at `/register` or sign in at `/login`.
-2. Save and remove cafe favorites at `/favorites`.
-3. Open `/dashboard` to view discovery activity, saved cafes, recommendations, and account shortcuts.
-4. Edit personal information at `/profile`.
-5. Set optional recommendation preferences at `/dashboard/settings`, including city, price range, amenities, coffee types, and vibes.
-6. Write one review per cafe, provide overall/category ratings, add review photos, edit the user's own review, and delete it where permitted.
-7. Submit a new cafe through `/submit-cafe` and track its status under `/my-submissions`.
-8. View and manage in-app notifications.
-
-Reviews are initially pending moderation. Only approved reviews contribute to public review lists and cafe rating aggregates. Review photos use the existing upload and authorization pipeline.
-
-### Cafe owner workspace
-
-Users with the `OWNER` role can access `/owner`. Administrators can also access owner tools when required for support. Owner capabilities include:
-
-- View the owner dashboard and owned cafes.
-- Manage cafe business information, hours, amenities, photos, cover photos, and menu content.
-- Submit ownership claims for existing directory records.
-- Submit cafe change requests for administrator review.
-- Review cafe reviews and view aggregate cafe analytics.
-- Create time-sensitive event and special drafts through the protected time-sensitive API, submit them for moderation, and view owner-scoped content.
-
-Owners are restricted to their own cafes. They cannot change protected public moderation fields, review aggregates, or another owner's cafe data.
-
-### Administrator workspace
-
-Administrators use the protected `/admin` area to manage the platform:
-
-- **Dashboard**: Review pending cafe submissions and moderation workload.
-- **Cafe submissions**: Review, approve, reject, or reopen submitted cafes.
-- **Reviews**: Moderate pending reviews, hide/restore reviews, inspect review details, and manage review photos.
-- **Owner claims**: Review and decide ownership claims.
-- **Change requests**: Approve or reject owner requests to change live cafe data.
-- **Cafe directory**: Search cafes, update lifecycle status, assign owners, and manage verified, featured, and trending flags.
-- **Users**: Review user accounts and update account status.
-- **Content**: Manage blog posts, curated lists, testimonials, redirects, media, and content-quality checks.
-- **System**: Monitor health, deployments, security, recommendations, operational alerts, scheduled jobs, backups, cleanup, and data integrity.
-- **Activity logs**: Audit administrative and important owner actions.
-
-Administrator routes are protected by both authentication and the `ADMIN` role. Moderation operations verify the current database state and are recorded in the existing activity log system.
-
-## 🧑💻 Detailed User Workflows
-
-### Find a cafe
-
-1. Open `/explore`.
-2. Enter a cafe name, city, address, amenity, or descriptive term in the search field.
-3. Apply optional city, price, or amenity filters.
-4. Select a sort order.
-5. Switch between list and map views on supported screen sizes.
-6. Select a cafe card to open its profile.
-
-Explore uses server-side queries and pagination. It does not require a cafe to be marked verified, featured, or trending to appear.
-
-### Save a favorite
-
-1. Sign in.
-2. Select the heart button on a cafe card or profile.
-3. Open `/favorites` to review saved cafes.
-4. Select the heart button again to remove a saved cafe.
-
-Favorite identities are not publicly exposed.
-
-### Write or edit a review
-
-1. Sign in and open a published cafe profile.
-2. Select **Write a review**.
-3. Provide overall, coffee, ambiance, and service ratings.
-4. Add an experience-focused comment.
-5. Optionally upload up to five supported review images within the displayed file-size limit.
-6. Submit the review and wait for moderation.
-7. Find your review in the cafe profile and use the edit or delete controls when available.
-
-Do not include private information or personal attacks. Normal negative feedback is allowed; content is moderated based on policy and evidence.
-
-### Submit a cafe
-
-1. Sign in.
-2. Open `/submit-cafe`.
-3. Complete the cafe information and upload any permitted photos.
-4. Submit the form.
-5. Track the result at `/my-submissions` and open an item for details.
-
-Submissions remain pending until an administrator reviews them.
-
-### Claim a cafe as an owner
-
-1. Sign in with an owner account or eligible account.
-2. Open a cafe profile and select the claim workflow, or use the owner claims area.
-3. Provide business and verification information.
-4. Submit the claim.
-5. Monitor its status from the claims page.
-
-Administrators verify claims before assigning ownership.
-
-### Manage a cafe as an owner
-
-1. Sign in with an authorized owner account.
-2. Open `/owner` and select a cafe.
-3. Use the cafe workspace tabs for business details, location, hours, amenities, photos, menus, reviews, analytics, and change requests.
-4. Save permitted changes or submit a change request when live data requires moderation.
-
-### Create an event or special
-
-The current Stage 38 backend supports protected owner creation and moderation workflows for events and specials. Content is created as a draft, submitted for review, and only becomes public after administrator approval. Dates are stored in UTC with an explicit IANA timezone for display. Ended content is excluded from public queries and is marked expired by the maintenance scheduler.
-
-## 🔐 Account, Privacy, and Security Rules
-
-- Roles are `USER`, `OWNER`, and `ADMIN`.
-- Authentication uses the existing session system with secure cookies and supported authorization headers.
-- Authorization is enforced on the server; frontend route guards are not security boundaries.
-- Public DTOs exclude passwords, session tokens, IP addresses, private moderation information, and private account data.
-- Public APIs return only published cafes and approved public content.
-- Uploaded files are validated and processed through the existing media pipeline.
-- User input is validated with Zod and sanitized before storage or rendering.
-- External registration links accept safe HTTP(S) protocols only.
-- Rate limiting, security headers, request correlation, logging, maintenance mode, backups, and cleanup jobs are enabled through existing backend infrastructure.
-
-## 🌐 Localization, Accessibility, and SEO
-
-- User-facing localization is provided through the existing i18n provider and locale files.
-- Forms use labels, validation feedback, keyboard-accessible controls, semantic headings, and responsive layouts.
-- Cafe, blog, list, event, and special pages use existing SEO components and canonical route conventions.
-- Public sitemap and robots routes exclude private, administrative, and unpublished content.
-- Dates, times, and currency values should be displayed using locale-aware formatting and the relevant cafe/content timezone.
-
-## 🧪 Recommended First-Run Checklist
-
-After installation:
-
-1. Copy `.env.example` to `.env` and configure PostgreSQL or the supported local fallback.
-2. Configure the map keys if map features are needed.
-3. Run `npm run db:push` for a new local schema or `npm run db:migrate` for migrations.
-4. Run `npm run db:seed` if demonstration data is needed.
-5. Run `npm run lint`.
-6. Run `npm run build`.
-7. Start the app with `npm run dev`.
-8. Verify `/`, `/explore`, `/cafes/:slug`, `/blog`, `/lists`, `/events`, `/specials`, `/login`, and `/admin` with the appropriate account.
-9. Run `npm run test:smoke` while the application is running on the configured port.
-
-If Explore appears empty, verify that cafes have `status = PUBLISHED`, the API is reachable, the frontend is using the expected API origin, and the database connection points to the intended PostgreSQL instance.
 
 For in-depth operational procedures, consult the repository architecture guides:
 - **[Database Performance & Indexing](./DATABASE_PERFORMANCE.md)**: Index strategies and query optimization.

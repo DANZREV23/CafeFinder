@@ -5,6 +5,7 @@ import { prisma } from '../config/database.js';
 import { UserCafeViewRepository } from '../repositories/userCafeViewRepository.js';
 import { sanitizePlain } from '../utils/sanitization.js';
 import { EditorialService } from './editorialService.js';
+import { recommendationService } from './recommendationService.js';
 
 const editorialService = new EditorialService();
 
@@ -125,15 +126,7 @@ export class CafeService {
       };
     }
 
-    const relatedCafes = await prisma.cafe.findMany({
-      where: {
-        city: cafe.city,
-        id: { not: cafe.id },
-        status: 'PUBLISHED',
-      },
-      include: relatedInclude,
-      take: 4,
-    });
+    const relatedCafes = await recommendationService.getSimilarCafes(cafe.id, 4, currentUserId);
 
     const pendingClaim = currentUserId && !cafe.ownerId
       ? await prisma.cafeOwnerClaim.findFirst({ where: { cafeId: cafe.id, userId: currentUserId, status: 'PENDING' } })

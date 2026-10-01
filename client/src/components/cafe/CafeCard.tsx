@@ -10,6 +10,7 @@ import { CafePrice } from "./CafePrice";
 import { CafeAmenities } from "./CafeAmenities";
 import { Cafe } from "@/types";
 import { FavoriteButton } from "./FavoriteButton";
+import { Sparkles } from "lucide-react";
 
 import { useI18n } from "@/i18n";
 
@@ -81,12 +82,33 @@ export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured 
           className="mb-3" 
         />
 
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-3">
           <CafePrice priceRange={cafe.priceRange} />
           <span className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">
             {cafe.coffeeType || "Specialty Coffee"}
           </span>
         </div>
+
+        {cafe.recommendationReason && (
+          <div className="mb-3 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200/70 text-amber-900 text-xs flex items-center justify-between gap-1.5 font-medium">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="truncate">{cafe.recommendationReason}</span>
+            </div>
+            {cafe.matchScore ? (
+              <span className="shrink-0 text-[10px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.5 rounded">
+                {cafe.matchScore}%
+              </span>
+            ) : null}
+          </div>
+        )}
+
+        {!cafe.recommendationReason && cafe.similarityReasons && cafe.similarityReasons.length > 0 && (
+          <div className="mb-3 px-2.5 py-1.5 rounded-lg bg-stone-100/80 border border-stone-200/60 text-stone-700 text-xs flex items-center gap-1.5 font-medium">
+            <Sparkles className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+            <span className="truncate">{cafe.similarityReasons[0]}</span>
+          </div>
+        )}
 
         <div className="mt-auto pt-4 border-t border-brand-border flex flex-col gap-3">
           <CafeAmenities amenities={cafe.amenities?.map(a => a.amenity) || []} max={2} />

@@ -5,6 +5,9 @@ interface ActiveFiltersProps {
   search?: string;
   city?: string;
   priceRange?: number;
+  featured?: boolean;
+  trending?: boolean;
+  verified?: boolean;
   amenities?: string[];
   onRemove: (key: string, value?: any) => void;
   onClearAll: () => void;
@@ -14,11 +17,14 @@ export const ActiveFilters: React.FC<ActiveFiltersProps> = ({
   search,
   city,
   priceRange,
+  featured,
+  trending,
+  verified,
   amenities = [],
   onRemove,
   onClearAll,
 }) => {
-  const activeCount = [search, city, priceRange].filter(Boolean).length + amenities.length;
+  const activeCount = [search, city, priceRange, featured, trending, verified].filter(Boolean).length + amenities.length;
 
   if (activeCount === 0) return null;
 
@@ -42,6 +48,18 @@ export const ActiveFilters: React.FC<ActiveFiltersProps> = ({
         <FilterChip label={`Price: ${"₱".repeat(priceRange)}`} onRemove={() => onRemove("priceRange")} />
       )}
       
+      {verified && (
+        <FilterChip label="Verified Only" onRemove={() => onRemove("verified")} />
+      )}
+      
+      {featured && (
+        <FilterChip label="Featured Only" onRemove={() => onRemove("featured")} />
+      )}
+      
+      {trending && (
+        <FilterChip label="Trending Only" onRemove={() => onRemove("trending")} />
+      )}
+
       {amenities.map(amenity => (
         <FilterChip 
           key={amenity} 

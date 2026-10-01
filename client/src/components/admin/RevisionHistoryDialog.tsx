@@ -13,8 +13,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'react-hot-toast';
 import { clsx } from 'clsx';
-import { fetchApi } from '@/services/api';
-import { ApiResponse } from '@/types';
 
 interface Revision {
   id: string;
@@ -53,8 +51,9 @@ export const RevisionHistoryDialog: React.FC<RevisionHistoryDialogProps> = ({
   const fetchRevisions = async () => {
     setLoading(true);
     try {
-      const data = await fetchApi<ApiResponse<Revision[]>>(`/admin/editorial/revisions/${entityType}/${entityId}`);
-      if (data.success && data.data) {
+      const response = await fetch(`/api/admin/editorial/revisions/${entityType}/${entityId}`);
+      const data = await response.json();
+      if (data.success) {
         setRevisions(data.data);
       }
     } catch (error) {
@@ -68,9 +67,10 @@ export const RevisionHistoryDialog: React.FC<RevisionHistoryDialogProps> = ({
     if (!window.confirm('Are you sure you want to restore this version? Current changes will be archived as a new revision.')) return;
 
     try {
-      const data = await fetchApi<ApiResponse<any>>(`/admin/editorial/revisions/${revisionId}/restore`, {
+      const response = await fetch(`/api/admin/editorial/revisions/${revisionId}/restore`, {
         method: 'POST'
       });
+      const data = await response.json();
       if (data.success) {
         toast.success('Revision restored successfully');
         onRestore(selectedRevision?.snapshot);

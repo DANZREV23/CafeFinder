@@ -1,52 +1,100 @@
 import { prisma } from '../config/database.js';
+import { z } from 'zod';
 
-export interface UserPreferenceInput {
-  preferredCity?: string | null;
-  preferredPriceRange?: number | null;
-  preferredAmenities?: string[];
-  preferredCoffeeTypes?: string[];
-  preferredVibes?: string[];
-}
+export const userPreferenceSchema = z.object({
+  preferredCity: z.string().trim().max(100).nullable().optional(),
+  preferredPriceRange: z.number().int().min(1).max(4).nullable().optional(),
+  preferredAmenities: z.array(z.string().trim().max(100)).max(20).optional(),
+  preferredCoffeeTypes: z.array(z.string().trim().max(100)).max(10).optional(),
+  preferredVibes: z.array(z.string().trim().max(100)).max(10).optional(),
+});
 
-const MAX_ITEMS = 20;
-
-const boundedStrings = (value: unknown) => Array.isArray(value)
-  ? [...new Set(value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map(item => item.trim()).slice(0, MAX_ITEMS))]
-  : [];
+export type UserPreferenceInput = z.infer<typeof userPreferenceSchema>;
 
 export class UserPreferenceService {
-  async get(userId: string) {
-    return prisma.userRecommendationPreference.findUnique({ where: { userId } });
-  }
+  async getPreferences(userId: string) {
+    const preference = await prisma.userPreference.findUnique({
+      where: { userId },
+    });
 
-  async update(userId: string, input: UserPreferenceInput) {
-    const price = input.preferredPriceRange == null ? null : Number(input.preferredPriceRange);
-    if (price !== null && (!Number.isInteger(price) || price < 1 || price > 5)) {
-      throw new Error('preferredPriceRange must be an integer between 1 and 5');
+    if (!preference) {
+      return {
+        userId,
+        preferredCity: null,
+        preferredPriceRange: null,
+        preferredAmenities: [],
+        preferredCoffeeTypes: [],
+        preferredVibes: [],
+        isConfigured: false,
+      };
     }
 
-    return prisma.userRecommendationPreference.upsert({
+    return {
+      id: preference.id,
+      userId: preference.userId,
+      preferredCity: preference.preferredCity,
+      preferredPriceRange: preference.preferredPriceRange,
+      preferredAmenities: preference.preferredAmenities || [],
+      preferredCoffeeTypes: preference.preferredCoffeeTypes || [],
+      preferredVibes: preference.preferredVibes || [],
+      updatedAt: preference.updatedAt,
+      isConfigured: Boolean(
+        preference.preferredCity ||
+        preference.preferredPriceRange ||
+        (preference.preferredAmenities && preference.preferredAmenities.length > 0) ||
+        (preference.preferredCoffeeTypes && preference.preferredCoffeeTypes.length > 0) ||
+        (preference.preferredVibes && preference.preferredVibes.length > 0)
+      ),
+    };
+  }
+
+  async updatePreferences(userId: string, data: UserPreferenceInput) {
+    const upserted = await prisma.userPreference.upsert({
       where: { userId },
       create: {
         userId,
-        preferredCity: typeof input.preferredCity === 'string' ? input.preferredCity.trim().slice(0, 120) || null : null,
-        preferredPriceRange: price,
-        preferredAmenities: boundedStrings(input.preferredAmenities),
-        preferredCoffeeTypes: boundedStrings(input.preferredCoffeeTypes),
-        preferredVibes: boundedStrings(input.preferredVibes),
+        preferredCity: data.preferredCity || null,
+        preferredPriceRange: data.preferredPriceRange ?? null,
+        preferredAmenities: data.preferredAmenities || [],
+        preferredCoffeeTypes: data.preferredCoffeeTypes || [],
+        preferredVibes: data.preferredVibes || [],
       },
       update: {
-        preferredCity: input.preferredCity === undefined ? undefined : (typeof input.preferredCity === 'string' ? input.preferredCity.trim().slice(0, 120) || null : null),
-        preferredPriceRange: input.preferredPriceRange === undefined ? undefined : price,
-        preferredAmenities: input.preferredAmenities === undefined ? undefined : boundedStrings(input.preferredAmenities),
-        preferredCoffeeTypes: input.preferredCoffeeTypes === undefined ? undefined : boundedStrings(input.preferredCoffeeTypes),
-        preferredVibes: input.preferredVibes === undefined ? undefined : boundedStrings(input.preferredVibes),
+        preferredCity: data.preferredCity !== undefined ? (data.preferredCity || null) : undefined,
+        preferredPriceRange: data.preferredPriceRange !== undefined ? data.preferredPriceRange : undefined,
+        preferredAmenities: data.preferredAmenities !== undefined ? data.preferredAmenities : undefined,
+        preferredCoffeeTypes: data.preferredCoffeeTypes !== undefined ? data.preferredCoffeeTypes : undefined,
+        preferredVibes: data.preferredVibes !== undefined ? data.preferredVibes : undefined,
       },
     });
+
+    return {
+      id: upserted.id,
+      userId: upserted.userId,
+      preferredCity: upserted.preferredCity,
+      preferredPriceRange: upserted.preferredPriceRange,
+      preferredAmenities: upserted.preferredAmenities,
+      preferredCoffeeTypes: upserted.preferredCoffeeTypes,
+      preferredVibes: upserted.preferredVibes,
+      updatedAt: upserted.updatedAt,
+      isConfigured: true,
+    };
   }
 
-  async reset(userId: string) {
-    return prisma.userRecommendationPreference.deleteMany({ where: { userId } });
+  async resetPreferences(userId: string) {
+    await prisma.userPreference.deleteMany({
+      where: { userId },
+    });
+
+    return {
+      userId,
+      preferredCity: null,
+      preferredPriceRange: null,
+      preferredAmenities: [],
+      preferredCoffeeTypes: [],
+      preferredVibes: [],
+      isConfigured: false,
+    };
   }
 }
 

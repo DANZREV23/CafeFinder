@@ -1,7 +1,7 @@
 export type Role = 'USER' | 'OWNER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 export type CafeStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED' | 'ARCHIVED';
-export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'REMOVED';
 export type CafeSubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface User {
@@ -95,6 +95,57 @@ export interface Cafe {
   relatedCafes?: Cafe[];
   isFavorite?: boolean;
   claimStatus?: 'AVAILABLE' | 'PENDING' | 'MANAGED' | 'OWNED';
+  recommendationReason?: string;
+  matchScore?: number;
+  matchReasons?: string[];
+  matchBadges?: Array<{ type: string; label: string }>;
+  similarityScore?: number;
+  similarityReasons?: string[];
+}
+
+export interface UserPreference {
+  id?: string;
+  userId?: string;
+  preferredCity?: string | null;
+  preferredPriceRange?: number | null;
+  preferredAmenities: string[];
+  preferredCoffeeTypes: string[];
+  preferredVibes: string[];
+  isConfigured?: boolean;
+  updatedAt?: string;
+}
+
+export interface RecommendationDiagnostics {
+  status: string;
+  engine: string;
+  latencyMs: number;
+  metrics: {
+    totalUsers: number;
+    usersWithPreferences: number;
+    preferenceCoveragePercent: number;
+    totalFavorites: number;
+    totalReviews: number;
+    totalViews: number;
+    totalCafes: number;
+    publishedCafes: number;
+  };
+  catalog: {
+    amenitiesCount: number;
+    topAmenities: Array<{ name: string; cafeCount: number }>;
+  };
+  scoringWeights: Record<string, number>;
+  privacyCompliance: {
+    isSensitiveDataUsed: boolean;
+    sensitiveCategoriesAudited: string[];
+    dataRetention: string;
+    profilingType: string;
+    explainabilityCoverage: string;
+  };
+  simulation: {
+    testedUserId: string;
+    recommendationsCount: number;
+    results: any[];
+  };
 }
 
 export interface ApiResponse<T> {

@@ -151,7 +151,7 @@ export function mapToPublicCafeProfile(cafe: any): PublicCafeProfileDto {
       },
       photos: r.photos.map((ph: any) => ({ url: ph.url })),
     })),
-    relatedCafes: cafe.relatedCafes.map((rc: any) => ({
+    relatedCafes: (cafe.relatedCafes || []).map((rc: any) => ({
       id: rc.id,
       name: rc.name,
       slug: rc.slug,
@@ -160,6 +160,9 @@ export function mapToPublicCafeProfile(cafe: any): PublicCafeProfileDto {
       reviewCount: rc.reviewCount,
       priceRange: rc.priceRange,
       photos: rc.photos,
+      similarityScore: rc.similarityScore,
+      similarityReasons: rc.similarityReasons,
+      recommendationReason: rc.recommendationReason || (rc.similarityReasons ? rc.similarityReasons[0] : undefined),
     })),
     isFavorite: cafe.favorites ? cafe.favorites.length > 0 : false,
     claimStatus: cafe.claimStatus || 'AVAILABLE',

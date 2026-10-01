@@ -1,5 +1,4 @@
 import { fetchApi } from './api';
-import { RecommendationItem } from './recommendationService';
 
 export interface DashboardData {
   user: {
@@ -19,22 +18,12 @@ export interface DashboardData {
   recentReviews: any[];
   recentSubmissions: any[];
   recentViews: any[];
-  recommendations: RecommendationItem[];
-  recommendationItems?: RecommendationItem[];
+  recommendations: any[];
 }
 
 export const getDashboardData = async (): Promise<DashboardData> => {
   const response = await fetchApi<{ success: boolean; data: DashboardData }>('/users/me/dashboard');
-  return {
-    ...response.data,
-    recommendations: (response.data.recommendationItems || response.data.recommendations || []).map((item: any) => {
-      if (item.cafe && item.reason) return item;
-      return {
-        cafe: item,
-        reason: { type: 'HIGH_RATING' as const, data: { rating: item.ratingAverage } },
-      };
-    }),
-  };
+  return response.data;
 };
 
 export const getNotifications = async (page = 1, limit = 20) => {

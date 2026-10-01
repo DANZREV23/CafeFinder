@@ -395,6 +395,82 @@ export class AdminService {
     return true;
   }
 
+  async getReviewReports(filters: any) {
+    const { status, search, page = 1, limit = 20 } = filters;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const where: Prisma.CafeReviewReportWhereInput = {
+      ...(status && status !== 'ALL' && { status: status as any }),
+      ...(search && {
+        OR: [
+          { description: { contains: search } },
+          { review: { comment: { contains: search } } },
+          { reporter: { name: { contains: search } } },
+        ]
+      })
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.cafeReviewReport.findMany({
+        where,
+        include: {
+          reporter: { select: { id: true, name: true, email: true } },
+          review: {
+            include: {
+              cafe: { select: { id: true, name: true } },
+              user: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: safeLimit,
+      }),
+      prisma.cafeReviewReport.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
+  }
+
+  async resolveReviewReport(reportId: string, adminId: string, payload: { status?: string; actionTaken?: string; resolutionNotes?: string }) {
+    const report = await prisma.cafeReviewReport.findUnique({ where: { id: reportId } });
+    if (!report) {
+      throw new Error('Review report not found');
+    }
+
+    const status = payload.status === 'DISMISSED' ? 'DISMISSED' : 'RESOLVED';
+    const resolved = await prisma.cafeReviewReport.update({
+      where: { id: reportId },
+      data: {
+        status: status as any,
+        resolvedAt: new Date(),
+        resolvedById: adminId,
+        actionTaken: payload.actionTaken || status,
+        resolutionNotes: payload.resolutionNotes || null,
+      },
+    });
+
+    await this.activityLogService.logAction({
+      userId: adminId,
+      action: `ADMIN_${status}_REVIEW_REPORT`,
+      entityType: 'CafeReviewReport',
+      entityId: reportId,
+      description: `Resolved review report ${reportId} with action ${status}`,
+    });
+
+    return resolved;
+  }
+
   // --- Cafes ---
 
   async getCafes(filters: any) {

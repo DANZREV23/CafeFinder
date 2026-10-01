@@ -7,9 +7,25 @@ export interface MapConfig {
   isConfigured: boolean;
 }
 
+const isValidApiKey = (key: string | undefined | null): boolean => {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (
+    !trimmed ||
+    trimmed === 'REPLACE_WITH_KEY' ||
+    trimmed.startsWith('REPLACE_') ||
+    trimmed === 'your_api_key' ||
+    trimmed === 'YOUR_KEY'
+  ) {
+    return false;
+  }
+  return true;
+};
+
 export const getMapConfig = (): MapConfig => {
   const provider = (import.meta.env.VITE_MAP_PROVIDER as MapProviderType) || 'google';
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_MAP_API_KEY || null;
+  const rawKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_MAP_API_KEY || null;
+  const apiKey = isValidApiKey(rawKey) ? rawKey!.trim() : null;
 
   return {
     provider,

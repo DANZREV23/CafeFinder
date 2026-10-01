@@ -10,9 +10,10 @@ import { PWAInstallButton } from "../pwa/PWAInstallButton";
 import { useI18n } from "@/i18n";
 
 const navLinks = [
+  { labelPath: "nav.home", href: "/" },
   { labelPath: "nav.explore", href: "/explore" },
   { labelPath: "nav.blog", href: "/blog" },
-  { labelPath: "nav.home", href: "/" },
+  { labelPath: "nav.about", href: "/about" },
 ];
 
 import { 

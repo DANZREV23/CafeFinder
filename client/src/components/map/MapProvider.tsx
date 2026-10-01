@@ -52,7 +52,7 @@ export const MapProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const effectiveError = isAuthFailure 
     ? new Error("Google Maps Billing or Authentication Error. Please check your API key configuration.") 
-    : (loadRequested && config.provider && !config.apiKey ? new Error("Missing API Key") : null);
+    : null;
 
   return (
     <MapContext.Provider value={{ 

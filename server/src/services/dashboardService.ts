@@ -72,7 +72,7 @@ export class DashboardService {
         take: 5
       }),
       this.userCafeViewRepository.findRecentByUserId(userId, 6),
-      this.recommendationService.getCafeSummaries(userId, 6)
+      this.recommendationService.getRecommendations(userId, 6)
     ]);
 
     return {
@@ -87,7 +87,13 @@ export class DashboardService {
       recentReviews,
       recentSubmissions,
       recentViews: recentViews.map(v => mapToPublicCafeSummary(v.cafe)),
-      recommendations
+      recommendations: recommendations.map((r: any) => ({
+        ...mapToPublicCafeSummary(r),
+        recommendationReason: r.recommendationReason,
+        matchScore: r.matchScore,
+        matchReasons: r.matchReasons,
+        matchBadges: r.matchBadges,
+      }))
     };
   }
 }

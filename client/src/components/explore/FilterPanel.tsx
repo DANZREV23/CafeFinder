@@ -112,6 +112,36 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         </div>
       </div>
 
+      {/* Status Filters */}
+      <div className="space-y-3">
+        <Label className="uppercase tracking-wider">
+          {t("cafe.status.published")}
+        </Label>
+        <div className="space-y-4" role="group" aria-label="Status Filters">
+          {[
+            { key: "verified", label: t("cafe.verified") },
+            { key: "featured", label: t("cafe.featured") },
+            { key: "trending", label: t("cafe.trending") },
+          ].map((item) => (
+            <div
+              key={item.key}
+              className="flex items-center space-x-3"
+            >
+              <Checkbox 
+                id={`status-${item.key}`}
+                checked={!!filters[item.key as keyof typeof filters]}
+                onCheckedChange={(checked) => onFilterChange(item.key, checked)}
+              />
+              <Label 
+                htmlFor={`status-${item.key}`}
+                className="text-sm text-brand-charcoal font-medium cursor-pointer"
+              >
+                {item.label}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Vibes Filter */}
       {vibes.length > 0 && (

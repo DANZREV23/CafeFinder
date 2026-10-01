@@ -91,6 +91,30 @@ const reviewService = {
       method: 'DELETE',
     });
   },
+
+  toggleHelpful: async (reviewId: string) => {
+    return fetchApi<any>(`/reviews/${reviewId}/helpful`, {
+      method: 'POST',
+    });
+  },
+
+  reportReview: async (reviewId: string, data: { reason: string; description?: string }) => {
+    return fetchApi<any>(`/reviews/${reviewId}/report`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getReviewResponse: async (reviewId: string) => {
+    return fetchApi<any>(`/reviews/${reviewId}/response`);
+  },
+
+  upsertReviewResponse: async (reviewId: string, content: string) => {
+    return fetchApi<any>(`/reviews/${reviewId}/response`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  },
 };
 
 export default reviewService;

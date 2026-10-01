@@ -48,13 +48,19 @@ export default function ExplorePage() {
   const sort = searchParams.get("sort") || "rating";
   const city = searchParams.get("city") || "";
   const priceRange = searchParams.get("priceRange") ? parseInt(searchParams.get("priceRange")!) : undefined;
+  const featured = searchParams.get("featured") === "true" ? true : undefined;
+  const trending = searchParams.get("trending") === "true" ? true : undefined;
+  const verified = searchParams.get("verified") === "true" ? true : undefined;
   const amenities = searchParams.get("amenities") ? searchParams.get("amenities")!.split(",") : [];
 
-  const hasFilters = Boolean(search || city || priceRange || amenities.length > 0);
+  const hasFilters = Boolean(search || city || priceRange || featured || trending || verified || amenities.length > 0);
 
   const filters = {
     city,
     priceRange,
+    featured: featured === true,
+    trending: trending === true,
+    verified: verified === true,
     amenities,
   };
 
@@ -65,10 +71,13 @@ export default function ExplorePage() {
       const response = await cafeService.getAll({
         page,
         limit: 12,
-        search,
+        search: search || undefined,
         sort,
-        city,
+        city: city || undefined,
         priceRange,
+        featured,
+        trending,
+        verified,
         amenities: amenities.length > 0 ? amenities.join(",") : undefined,
       });
       if (response.success) {
@@ -88,7 +97,7 @@ export default function ExplorePage() {
   React.useEffect(() => {
     fetchCafes();
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page, search, sort, city, priceRange, amenities.join(",")]);
+  }, [page, search, sort, city, priceRange, featured, trending, verified, amenities.join(",")]);
 
   const updateParams = (updates: Record<string, any>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -223,6 +232,9 @@ export default function ExplorePage() {
                   search={search}
                   city={city}
                   priceRange={priceRange}
+                  featured={featured}
+                  trending={trending}
+                  verified={verified}
                   amenities={amenities}
                   onRemove={handleRemoveFilter}
                   onClearAll={handleClearAll}
@@ -236,7 +248,7 @@ export default function ExplorePage() {
                 {loading ? (
                   <div className="space-y-6">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-[25rem] bg-brand-border/10 animate-pulse rounded-3xl" />
+                      <div key={i} className="h-[400px] bg-brand-border/10 animate-pulse rounded-3xl" />
                     ))}
                   </div>
                 ) : error ? (

@@ -25,7 +25,6 @@ const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
-const RecommendationSettingsPage = lazy(() => import('@/pages/RecommendationSettingsPage'));
 const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'));
 const CafeClaimPage = lazy(() => import('@/pages/CafeClaimPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/OwnerDashboardPage'));
@@ -46,14 +45,14 @@ const OwnerClaimDetailsPage = lazy(() => import('./pages/OwnerClaimDetailsPage')
 const SubmitCafePage = lazy(() => import('./pages/SubmitCafePage'));
 const MySubmissionsPage = lazy(() => import('./pages/MySubmissionsPage'));
 const SubmissionDetailsPage = lazy(() => import('./pages/SubmissionDetailsPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const BlogListPage = lazy(() => import('./pages/blog/BlogListPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));const AboutPage = lazy(() => import('@/pages/AboutPage'));const BlogListPage = lazy(() => import('./pages/blog/BlogListPage'));
 const BlogPostPage = lazy(() => import('./pages/blog/BlogPostPage'));
 const ListsPage = lazy(() => import('./pages/lists/ListsPage'));
 const ListPage = lazy(() => import('./pages/lists/ListPage'));
 const OfflinePage = lazy(() => import('./pages/OfflinePage'));
-const TimeSensitiveDirectoryPage = lazy(() => import('./pages/TimeSensitiveDirectoryPage'));
-const TimeSensitiveDetailPage = lazy(() => import('./pages/TimeSensitiveDetailPage'));
+const TimeSensitiveDirectoryPage = lazy(() => import('./pages/TimeSensitivePages').then(module => ({ default: module.TimeSensitiveDirectoryPage })));
+const TimeSensitiveDetailPage = lazy(() => import('./pages/TimeSensitivePages').then(module => ({ default: module.TimeSensitiveDetailPage })));
+const OwnerTimeSensitivePage = lazy(() => import('./pages/TimeSensitivePages').then(module => ({ default: module.OwnerTimeSensitivePage })));
 
 // Admin Pages
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
@@ -71,7 +70,7 @@ const AdminDataIntegrityPage = lazy(() => import('./pages/admin/DataIntegrity').
 const AdminMaintenanceJobsPage = lazy(() => import('./pages/admin/system/MaintenanceJobs').then(m => ({ default: m.MaintenanceJobs })));
 const AdminOperationalAlertsPage = lazy(() => import('./pages/admin/system/OperationalAlerts').then(m => ({ default: m.OperationalAlerts })));
 const AdminSecurityOverviewPage = lazy(() => import('./pages/admin/system/SecurityOverview').then(m => ({ default: m.SecurityOverview })));
-const AdminRecommendationDiagnosticsPage = lazy(() => import('./pages/admin/system/RecommendationDiagnostics').then(m => ({ default: m.RecommendationDiagnostics })));
+const AdminRecommendationsPage = lazy(() => import('./pages/admin/AdminRecommendationsPage').then(m => ({ default: m.AdminRecommendationsPage })));
 const AdminOwnerClaimsPage = lazy(() => import('./pages/admin/AdminOwnerClaimsPage'));
 const AdminOwnerClaimDetailsPage = lazy(() => import('./pages/admin/AdminOwnerClaimDetailsPage'));
 const AdminChangeRequestsPage = lazy(() => import('./pages/admin/AdminChangeRequestsPage'));
@@ -84,7 +83,7 @@ const AdminMediaLibraryPage = lazy(() => import('./pages/admin/AdminMediaLibrary
 const AdminContentQualityPage = lazy(() => import('./pages/admin/AdminContentQualityPage').then(m => ({ default: m.AdminContentQualityPage })));
 const AdminRedirectsPage = lazy(() => import('./pages/admin/AdminRedirectsPage').then(m => ({ default: m.AdminRedirectsPage })));
 const AdminTestimonialsPage = lazy(() => import('./pages/admin/AdminTestimonialsPage').then(m => ({ default: m.AdminTestimonialsPage })));
-const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
+const AdminTimeSensitivePage = lazy(() => import('./pages/admin/AdminTimeSensitivePage'));
 
 export default function App() {
   return (
@@ -101,7 +100,7 @@ export default function App() {
                 <Route path="/cafes/:slug" element={<CafeProfilePage />} />
                 <Route path="/cafes/:slug/menu" element={<CafeMenuPage />} />
                 <Route path="/cafes/:slug/claim" element={<ProtectedRoute><CafeClaimPage /></ProtectedRoute>} />
-                <Route path="/about" element={<PlaceholderPage title="About Us" />} />
+                <Route path="/about" element={<AboutPage />} />
                 
                 {/* Blog Routes */}
                 <Route path="/blog" element={<BlogListPage />} />
@@ -110,12 +109,14 @@ export default function App() {
                 {/* Curated Lists Routes */}
                 <Route path="/lists" element={<ListsPage />} />
                 <Route path="/lists/:slug" element={<ListPage />} />
+                <Route path="/events" element={<TimeSensitiveDirectoryPage kind="events" />} />
+                <Route path="/events/:cafeSlug/:slug" element={<TimeSensitiveDetailPage kind="events" />} />
+                <Route path="/specials" element={<TimeSensitiveDirectoryPage kind="specials" />} />
+                <Route path="/specials/:cafeSlug/:slug" element={<TimeSensitiveDetailPage kind="specials" />} />
+                <Route path="/announcements" element={<TimeSensitiveDirectoryPage kind="announcements" />} />
+                <Route path="/announcements/:cafeSlug/:slug" element={<TimeSensitiveDetailPage kind="announcements" />} />
 
                 <Route path="/offline" element={<OfflinePage />} />
-                <Route path="/events" element={<TimeSensitiveDirectoryPage kind="events" />} />
-                <Route path="/events/:slug" element={<TimeSensitiveDetailPage kind="events" />} />
-                <Route path="/specials" element={<TimeSensitiveDirectoryPage kind="specials" />} />
-                <Route path="/specials/:slug" element={<TimeSensitiveDetailPage kind="specials" />} />
 
                 <Route path="/submit-cafe" element={
                   <ProtectedRoute>
@@ -148,11 +149,6 @@ export default function App() {
                     <ProfilePage />
                   </ProtectedRoute>
                 } />
-                <Route path="/dashboard/settings" element={
-                  <ProtectedRoute>
-                    <RecommendationSettingsPage />
-                  </ProtectedRoute>
-                } />
                 
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
@@ -165,6 +161,15 @@ export default function App() {
                     <OwnerDashboardPage />
                   </RoleRoute>
                 } />
+                <Route path="/owner/events" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="events" /></RoleRoute>} />
+                <Route path="/owner/events/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="events" /></RoleRoute>} />
+                <Route path="/owner/events/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="events" /></RoleRoute>} />
+                <Route path="/owner/specials" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="specials" /></RoleRoute>} />
+                <Route path="/owner/specials/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="specials" /></RoleRoute>} />
+                <Route path="/owner/specials/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="specials" /></RoleRoute>} />
+                <Route path="/owner/announcements" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="announcements" /></RoleRoute>} />
+                <Route path="/owner/announcements/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="announcements" /></RoleRoute>} />
+                <Route path="/owner/announcements/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="announcements" /></RoleRoute>} />
                 <Route path="/owner/cafes" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafesPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeDetailsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeEditPage /></RoleRoute>} />
@@ -199,12 +204,12 @@ export default function App() {
                   <Route path="system/jobs" element={<AdminMaintenanceJobsPage />} />
                   <Route path="system/alerts" element={<AdminOperationalAlertsPage />} />
                   <Route path="system/security" element={<AdminSecurityOverviewPage />} />
-                  <Route path="system/recommendations" element={<AdminRecommendationDiagnosticsPage />} />
-                  <Route path="settings" element={<AdminSettingsPage />} />
+                  <Route path="system/recommendations" element={<AdminRecommendationsPage />} />
                   <Route path="claims" element={<AdminOwnerClaimsPage />} />
                   <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                   <Route path="change-requests" element={<AdminChangeRequestsPage />} />
                   <Route path="change-requests/:id" element={<AdminChangeRequestDetailsPage />} />
+                  <Route path="time-sensitive" element={<AdminTimeSensitivePage />} />
                   
                   {/* Blog Management */}
                   <Route path="blog" element={<AdminBlogPage />} />

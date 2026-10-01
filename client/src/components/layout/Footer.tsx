@@ -57,6 +57,8 @@ export function Footer() {
               <li><Link to="/submit-cafe" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">{t("nav.submitCafe")}</Link></li>
               <li><Link to="/owner/dashboard" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Owner Dashboard</Link></li>
               <li><Link to="/owner/resources" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Business Resources</Link></li>
+                <li><Link to="/events" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Cafe Events</Link></li>
+                <li><Link to="/specials" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Cafe Specials</Link></li>
             </ul>
           </nav>
 

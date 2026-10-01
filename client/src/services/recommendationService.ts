@@ -1,63 +1,21 @@
 import { fetchApi } from './api';
-import { ApiResponse, Cafe } from '@/types';
+import { ApiResponse, Cafe, RecommendationDiagnostics } from '../types';
 
-export type RecommendationReasonType =
-  | 'FAVORITE_SIMILARITY'
-  | 'AMENITY_MATCH'
-  | 'CITY_MATCH'
-  | 'PRICE_MATCH'
-  | 'VIEW_SIMILARITY'
-  | 'PREFERENCE_MATCH'
-  | 'TRENDING'
-  | 'FEATURED'
-  | 'CURATED_LIST'
-  | 'HIGH_RATING';
+export const recommendationService = {
+  getPersonalized: async (limit = 6, city?: string) => {
+    const params = new URLSearchParams();
+    if (limit) params.set('limit', limit.toString());
+    if (city) params.set('city', city);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return fetchApi<ApiResponse<Cafe[]>>(`/recommendations${query}`);
+  },
 
-export interface RecommendationItem {
-  cafe: Cafe;
-  reason: {
-    type: RecommendationReasonType;
-    data?: Record<string, string | number>;
-  };
-}
+  getSimilar: async (idOrSlug: string, limit = 4) => {
+    return fetchApi<ApiResponse<Cafe[]>>(`/recommendations/similar/${idOrSlug}?limit=${limit}`);
+  },
 
-export interface RecommendationsResponse {
-  items: RecommendationItem[];
-}
-
-export const getRecommendations = (params: {
-  limit?: number;
-  context?: 'home' | 'dashboard' | 'explore' | 'profile';
-  excludeCafeId?: string;
-  cafeId?: string;
-  city?: string;
-  amenity?: string;
-} = {}) => {
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== '') query.set(key, String(value));
-  });
-  return fetchApi<ApiResponse<RecommendationsResponse>>(`/recommendations/cafes?${query.toString()}`);
+  getAdminDiagnostics: async (userId?: string) => {
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    return fetchApi<ApiResponse<RecommendationDiagnostics>>(`/recommendations/admin/diagnostics${query}`);
+  },
 };
-
-export interface UserRecommendationPreferences {
-  id: string;
-  userId: string;
-  preferredCity: string | null;
-  preferredPriceRange: number | null;
-  preferredAmenities: string[];
-  preferredCoffeeTypes: string[];
-  preferredVibes: string[];
-}
-
-export const getRecommendationPreferences = () =>
-  fetchApi<ApiResponse<UserRecommendationPreferences | null>>('/users/me/preferences');
-
-export const updateRecommendationPreferences = (preferences: Partial<Omit<UserRecommendationPreferences, 'id' | 'userId'>>) =>
-  fetchApi<ApiResponse<UserRecommendationPreferences>>('/users/me/preferences', {
-    method: 'PUT',
-    body: JSON.stringify(preferences),
-  });
-
-export const resetRecommendationPreferences = () =>
-  fetchApi<ApiResponse<null>>('/users/me/preferences', { method: 'DELETE' });

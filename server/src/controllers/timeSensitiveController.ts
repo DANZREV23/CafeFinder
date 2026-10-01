@@ -1,42 +1,148 @@
-import { Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
+import { AnnouncementPriority, CafeAnnouncementType, CafeEventType, CafeSpecialType, TimeSensitiveStatus } from '@prisma/client';
 import { AuthRequest } from '../middleware/authMiddleware.js';
-import { timeSensitiveService } from '../services/timeSensitiveService.js';
+import { TimeSensitiveKind, TimeSensitiveService } from '../services/timeSensitiveService.js';
 
-const baseSchema = z.object({
-  title: z.string().trim().min(2).max(160),
-  shortDescription: z.string().trim().max(500).optional(),
-  description: z.string().trim().min(2).max(10000),
-  startAt: z.string().datetime({ offset: true }),
-  endAt: z.string().datetime({ offset: true }),
-  timezone: z.string().trim().min(1).max(80).default('UTC'),
-  price: z.number().min(0).optional(),
-  currency: z.string().trim().length(3).optional(),
+const dateWithOffset = z.string().refine(value => !Number.isNaN(Date.parse(value)) && /(?:Z|[+-]\d{2}:\d{2})$/i.test(value), 'Use an ISO datetime with an explicit UTC offset');
+const safeUrl = z.preprocess(value => value === '' ? null : value, z.string().url().refine(value => ['http:', 'https:'].includes(new URL(value).protocol), 'Only HTTP and HTTPS links are allowed').nullable().optional());
+const optionalText = (max: number) => z.string().trim().max(max).nullable().optional();
+const shared = {
+  cafeId: z.string().cuid(),
+  title: z.string().trim().min(1).max(160),
+  shortDescription: optionalText(240),
+  startAt: dateWithOffset,
+  endAt: dateWithOffset,
+  timezone: z.string().trim().min(1).max(64),
+  coverPhotoId: z.string().cuid().nullable().optional()
+};
+
+const eventSchema = z.object({
+  ...shared,
+  description: z.string().trim().min(1).max(10000),
+  eventType: z.nativeEnum(CafeEventType),
+  allDay: z.boolean().optional().default(false),
+  location: optionalText(200),
+  capacity: z.number().int().min(1).max(100000).nullable().optional(),
+  registrationUrl: safeUrl,
+  price: z.number().min(0).max(1000000).nullable().optional(),
+  currency: z.string().regex(/^[A-Za-z]{3}$/).nullable().optional()
 }).strict();
 
-const eventSchema = baseSchema.extend({
-  eventType: z.enum(['WORKSHOP', 'TASTING', 'LIVE_MUSIC', 'OPEN_MIC', 'COMMUNITY', 'MEETUP', 'CLASS', 'COMPETITION', 'SEASONAL', 'OTHER']).optional(),
-  allDay: z.boolean().optional(), location: z.string().trim().max(255).optional(),
-  capacity: z.number().int().positive().max(100000).optional(),
-  registrationUrl: z.string().url().refine(value => /^https?:\/\//i.test(value), 'Only HTTP(S) URLs are allowed').optional(),
-});
+const specialSchema = z.object({
+  ...shared,
+  description: z.string().trim().min(1).max(10000),
+  specialType: z.nativeEnum(CafeSpecialType),
+  terms: optionalText(5000),
+  redemptionInstructions: optionalText(3000),
+  price: z.number().min(0).max(1000000).nullable().optional(),
+  discountPercent: z.number().min(0.01).max(100).nullable().optional(),
+  currency: z.string().regex(/^[A-Za-z]{3}$/).nullable().optional()
+}).strict();
 
-const specialSchema = baseSchema.extend({
-  specialType: z.enum(['DISCOUNT', 'BOGO', 'HAPPY_HOUR', 'SEASONAL', 'COMBO', 'STUDENT', 'MEMBERSHIP', 'NEW_MENU', 'LIMITED_TIME', 'OTHER']).optional(),
-  terms: z.string().trim().max(5000).optional(), redemptionInstructions: z.string().trim().max(5000).optional(),
-  discountPercent: z.number().int().min(1).max(100).optional(),
-});
+const announcementSchema = z.object({
+  cafeId: z.string().cuid(),
+  title: z.string().trim().min(1).max(160),
+  content: z.string().trim().min(1).max(10000),
+  type: z.nativeEnum(CafeAnnouncementType),
+  priority: z.nativeEnum(AnnouncementPriority).optional().default(AnnouncementPriority.NORMAL),
+  startAt: dateWithOffset,
+  endAt: dateWithOffset,
+  timezone: z.string().trim().min(1).max(64),
+  coverPhotoId: z.string().cuid().nullable().optional()
+}).strict();
 
-const sendError = (res: Response, error: any) => res.status(error?.status || (error?.name === 'ZodError' ? 422 : 400)).json({ success: false, error: { message: error?.message || 'Request failed', details: error?.issues } });
+const schemas: Record<TimeSensitiveKind, z.ZodTypeAny> = {
+  events: eventSchema,
+  specials: specialSchema,
+  announcements: announcementSchema
+};
+const updateSchemas: Record<TimeSensitiveKind, z.ZodTypeAny> = {
+  events: eventSchema.omit({ cafeId: true }).partial().strict(),
+  specials: specialSchema.omit({ cafeId: true }).partial().strict(),
+  announcements: announcementSchema.omit({ cafeId: true }).partial().strict()
+};
+
+const kindFrom = (value: string): TimeSensitiveKind => {
+  if (value === 'events' || value === 'specials' || value === 'announcements') return value;
+  throw Object.assign(new Error('Unknown content type'), { status: 404 });
+};
+
+const isAdmin = (req: AuthRequest) => req.user?.role === 'ADMIN';
 
 export class TimeSensitiveController {
-  list = async (req: AuthRequest, res: Response) => { try { const kind = req.params.kind as 'events' | 'specials'; res.json({ success: true, data: await timeSensitiveService.listPublic(kind, { page: Number(req.query.page) || 1, limit: Number(req.query.limit) || 12, search: req.query.search as string, cafeId: req.query.cafeId as string, type: req.query.type as string, active: req.query.active !== 'false' }) }); } catch (e) { sendError(res, e); } };
-  detail = async (req: AuthRequest, res: Response) => { try { const item = await timeSensitiveService.getPublic(req.params.kind as 'events' | 'specials', req.params.slug); if (!item) return res.status(404).json({ success: false, error: { message: 'Content not found' } }); res.json({ success: true, data: item }); } catch (e) { sendError(res, e); } };
-  cafeContent = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await timeSensitiveService.listForCafe(req.params.cafeId) }); } catch (e) { sendError(res, e); } };
-  create = async (req: AuthRequest, res: Response) => { try { const kind = req.params.kind as 'events' | 'specials'; const data = kind === 'events' ? eventSchema.parse(req.body) : specialSchema.parse(req.body); res.status(201).json({ success: true, data: await timeSensitiveService.create(kind, req.params.cafeId, req.user!.id, data) }); } catch (e) { sendError(res, e); } };
-  ownerList = async (req: AuthRequest, res: Response) => { try { const kind = req.params.kind as 'events' | 'specials'; res.json({ success: true, data: await timeSensitiveService.listForOwner(req.user!.id, kind, Number(req.query.page) || 1, Number(req.query.limit) || 20) }); } catch (e) { sendError(res, e); } };
-  submit = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await timeSensitiveService.submit(req.params.kind as 'events' | 'specials', req.params.id, req.user!.id) }); } catch (e) { sendError(res, e); } };
-  moderate = async (req: AuthRequest, res: Response) => { try { const status = z.enum(['PUBLISHED', 'REJECTED', 'CANCELLED', 'ARCHIVED']).parse(req.body.status); res.json({ success: true, data: await timeSensitiveService.moderate(req.params.kind as 'events' | 'specials', req.params.id, status, req.user!.id) }); } catch (e) { sendError(res, e); } };
-}
+  private service = new TimeSensitiveService();
 
-export const timeSensitiveController = new TimeSensitiveController();
+  listPublic = async (req: Request, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      res.json({ success: true, ...(await this.service.listPublic(kind, req.query)) });
+    } catch (error) { next(error); }
+  };
+
+  getPublic = async (req: Request, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      res.json({ success: true, data: await this.service.getPublic(kind, req.params.cafeSlug, req.params.slug) });
+    } catch (error) { next(error); }
+  };
+
+  listOwned = async (req: AuthRequest, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      res.json({ success: true, ...(await this.service.listOwned(kind, req.user!.id, isAdmin(req), req.query)) });
+    } catch (error) { next(error); }
+  };
+
+  create = async (req: AuthRequest, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      const input = schemas[kind].parse(req.body);
+      res.status(201).json({ success: true, data: await this.service.create(kind, req.user!.id, isAdmin(req), input) });
+    } catch (error) { next(error); }
+  };
+
+  update = async (req: AuthRequest, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      const input = updateSchemas[kind].parse(req.body);
+      res.json({ success: true, data: await this.service.update(kind, req.params.id, req.user!.id, isAdmin(req), input) });
+    } catch (error) { next(error); }
+  };
+
+  submit = async (req: AuthRequest, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      res.json({ success: true, data: await this.service.submit(kind, req.params.id, req.user!.id, isAdmin(req)) });
+    } catch (error) { next(error); }
+  };
+
+  cancel = async (req: AuthRequest, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      res.json({ success: true, data: await this.service.cancel(kind, req.params.id, req.user!.id, isAdmin(req)) });
+    } catch (error) { next(error); }
+  };
+
+  archive = async (req: AuthRequest, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      res.json({ success: true, data: await this.service.archive(kind, req.params.id, req.user!.id, isAdmin(req)) });
+    } catch (error) { next(error); }
+  };
+
+  listAdmin = async (req: Request, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      res.json({ success: true, ...(await this.service.listForModeration(kind, req.query)) });
+    } catch (error) { next(error); }
+  };
+
+  moderate = async (req: AuthRequest, res: Response, next: NextFunction, kindOverride?: string) => {
+    try {
+      const kind = kindFrom(kindOverride ?? req.params.kind);
+      const input = z.object({ status: z.nativeEnum(TimeSensitiveStatus), isFeatured: z.boolean().optional() }).strict().parse(req.body);
+      res.json({ success: true, data: await this.service.moderate(kind, req.params.id, req.user!.id, input.status, input.isFeatured) });
+    } catch (error) { next(error); }
+  };
+}

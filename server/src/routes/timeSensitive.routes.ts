@@ -1,13 +1,14 @@
 import { Router } from 'express';
-import { optionalAuth, requireAuth, requireRole } from '../middleware/authMiddleware.js';
-import { timeSensitiveController } from '../controllers/timeSensitiveController.js';
+import { TimeSensitiveController } from '../controllers/timeSensitiveController.js';
 
 const router = Router();
-router.get('/cafes/:cafeId', optionalAuth, timeSensitiveController.cafeContent);
-router.post('/owner/:kind/:cafeId', requireAuth, requireRole('OWNER', 'ADMIN'), timeSensitiveController.create);
-router.get('/owner/:kind', requireAuth, requireRole('OWNER', 'ADMIN'), timeSensitiveController.ownerList);
-router.post('/owner/:kind/:id/submit', requireAuth, requireRole('OWNER', 'ADMIN'), timeSensitiveController.submit);
-router.post('/admin/:kind/:id/moderate', requireAuth, requireRole('ADMIN'), timeSensitiveController.moderate);
-router.get('/:kind', optionalAuth, timeSensitiveController.list);
-router.get('/:kind/:slug', optionalAuth, timeSensitiveController.detail);
+const controller = new TimeSensitiveController();
+
+router.get('/events', (req, res, next) => controller.listPublic(req, res, next, 'events'));
+router.get('/events/:cafeSlug/:slug', (req, res, next) => controller.getPublic(req, res, next, 'events'));
+router.get('/specials', (req, res, next) => controller.listPublic(req, res, next, 'specials'));
+router.get('/specials/:cafeSlug/:slug', (req, res, next) => controller.getPublic(req, res, next, 'specials'));
+router.get('/announcements', (req, res, next) => controller.listPublic(req, res, next, 'announcements'));
+router.get('/announcements/:cafeSlug/:slug', (req, res, next) => controller.getPublic(req, res, next, 'announcements'));
+
 export default router;
