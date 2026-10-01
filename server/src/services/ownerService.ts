@@ -77,8 +77,8 @@ export class OwnerService {
     return { ...updated, ratingAverage: Number(updated.ratingAverage) };
   }
 
-  async createChangeRequest(cafeId: string, userId: string, type: CafeChangeRequestType, payload: unknown, reason?: string) {
-    const cafe = await this.requireCafe(cafeId, userId, false);
+  async createChangeRequest(cafeId: string, userId: string, isAdmin: boolean, type: CafeChangeRequestType, payload: unknown, reason?: string) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
     const existing = await prisma.cafeChangeRequest.findFirst({ where: { cafeId, requestedById: userId, type, status: CafeChangeRequestStatus.PENDING } });
     if (existing) throw fail('A pending change request of this type already exists', 409);
     const request = await prisma.cafeChangeRequest.create({ data: { cafeId, requestedById: userId, type, payload: payload as Prisma.InputJsonValue, reason } });

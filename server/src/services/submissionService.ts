@@ -31,7 +31,7 @@ export class SubmissionService {
     const submissionData: Prisma.CafeSubmissionCreateInput = {
       name: sanitizePlain(data.name),
       shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : null,
-      description: data.description ? sanitizePlain(data.description) : null,
+      description: sanitizePlain(data.description?.trim() || data.shortDescription),
       address: sanitizePlain(data.address),
       city: sanitizePlain(data.city),
       state: data.state ? sanitizePlain(data.state) : null,
