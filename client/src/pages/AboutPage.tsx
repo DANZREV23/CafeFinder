@@ -1,253 +1,432 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Coffee, MapPin, Users, Star, Heart, Search, CheckCircle, Mail } from 'lucide-react';
+import { 
+  Coffee, 
+  Sparkles, 
+  Heart, 
+  ShieldCheck, 
+  MapPin, 
+  Wifi, 
+  Users, 
+  Star, 
+  ArrowRight, 
+  Award, 
+  Compass, 
+  CheckCircle2,
+  Plug,
+  Clock,
+  BookOpen
+} from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { SEO } from '@/components/common/SEO';
 import { Button } from '@/components/ui/Button';
-
-const stats = [
-  { value: '500+', label: 'Cafes Listed' },
-  { value: '10k+', label: 'Coffee Lovers' },
-  { value: '25+', label: 'Cities Covered' },
-  { value: '4.8★', label: 'Average Rating' },
-];
-
-const values = [
-  {
-    icon: Search,
-    title: 'Discover Authentically',
-    description:
-      'Every cafe on CafeFinder is hand-reviewed. No pay-to-rank, no fake reviews — just honest recommendations from real coffee lovers.',
-  },
-  {
-    icon: Heart,
-    title: 'Community First',
-    description:
-      'We are built on the experiences of locals. Your reviews, photos, and tips help other coffee lovers find their next favorite spot.',
-  },
-  {
-    icon: MapPin,
-    title: 'Rooted in the Philippines',
-    description:
-      'Starting in Mindanao, we are passionate about showcasing the incredible local cafe culture across the Philippines and beyond.',
-  },
-  {
-    icon: CheckCircle,
-    title: 'Owner Friendly',
-    description:
-      'We partner with cafe owners to keep listings accurate and up-to-date. Claim your listing, manage your info, and grow your audience.',
-  },
-];
-
-const team = [
-  {
-    name: 'The CafeFinder Team',
-    role: 'Builders & Coffee Drinkers',
-    image: 'https://images.unsplash.com/photo-1511081692775-05d0f180a065?auto=format&fit=crop&q=80&w=400',
-    bio: 'A small team of developers, designers, and coffee enthusiasts who got tired of not being able to find a good spot to work or catch up with friends.',
-  },
-];
-
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true },
-  transition: { duration: 0.5 },
-};
+import { Card } from '@/components/ui/Card';
+import { SEO } from '@/components/common/SEO';
 
 export default function AboutPage() {
+  const values = [
+    {
+      icon: Coffee,
+      title: 'Craft & Specialty First',
+      description: 'We prioritize third-wave specialty roasters, passionate baristas, and independent coffee houses that take their beans and extractions seriously.'
+    },
+    {
+      icon: Wifi,
+      title: 'Real Work & Study Amenities',
+      description: 'No more guessing whether a spot has reliable high-speed Wi-Fi, abundant electrical outlets, or comfortable ergonomics for deep focus sessions.'
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Safe, Moderated Community',
+      description: 'Every review and photo is monitored to uphold community guidelines. We prevent spam, manipulated rankings, and pay-to-win listing placements.'
+    },
+    {
+      icon: Heart,
+      title: 'Championing Local Owners',
+      description: 'We give independent coffee shop owners free tools to claim their listings, update seasonal menus, showcase authentic photos, and respond to patrons.'
+    }
+  ];
+
+  const standards = [
+    {
+      step: '01',
+      title: 'Coffee & Extraction',
+      description: 'Origin transparency, roasting dates, espresso balance, pour-over selections, and alternative milk offerings.'
+    },
+    {
+      step: '02',
+      title: 'Ambiance & Acoustics',
+      description: 'Lighting quality, background music volume, seating comfort, layout flow, and conversational intimacy.'
+    },
+    {
+      step: '03',
+      title: 'Productivity Infrastructure',
+      description: 'Measured internet stability, accessible wall sockets, table space, and work-friendly hours.'
+    },
+    {
+      step: '04',
+      title: 'Hospitality & Inclusivity',
+      description: 'Welcoming service, pet-friendly patios, dietary accommodations, and accessibility for all visitors.'
+    }
+  ];
+
+  const faqs = [
+    {
+      question: 'How do cafes get featured or recommended on CafeFinder?',
+      answer: 'Our recommendations are entirely data-driven and community-powered. Rankings reflect real patron reviews, verified amenities, and traveler popularity. We never accept payment to feature a cafe.'
+    },
+    {
+      question: 'I own a coffee shop. How can I manage my listing?',
+      answer: 'You can claim your cafe for free through our Owner Portal. Once verified by our team, you can update business hours, menu items, photos, and directly answer customer feedback.'
+    },
+    {
+      question: 'Can I submit a neighborhood cafe that is not listed yet?',
+      answer: 'Absolutely! Our community thrives on local discoveries. Use the "Submit a Cafe" link in the menu to share your favorite hidden gems with fellow coffee lovers.'
+    },
+    {
+      question: 'How do you prevent fake reviews and manipulated ratings?',
+      answer: 'We employ automated text quality verification, duplicate submission filters, user session audits, and manual admin moderation to ensure all feedback is authentic and respectful.'
+    }
+  ];
+
   return (
     <MainLayout>
-      <SEO
-        title="About Us"
-        description="Learn about CafeFinder — our mission to help coffee lovers discover the best cafes across the Philippines."
+      <SEO 
+        title="About Us - Our Mission & Coffee Community"
+        description="Discover the story behind CafeFinder. We connect remote workers, students, and specialty coffee lovers with curated local cafes and transparent amenity details."
       />
 
-      {/* Hero */}
-      <section className="relative bg-brand-background overflow-hidden py-28 px-4">
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-brand-coffee/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-brand-coffee/5 rounded-full blur-3xl pointer-events-none" />
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-brand-cream/50 border-b border-brand-border py-20 lg:py-28">
+        <div className="absolute inset-0 opacity-40 pointer-events-none bg-[radial-gradient(#5A3825_1px,transparent_1px)] [background-size:24px_24px]" />
+        
+        <PageContainer className="relative">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-brand-coffee/10 text-brand-coffee rounded-full text-xs font-semibold tracking-wide">
+              <Compass className="w-3.5 h-3.5" />
+              <span>The Independent Cafe Guide</span>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-brand-charcoal tracking-tight leading-[1.15]">
+              Connecting Coffee Lovers with Exceptional Spaces
+            </h1>
+
+            <p className="text-lg md:text-xl text-brand-muted font-sans leading-relaxed">
+              CafeFinder was founded on a simple belief: the world is better when we slow down, savor a finely crafted cup of coffee, and gather in welcoming neighborhood spaces.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+              <Link to="/explore">
+                <Button size="lg" className="rounded-xl px-6 font-semibold flex items-center gap-2">
+                  <span>Explore Cafes</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Link to="/submit-cafe">
+                <Button variant="outline" size="lg" className="rounded-xl px-6 font-semibold">
+                  Submit a Hidden Gem
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </PageContainer>
+      </section>
+
+      {/* Origin Story Section */}
+      <section className="py-20 bg-white border-b border-brand-border">
         <PageContainer>
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.div {...fadeUp}>
-              <div className="inline-flex items-center gap-2 bg-brand-coffee/10 text-brand-coffee text-sm font-semibold px-4 py-2 rounded-full mb-6">
-                <Coffee className="w-4 h-4" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+            <div className="lg:col-span-6 space-y-6">
+              <div className="text-xs font-bold uppercase tracking-wider text-brand-coffee">
                 Our Story
               </div>
-              <h1 className="text-5xl md:text-6xl font-serif font-bold text-brand-charcoal leading-tight mb-6">
-                We help you find your <span className="text-brand-coffee">perfect cafe.</span>
-              </h1>
-              <p className="text-xl text-brand-muted leading-relaxed">
-                CafeFinder started with a simple frustration — finding a great cafe with good Wi-Fi, quality coffee, and the right vibe shouldn't be this hard. So we built the tool we always wanted.
-              </p>
-            </motion.div>
-          </div>
-        </PageContainer>
-      </section>
-
-      {/* Stats */}
-      <section className="py-16 bg-white border-y border-brand-border">
-        <PageContainer>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
-                className="text-center"
-              >
-                <p className="text-4xl font-serif font-bold text-brand-coffee">{stat.value}</p>
-                <p className="text-sm font-semibold text-brand-muted uppercase tracking-widest mt-1">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </PageContainer>
-      </section>
-
-      {/* Mission */}
-      <section className="py-24 px-4">
-        <PageContainer>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div {...fadeUp}>
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-brand-charcoal leading-tight mb-6">
-                Our mission is to put great cafes on the map.
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-charcoal leading-tight">
+                Born from the Search for the Perfect &quot;Third Place&quot;
               </h2>
-              <p className="text-lg text-brand-muted leading-relaxed mb-6">
-                Too many incredible local cafes go undiscovered because they don't have the marketing budget of big chains. CafeFinder levels the playing field — giving every great cafe the chance to be found.
-              </p>
-              <p className="text-lg text-brand-muted leading-relaxed mb-10">
-                We believe the best coffee experiences are local, personal, and community-driven. Our platform is built to celebrate that.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Link to="/explore">
-                  <Button className="bg-brand-coffee text-white hover:bg-brand-coffee/90 rounded-full px-8 py-4 h-auto font-bold shadow-lg shadow-brand-coffee/10">
-                    Start Exploring
-                  </Button>
-                </Link>
-                <Link to="/submit-cafe">
-                  <Button variant="outline" className="rounded-full px-8 py-4 h-auto font-bold border-brand-coffee text-brand-coffee hover:bg-brand-coffee/5">
-                    Submit a Cafe
-                  </Button>
-                </Link>
+              <div className="space-y-4 text-brand-muted leading-relaxed text-base">
+                <p>
+                  Sociologist Ray Oldenburg coined the concept of the <em>&quot;Third Place&quot;</em> — the social surroundings separate from the two usual environments of home and workplace. For millions of remote creators, students, and dreamers, coffee shops are exactly that sanctuary.
+                </p>
+                <p>
+                  Yet too often, discovering a new cafe meant rolling the dice. Will the Wi-Fi actually work? Are there power outlets near the tables? Is the espresso properly calibrated, or is it bitter and over-extracted? Is the music comfortable for conversation?
+                </p>
+                <p>
+                  We built <strong>CafeFinder</strong> to provide clarity. We look past the superficial aesthetic and document the concrete details coffee enthusiasts and mobile workers genuinely care about: roast profiles, acoustic vibes, seat comfort, and authentic local ownership.
+                </p>
               </div>
-            </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="relative"
-            >
-              <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80"
-                  alt="Cozy cafe interior with warm lighting"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-brand-coffee/5 rounded-3xl" />
-              </div>
-              {/* Floating badge */}
-              <div className="absolute -bottom-6 -left-6 bg-white px-6 py-4 rounded-2xl shadow-xl border border-brand-border/50 hidden md:flex items-center gap-3">
-                <div className="w-10 h-10 bg-brand-coffee/10 rounded-full flex items-center justify-center">
-                  <Star className="w-5 h-5 text-brand-coffee" />
+              <div className="pt-2 flex items-center gap-6 text-sm font-medium text-brand-charcoal">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Verified Amenities</span>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-brand-charcoal">Community Reviewed</p>
-                  <p className="text-xs text-brand-muted">Real people, honest opinions</p>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Unsponsored Rankings</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Real Patron Reviews</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <div className="relative rounded-3xl bg-brand-cream/80 p-8 border border-brand-border shadow-xs space-y-6">
+                <div className="flex items-center justify-between border-b border-brand-border/80 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-brand-coffee text-white flex items-center justify-center font-serif font-bold">
+                      CF
+                    </div>
+                    <div>
+                      <div className="font-bold text-brand-charcoal">The CafeFinder Standard</div>
+                      <div className="text-xs text-brand-muted">What we evaluate in every coffee spot</div>
+                    </div>
+                  </div>
+                  <Award className="w-6 h-6 text-brand-coffee" />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-white rounded-2xl border border-brand-border/60 flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <Coffee className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-brand-charcoal">Specialty Beans & Roasters</h4>
+                      <p className="text-xs text-brand-muted mt-0.5">
+                        Transparency in bean origins, single-origin pour-overs, calibrated grinders, and master baristas.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-white rounded-2xl border border-brand-border/60 flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <Plug className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-brand-charcoal">Sockets & Stable Connectivity</h4>
+                      <p className="text-xs text-brand-muted mt-0.5">
+                        High-speed internet speed checks and outlet coverage so you can work without battery anxiety.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-white rounded-2xl border border-brand-border/60 flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-brand-charcoal">Verified Hours & Menus</h4>
+                      <p className="text-xs text-brand-muted mt-0.5">
+                        Direct sync with verified cafe owners ensures opening hours and seasonal specialty items are always accurate.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </PageContainer>
       </section>
 
-      {/* Values */}
-      <section className="py-24 px-4 bg-brand-background">
+      {/* Core Values Bento Grid */}
+      <section className="py-20 bg-brand-cream/30 border-b border-brand-border">
         <PageContainer>
-          <motion.div {...fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl font-serif font-bold text-brand-charcoal mb-4">What we stand for</h2>
-            <p className="text-lg text-brand-muted max-w-xl mx-auto">
-              These are the principles that guide every feature we build and every decision we make.
+          <div className="max-w-2xl mx-auto text-center space-y-4 mb-14">
+            <div className="text-xs font-bold uppercase tracking-wider text-brand-coffee">
+              Our Principles
+            </div>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-charcoal">
+              Guided by Craft, Community & Transparency
+            </h2>
+            <p className="text-brand-muted text-base">
+              Every feature we build serves one goal: helping people discover and support great independent coffee shops.
             </p>
-          </motion.div>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            {values.map((value, i) => {
-              const Icon = value.icon;
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {values.map((v, i) => {
+              const Icon = v.icon;
               return (
-                <motion.div
-                  key={value.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.1 }}
-                  className="bg-white rounded-3xl p-8 border border-brand-border/50 shadow-sm"
-                >
-                  <div className="w-12 h-12 bg-brand-coffee/10 rounded-2xl flex items-center justify-center mb-5">
-                    <Icon className="w-6 h-6 text-brand-coffee" />
+                <Card key={i} className="p-6 bg-white border-brand-border flex flex-col justify-between hover:shadow-md transition-shadow">
+                  <div className="space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-cream flex items-center justify-center text-brand-coffee">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-serif font-bold text-lg text-brand-charcoal">
+                      {v.title}
+                    </h3>
+                    <p className="text-sm text-brand-muted leading-relaxed">
+                      {v.description}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-serif font-bold text-brand-charcoal mb-3">{value.title}</h3>
-                  <p className="text-brand-muted leading-relaxed">{value.description}</p>
-                </motion.div>
+                </Card>
               );
             })}
           </div>
         </PageContainer>
       </section>
 
-      {/* Team */}
-      <section className="py-24 px-4 bg-white">
+      {/* Evaluation Framework Section */}
+      <section className="py-20 bg-white border-b border-brand-border">
         <PageContainer>
-          <motion.div {...fadeUp} className="text-center mb-16">
-            <h2 className="text-4xl font-serif font-bold text-brand-charcoal mb-4">The people behind it</h2>
-            <p className="text-lg text-brand-muted max-w-xl mx-auto">
-              A small but passionate group who care deeply about coffee, community, and good design.
+          <div className="max-w-2xl mx-auto text-center space-y-4 mb-14">
+            <div className="text-xs font-bold uppercase tracking-wider text-brand-coffee">
+              The Framework
+            </div>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-charcoal">
+              How We Evaluate Coffee Spots
+            </h2>
+            <p className="text-brand-muted text-base">
+              Our 4-part review matrix gives equal weight to craft, comfort, and hospitality.
             </p>
-          </motion.div>
+          </div>
 
-          <div className="max-w-2xl mx-auto">
-            {team.map((member) => (
-              <motion.div
-                key={member.name}
-                {...fadeUp}
-                className="flex flex-col sm:flex-row items-center gap-8 bg-brand-background rounded-3xl p-8 border border-brand-border/50"
-              >
-                <div className="w-28 h-28 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
-                  <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {standards.map((s, i) => (
+              <div key={i} className="space-y-3 relative">
+                <div className="text-4xl font-serif font-bold text-brand-coffee/20">
+                  {s.step}
                 </div>
-                <div>
-                  <p className="text-xl font-serif font-bold text-brand-charcoal">{member.name}</p>
-                  <p className="text-sm font-semibold text-brand-coffee uppercase tracking-widest mt-1 mb-3">{member.role}</p>
-                  <p className="text-brand-muted leading-relaxed">{member.bio}</p>
-                </div>
-              </motion.div>
+                <h3 className="text-lg font-bold text-brand-charcoal">
+                  {s.title}
+                </h3>
+                <p className="text-sm text-brand-muted leading-relaxed">
+                  {s.description}
+                </p>
+              </div>
             ))}
           </div>
         </PageContainer>
       </section>
 
-      {/* Contact CTA */}
-      <section className="py-24 px-4 bg-brand-background border-t border-brand-border">
+      {/* For Cafe Owners Section */}
+      <section className="py-20 bg-brand-charcoal text-white">
         <PageContainer>
-          <motion.div {...fadeUp} className="max-w-2xl mx-auto text-center">
-            <div className="w-14 h-14 bg-brand-coffee/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Mail className="w-7 h-7 text-brand-coffee" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-7 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-semibold text-amber-200">
+                <Users className="w-3.5 h-3.5" />
+                <span>For Independent Cafe Owners</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold tracking-tight text-white">
+                Showcase Your Cafe to Thousands of Coffee Lovers
+              </h2>
+              <p className="text-stone-300 leading-relaxed text-base max-w-xl">
+                You pour your heart into every roast, espresso extraction, and welcoming interior. CafeFinder helps you connect with local patrons who truly value your craft.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <span className="text-sm text-stone-200">Free claim and verification</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <span className="text-sm text-stone-200">Full control over menus and hours</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <span className="text-sm text-stone-200">Direct replies to patron reviews</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <span className="text-sm text-stone-200">Rich visitor analytics</span>
+                </div>
+              </div>
+              <div className="pt-4 flex flex-wrap gap-4">
+                <Link to="/owner">
+                  <Button size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl">
+                    Claim or Register Your Cafe
+                  </Button>
+                </Link>
+                <Link to="/blog">
+                  <Button variant="outline" size="lg" className="border-stone-700 text-white hover:bg-white/10 font-semibold rounded-xl">
+                    Read Our Coffee Stories
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <h2 className="text-4xl font-serif font-bold text-brand-charcoal mb-4">Get in touch</h2>
-            <p className="text-lg text-brand-muted mb-8">
-              Have a question, a suggestion, or just want to say hello? We'd love to hear from you.
+
+            <div className="lg:col-span-5">
+              <div className="bg-stone-900 border border-stone-800 rounded-3xl p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold">
+                    <Star className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg text-white">Community First</h4>
+                    <p className="text-xs text-stone-400">Zero predatory fees or sponsored placements</p>
+                  </div>
+                </div>
+                <blockquote className="text-sm text-stone-300 italic leading-relaxed border-l-2 border-amber-500 pl-4 py-1">
+                  &quot;CafeFinder brought us regular patrons who appreciate our pour-over bar and actually stay to work peacefully. It is the best thing that happened to our neighborhood shop.&quot;
+                </blockquote>
+                <div className="text-xs text-stone-400">
+                  <strong className="text-white">Davao Specialty Roasters</strong> — Verified Cafe Partner
+                </div>
+              </div>
+            </div>
+          </div>
+        </PageContainer>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-white border-b border-brand-border">
+        <PageContainer>
+          <div className="max-w-2xl mx-auto text-center space-y-4 mb-14">
+            <div className="text-xs font-bold uppercase tracking-wider text-brand-coffee">
+              Common Questions
+            </div>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-charcoal">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-brand-muted text-base">
+              Everything you need to know about our community guidelines and discovery tools.
             </p>
-            <a href="mailto:hello@cafefinder.ph">
-              <Button className="bg-brand-coffee text-white hover:bg-brand-coffee/90 rounded-full px-10 py-4 h-auto font-bold shadow-lg shadow-brand-coffee/10">
-                hello@cafefinder.ph
-              </Button>
-            </a>
-          </motion.div>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-4">
+            {faqs.map((faq, i) => (
+              <div 
+                key={i} 
+                className="p-6 bg-brand-cream/30 border border-brand-border rounded-2xl space-y-2"
+              >
+                <h3 className="font-serif font-bold text-lg text-brand-charcoal">
+                  {faq.question}
+                </h3>
+                <p className="text-sm text-brand-muted leading-relaxed">
+                  {faq.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </PageContainer>
+      </section>
+
+      {/* Bottom CTA Banner */}
+      <section className="py-16 bg-brand-cream border-t border-brand-border text-center">
+        <PageContainer>
+          <div className="max-w-2xl mx-auto space-y-6">
+            <h2 className="text-3xl font-serif font-bold text-brand-charcoal">
+              Ready to Discover Your Next Favorite Cafe?
+            </h2>
+            <p className="text-brand-muted text-base">
+              Filter by location, fast Wi-Fi, ambiance, and specialty brews. Join our community of passionate coffee explorers today.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+              <Link to="/explore">
+                <Button size="lg" className="rounded-xl px-8 font-semibold">
+                  Start Exploring Cafes
+                </Button>
+              </Link>
+              <Link to="/blog">
+                <Button variant="outline" size="lg" className="rounded-xl px-8 font-semibold">
+                  Read Coffee Guides
+                </Button>
+              </Link>
+            </div>
+          </div>
         </PageContainer>
       </section>
     </MainLayout>

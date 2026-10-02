@@ -12,9 +12,7 @@ import {
   ChevronRight,
   Loader2,
   Trash2,
-  Database,
-  CalendarDays,
-  Clock
+  Database
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import toast from 'react-hot-toast';
@@ -45,18 +43,6 @@ interface IntegrityReport {
   notifications: {
     total: number;
     brokenReferences: number;
-  };
-  timeSensitive?: {
-    publishedEvents: number;
-    upcomingEvents: number;
-    expiredEvents: number;
-    publishedSpecials: number;
-    activeSpecials: number;
-    expiredSpecials: number;
-    pendingReview: number;
-    invalidDateRanges: number;
-    invalidTimezones: number;
-    invalidRegistrationUrls: number;
   };
 }
 
@@ -194,21 +180,6 @@ export const DataIntegrity: React.FC = () => {
       ],
       actions: [
         { label: 'Cleanup Sessions', action: 'cleanup-sessions' }
-      ]
-    },
-    {
-      title: 'Events & Specials',
-      icon: CalendarDays,
-      color: 'green',
-      stats: [
-        { label: 'Upcoming Events', value: report?.timeSensitive?.upcomingEvents || 0, icon: CalendarDays },
-        { label: 'Active Specials', value: report?.timeSensitive?.activeSpecials || 0, icon: Star },
-        { label: 'Expired Events', value: report?.timeSensitive?.expiredEvents || 0, icon: Clock, warning: (report?.timeSensitive?.expiredEvents || 0) > 0 },
-        { label: 'Expired Specials', value: report?.timeSensitive?.expiredSpecials || 0, icon: Clock, warning: (report?.timeSensitive?.expiredSpecials || 0) > 0 },
-        { label: 'Pending Review', value: report?.timeSensitive?.pendingReview || 0, icon: FileWarning },
-        { label: 'Invalid Schedules', value: report?.timeSensitive?.invalidDateRanges || 0, icon: AlertTriangle, warning: (report?.timeSensitive?.invalidDateRanges || 0) > 0 },
-        { label: 'Invalid Timezones', value: report?.timeSensitive?.invalidTimezones || 0, icon: AlertTriangle, warning: (report?.timeSensitive?.invalidTimezones || 0) > 0 },
-        { label: 'Unsafe Registration URLs', value: report?.timeSensitive?.invalidRegistrationUrls || 0, icon: AlertTriangle, warning: (report?.timeSensitive?.invalidRegistrationUrls || 0) > 0 }
       ]
     }
   ];

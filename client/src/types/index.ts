@@ -1,7 +1,7 @@
 export type Role = 'USER' | 'OWNER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 export type CafeStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'SUSPENDED' | 'ARCHIVED';
-export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN' | 'REMOVED';
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
 export type CafeSubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface User {
@@ -10,6 +10,8 @@ export interface User {
   email: string;
   avatar?: string;
   avatarUrl?: string | null;
+  bio?: string | null;
+  isProfilePublic?: boolean;
   role: Role;
   status: UserStatus;
   createdAt?: string;

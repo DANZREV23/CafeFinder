@@ -23,6 +23,18 @@ CREATE TYPE "PostStatus" AS ENUM ('DRAFT', 'PENDING_REVIEW', 'SCHEDULED', 'PUBLI
 CREATE TYPE "TestimonialStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 
 -- CreateEnum
+CREATE TYPE "TimeSensitiveStatus" AS ENUM ('DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED', 'CANCELLED', 'EXPIRED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "EventType" AS ENUM ('WORKSHOP', 'TASTING', 'LIVE_MUSIC', 'OPEN_MIC', 'COMMUNITY', 'MEETUP', 'CLASS', 'COMPETITION', 'SEASONAL', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "SpecialType" AS ENUM ('DISCOUNT', 'BOGO', 'HAPPY_HOUR', 'SEASONAL', 'COMBO', 'STUDENT', 'MEMBERSHIP', 'NEW_MENU', 'LIMITED_TIME', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "AnnouncementPriority" AS ENUM ('NORMAL', 'IMPORTANT', 'URGENT');
+
+-- CreateEnum
 CREATE TYPE "ClaimStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
 
 -- CreateEnum
@@ -699,6 +711,96 @@ CREATE TABLE "maintenance_job_locks" (
     CONSTRAINT "maintenance_job_locks_pkey" PRIMARY KEY ("jobName")
 );
 
+-- CreateTable
+CREATE TABLE "cafe_events" (
+    "id" TEXT NOT NULL,
+    "cafeId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "shortDescription" TEXT,
+    "description" TEXT NOT NULL,
+    "eventType" "EventType" NOT NULL DEFAULT 'COMMUNITY',
+    "status" "TimeSensitiveStatus" NOT NULL DEFAULT 'DRAFT',
+    "startAt" TIMESTAMP(3) NOT NULL,
+    "endAt" TIMESTAMP(3) NOT NULL,
+    "timezone" TEXT NOT NULL DEFAULT 'Asia/Manila',
+    "allDay" BOOLEAN NOT NULL DEFAULT false,
+    "location" TEXT,
+    "capacity" INTEGER,
+    "registrationUrl" TEXT,
+    "price" DECIMAL(10,2),
+    "currency" TEXT NOT NULL DEFAULT 'PHP',
+    "coverPhotoId" TEXT,
+    "coverPhotoUrl" TEXT,
+    "isFeatured" BOOLEAN NOT NULL DEFAULT false,
+    "createdById" TEXT NOT NULL,
+    "moderationNotes" TEXT,
+    "moderatedById" TEXT,
+    "moderatedAt" TIMESTAMP(3),
+    "publishedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cafe_events_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cafe_specials" (
+    "id" TEXT NOT NULL,
+    "cafeId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "shortDescription" TEXT,
+    "description" TEXT NOT NULL,
+    "specialType" "SpecialType" NOT NULL DEFAULT 'SEASONAL',
+    "status" "TimeSensitiveStatus" NOT NULL DEFAULT 'DRAFT',
+    "startAt" TIMESTAMP(3) NOT NULL,
+    "endAt" TIMESTAMP(3) NOT NULL,
+    "timezone" TEXT NOT NULL DEFAULT 'Asia/Manila',
+    "terms" TEXT,
+    "redemptionInstructions" TEXT,
+    "price" DECIMAL(10,2),
+    "discountPercent" INTEGER,
+    "currency" TEXT NOT NULL DEFAULT 'PHP',
+    "coverPhotoId" TEXT,
+    "coverPhotoUrl" TEXT,
+    "isFeatured" BOOLEAN NOT NULL DEFAULT false,
+    "createdById" TEXT NOT NULL,
+    "moderationNotes" TEXT,
+    "moderatedById" TEXT,
+    "moderatedAt" TIMESTAMP(3),
+    "publishedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cafe_specials_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cafe_announcements" (
+    "id" TEXT NOT NULL,
+    "cafeId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "priority" "AnnouncementPriority" NOT NULL DEFAULT 'NORMAL',
+    "status" "TimeSensitiveStatus" NOT NULL DEFAULT 'DRAFT',
+    "startAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endAt" TIMESTAMP(3),
+    "timezone" TEXT NOT NULL DEFAULT 'Asia/Manila',
+    "coverPhotoId" TEXT,
+    "coverPhotoUrl" TEXT,
+    "createdById" TEXT NOT NULL,
+    "moderationNotes" TEXT,
+    "moderatedById" TEXT,
+    "moderatedAt" TIMESTAMP(3),
+    "publishedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cafe_announcements_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE INDEX "media_assets_uploadedById_idx" ON "media_assets"("uploadedById");
 
@@ -812,9 +914,6 @@ CREATE INDEX "cafe_review_photos_status_idx" ON "cafe_review_photos"("status");
 
 -- CreateIndex
 CREATE INDEX "cafe_review_reports_reviewId_idx" ON "cafe_review_reports"("reviewId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "cafe_review_reports_reviewId_reporterId_key" ON "cafe_review_reports"("reviewId", "reporterId");
 
 -- CreateIndex
 CREATE INDEX "cafe_review_reports_reporterId_idx" ON "cafe_review_reports"("reporterId");
@@ -1032,6 +1131,72 @@ CREATE INDEX "maintenance_job_runs_status_idx" ON "maintenance_job_runs"("status
 -- CreateIndex
 CREATE INDEX "maintenance_job_runs_startedAt_idx" ON "maintenance_job_runs"("startedAt");
 
+-- CreateIndex
+CREATE INDEX "cafe_events_cafeId_idx" ON "cafe_events"("cafeId");
+
+-- CreateIndex
+CREATE INDEX "cafe_events_status_idx" ON "cafe_events"("status");
+
+-- CreateIndex
+CREATE INDEX "cafe_events_startAt_idx" ON "cafe_events"("startAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_events_endAt_idx" ON "cafe_events"("endAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_events_eventType_idx" ON "cafe_events"("eventType");
+
+-- CreateIndex
+CREATE INDEX "cafe_events_isFeatured_idx" ON "cafe_events"("isFeatured");
+
+-- CreateIndex
+CREATE INDEX "cafe_events_createdById_idx" ON "cafe_events"("createdById");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "cafe_events_cafeId_slug_key" ON "cafe_events"("cafeId", "slug");
+
+-- CreateIndex
+CREATE INDEX "cafe_specials_cafeId_idx" ON "cafe_specials"("cafeId");
+
+-- CreateIndex
+CREATE INDEX "cafe_specials_status_idx" ON "cafe_specials"("status");
+
+-- CreateIndex
+CREATE INDEX "cafe_specials_startAt_idx" ON "cafe_specials"("startAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_specials_endAt_idx" ON "cafe_specials"("endAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_specials_specialType_idx" ON "cafe_specials"("specialType");
+
+-- CreateIndex
+CREATE INDEX "cafe_specials_isFeatured_idx" ON "cafe_specials"("isFeatured");
+
+-- CreateIndex
+CREATE INDEX "cafe_specials_createdById_idx" ON "cafe_specials"("createdById");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "cafe_specials_cafeId_slug_key" ON "cafe_specials"("cafeId", "slug");
+
+-- CreateIndex
+CREATE INDEX "cafe_announcements_cafeId_idx" ON "cafe_announcements"("cafeId");
+
+-- CreateIndex
+CREATE INDEX "cafe_announcements_status_idx" ON "cafe_announcements"("status");
+
+-- CreateIndex
+CREATE INDEX "cafe_announcements_startAt_idx" ON "cafe_announcements"("startAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_announcements_priority_idx" ON "cafe_announcements"("priority");
+
+-- CreateIndex
+CREATE INDEX "cafe_announcements_createdById_idx" ON "cafe_announcements"("createdById");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "cafe_announcements_cafeId_slug_key" ON "cafe_announcements"("cafeId", "slug");
+
 -- AddForeignKey
 ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -1193,3 +1358,30 @@ ALTER TABLE "email_jobs" ADD CONSTRAINT "email_jobs_userId_fkey" FOREIGN KEY ("u
 
 -- AddForeignKey
 ALTER TABLE "operational_alerts" ADD CONSTRAINT "operational_alerts_acknowledgedById_fkey" FOREIGN KEY ("acknowledgedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_events" ADD CONSTRAINT "cafe_events_cafeId_fkey" FOREIGN KEY ("cafeId") REFERENCES "cafes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_events" ADD CONSTRAINT "cafe_events_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_events" ADD CONSTRAINT "cafe_events_moderatedById_fkey" FOREIGN KEY ("moderatedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_specials" ADD CONSTRAINT "cafe_specials_cafeId_fkey" FOREIGN KEY ("cafeId") REFERENCES "cafes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_specials" ADD CONSTRAINT "cafe_specials_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_specials" ADD CONSTRAINT "cafe_specials_moderatedById_fkey" FOREIGN KEY ("moderatedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_announcements" ADD CONSTRAINT "cafe_announcements_cafeId_fkey" FOREIGN KEY ("cafeId") REFERENCES "cafes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_announcements" ADD CONSTRAINT "cafe_announcements_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_announcements" ADD CONSTRAINT "cafe_announcements_moderatedById_fkey" FOREIGN KEY ("moderatedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -2,7 +2,7 @@ import { ApiResponse, User } from '../types';
 import { fetchApi } from './api';
 
 export const userService = {
-  updateProfile: async (data: { name?: string; email?: string; avatarUrl?: string }): Promise<ApiResponse<{ user: User }>> => {
+  updateProfile: async (data: { name?: string; email?: string; avatarUrl?: string; bio?: string; isProfilePublic?: boolean }): Promise<ApiResponse<{ user: User }>> => {
     return fetchApi<ApiResponse<{ user: User }>>('/users/profile', {
       method: 'PATCH',
       body: JSON.stringify(data),

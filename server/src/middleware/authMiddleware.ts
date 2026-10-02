@@ -12,6 +12,8 @@ export interface AuthRequest extends Request {
     email: string;
     role: Role;
     avatarUrl: string | null;
+    bio?: string | null;
+    isProfilePublic?: boolean;
   };
 }
 

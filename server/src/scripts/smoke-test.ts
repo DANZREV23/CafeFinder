@@ -18,12 +18,6 @@ async function runSmokeTest() {
     { path: '/api/cafes', expectedStatus: 200, name: 'Cafes List API' },
     { path: '/api/blog', expectedStatus: 200, name: 'Blog API' },
     { path: '/api/lists', expectedStatus: 200, name: 'Lists API' },
-    { path: '/api/events', expectedStatus: 200, name: 'Public Events API' },
-    { path: '/api/specials', expectedStatus: 200, name: 'Public Specials API' },
-    { path: '/api/announcements', expectedStatus: 200, name: 'Public Announcements API' },
-    { path: '/api/events/not-a-cafe/not-an-event', expectedStatus: 404, name: 'Unpublished Event Detail Hidden' },
-    { path: '/api/owner/events', expectedStatus: 401, name: 'Owner Event API Requires Authentication' },
-    { path: '/api/admin/time-sensitive/events', expectedStatus: 401, name: 'Admin Moderation Requires Authentication' },
     { path: '/robots.txt', expectedStatus: 200, name: 'Robots.txt' },
     { path: '/sitemap.xml', expectedStatus: 200, name: 'Sitemap' },
   ];

@@ -32,18 +32,6 @@ export interface IntegrityReport {
     total: number;
     brokenReferences: number;
   };
-  timeSensitive: {
-    publishedEvents: number;
-    upcomingEvents: number;
-    expiredEvents: number;
-    publishedSpecials: number;
-    activeSpecials: number;
-    expiredSpecials: number;
-    pendingReview: number;
-    invalidDateRanges: number;
-    invalidTimezones: number;
-    invalidRegistrationUrls: number;
-  };
 }
 
 export class DataIntegrityService {
@@ -74,63 +62,7 @@ export class DataIntegrityService {
         total: await prisma.notification.count(),
         brokenReferences: 0,
       },
-      timeSensitive: {
-        publishedEvents: 0,
-        upcomingEvents: 0,
-        expiredEvents: 0,
-        publishedSpecials: 0,
-        activeSpecials: 0,
-        expiredSpecials: 0,
-        pendingReview: 0,
-        invalidDateRanges: 0,
-        invalidTimezones: 0,
-        invalidRegistrationUrls: 0,
-      },
     };
-
-    const now = new Date();
-    const [publishedEvents, upcomingEvents, expiredEvents, publishedSpecials, activeSpecials, expiredSpecials, pendingEvents, pendingSpecials, pendingAnnouncements, invalidEventDates, invalidSpecialDates, invalidAnnouncementDates, eventZones, specialZones, announcementZones, registrationLinks] = await Promise.all([
-      prisma.cafeEvent.count({ where: { status: 'PUBLISHED' } }),
-      prisma.cafeEvent.count({ where: { status: 'PUBLISHED', startAt: { gt: now }, endAt: { gte: now } } }),
-      prisma.cafeEvent.count({ where: { OR: [{ status: 'EXPIRED' }, { status: 'PUBLISHED', endAt: { lt: now } }] } }),
-      prisma.cafeSpecial.count({ where: { status: 'PUBLISHED' } }),
-      prisma.cafeSpecial.count({ where: { status: 'PUBLISHED', startAt: { lte: now }, endAt: { gte: now } } }),
-      prisma.cafeSpecial.count({ where: { OR: [{ status: 'EXPIRED' }, { status: 'PUBLISHED', endAt: { lt: now } }] } }),
-      prisma.cafeEvent.count({ where: { status: 'PENDING_REVIEW' } }),
-      prisma.cafeSpecial.count({ where: { status: 'PENDING_REVIEW' } }),
-      prisma.cafeAnnouncement.count({ where: { status: 'PENDING_REVIEW' } }),
-      prisma.cafeEvent.count({ where: { endAt: { lt: prisma.cafeEvent.fields.startAt } } }),
-      prisma.cafeSpecial.count({ where: { endAt: { lt: prisma.cafeSpecial.fields.startAt } } }),
-      prisma.cafeAnnouncement.count({ where: { endAt: { lt: prisma.cafeAnnouncement.fields.startAt } } }),
-      prisma.cafeEvent.findMany({ distinct: ['timezone'], select: { timezone: true } }),
-      prisma.cafeSpecial.findMany({ distinct: ['timezone'], select: { timezone: true } }),
-      prisma.cafeAnnouncement.findMany({ distinct: ['timezone'], select: { timezone: true } }),
-      prisma.cafeEvent.findMany({ where: { registrationUrl: { not: null } }, distinct: ['registrationUrl'], select: { registrationUrl: true } })
-    ]);
-    report.timeSensitive.publishedEvents = publishedEvents;
-    report.timeSensitive.upcomingEvents = upcomingEvents;
-    report.timeSensitive.expiredEvents = expiredEvents;
-    report.timeSensitive.publishedSpecials = publishedSpecials;
-    report.timeSensitive.activeSpecials = activeSpecials;
-    report.timeSensitive.expiredSpecials = expiredSpecials;
-    report.timeSensitive.pendingReview = pendingEvents + pendingSpecials + pendingAnnouncements;
-    report.timeSensitive.invalidDateRanges = invalidEventDates + invalidSpecialDates + invalidAnnouncementDates;
-    const invalidZones = [...new Set([...eventZones, ...specialZones, ...announcementZones].map(item => item.timezone).filter(timezone => {
-      try { new Intl.DateTimeFormat('en', { timeZone: timezone }); return false; } catch { return true; }
-    }))];
-    if (invalidZones.length) {
-      const [invalidEvents, invalidSpecials, invalidAnnouncements] = await Promise.all([
-        prisma.cafeEvent.count({ where: { timezone: { in: invalidZones } } }),
-        prisma.cafeSpecial.count({ where: { timezone: { in: invalidZones } } }),
-        prisma.cafeAnnouncement.count({ where: { timezone: { in: invalidZones } } })
-      ]);
-      report.timeSensitive.invalidTimezones = invalidEvents + invalidSpecials + invalidAnnouncements;
-    }
-    const invalidLinks = registrationLinks.flatMap(item => {
-      if (!item.registrationUrl) return [];
-      try { return ['http:', 'https:'].includes(new URL(item.registrationUrl).protocol) ? [] : [item.registrationUrl]; } catch { return [item.registrationUrl]; }
-    });
-    if (invalidLinks.length) report.timeSensitive.invalidRegistrationUrls = await prisma.cafeEvent.count({ where: { registrationUrl: { in: invalidLinks } } });
 
     // 1. Cafe Integrity
     const cafes = await prisma.cafe.findMany({

@@ -9,7 +9,6 @@ import { MediaController } from '../controllers/mediaController.js';
 import { EditorialController } from '../controllers/editorialController.js';
 import { RedirectController } from '../controllers/redirectController.js';
 import { TestimonialController } from '../controllers/testimonialController.js';
-import { TimeSensitiveController } from '../controllers/timeSensitiveController.js';
 
 const router = Router();
 const adminController = new AdminController();
@@ -21,15 +20,10 @@ const mediaController = new MediaController();
 const editorialController = new EditorialController();
 const redirectController = new RedirectController();
 const testimonialController = new TestimonialController();
-const timeSensitiveController = new TimeSensitiveController();
 
 // All admin routes require authentication and ADMIN role
 router.use(requireAuth);
 router.use(requireRole('ADMIN'));
-for (const kind of ['events', 'specials', 'announcements']) {
-	router.get(`/time-sensitive/${kind}`, (req, res, next) => timeSensitiveController.listAdmin(req, res, next, kind));
-	router.patch(`/time-sensitive/${kind}/:id`, (req, res, next) => timeSensitiveController.moderate(req, res, next, kind));
-}
 
 router.get('/claims', claimController.getAdminClaims);
 router.get('/claims/:id', claimController.getAdminClaim);
@@ -58,9 +52,24 @@ router.post('/reviews/:id/approve', adminController.approveReview);
 router.post('/reviews/:id/reject', adminController.rejectReview);
 router.post('/reviews/:id/hide', adminController.hideReview);
 router.post('/reviews/:id/restore', adminController.restoreReview);
+router.post('/reviews/:id/remove', adminController.removeReview);
 router.delete('/reviews/:reviewId/photos/:photoId', adminController.deleteReviewPhoto);
+
+// Community Moderation: Reports, Photos, Responses, Integrity
 router.get('/review-reports', adminController.getReviewReports);
-router.patch('/review-reports/:id', adminController.resolveReviewReport);
+router.post('/review-reports/:id/resolve', adminController.resolveReviewReport);
+router.post('/review-reports/:id/dismiss', adminController.dismissReviewReport);
+
+router.get('/review-photos', adminController.getReviewPhotos);
+router.patch('/review-photos/:photoId/status', adminController.updateReviewPhotoStatus);
+
+router.get('/review-responses', adminController.getReviewResponses);
+router.patch('/review-responses/:responseId/status', adminController.updateReviewResponseStatus);
+
+router.get('/integrity/ratings', adminController.checkRatingsIntegrity);
+router.post('/integrity/ratings/repair', adminController.repairRatings);
+
+router.get('/community/stats', adminController.getCommunityStats);
 
 // Cafes
 router.get('/cafes', adminController.getCafes);

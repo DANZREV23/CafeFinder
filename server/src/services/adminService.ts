@@ -396,30 +396,48 @@ export class AdminService {
   }
 
   async getReviewReports(filters: any) {
-    const { status, search, page = 1, limit = 20 } = filters;
+    return this.reviewService.getReports(filters);
+  }
+
+  async resolveReviewReport(reportId: string, adminId: string, actionTaken: any, resolutionNotes?: string) {
+    const report = await this.reviewService.resolveReport(reportId, adminId, actionTaken, resolutionNotes);
+    await this.activityLogService.logAction({
+      userId: adminId,
+      action: 'ADMIN_RESOLVED_REVIEW_REPORT',
+      entityType: 'CafeReviewReport',
+      entityId: reportId,
+      description: `Resolved report with action ${actionTaken}`,
+    });
+    return report;
+  }
+
+  async dismissReviewReport(reportId: string, adminId: string, resolutionNotes?: string) {
+    const report = await this.reviewService.resolveReport(reportId, adminId, 'DISMISS', resolutionNotes);
+    await this.activityLogService.logAction({
+      userId: adminId,
+      action: 'ADMIN_DISMISSED_REVIEW_REPORT',
+      entityType: 'CafeReviewReport',
+      entityId: reportId,
+      description: 'Dismissed report',
+    });
+    return report;
+  }
+
+  async getReviewPhotos(filters: any) {
+    const { status, page = 1, limit = 20 } = filters;
     const safePage = Math.max(page, 1);
     const safeLimit = Math.max(limit, 1);
     const skip = (safePage - 1) * safeLimit;
+    const where: any = {};
+    if (status) where.status = status;
 
-    const where: Prisma.CafeReviewReportWhereInput = {
-      ...(status && status !== 'ALL' && { status: status as any }),
-      ...(search && {
-        OR: [
-          { description: { contains: search } },
-          { review: { comment: { contains: search } } },
-          { reporter: { name: { contains: search } } },
-        ]
-      })
-    };
-
-    const [data, total] = await Promise.all([
-      prisma.cafeReviewReport.findMany({
+    const [photos, total] = await Promise.all([
+      prisma.cafeReviewPhoto.findMany({
         where,
         include: {
-          reporter: { select: { id: true, name: true, email: true } },
           review: {
             include: {
-              cafe: { select: { id: true, name: true } },
+              cafe: { select: { id: true, name: true, slug: true } },
               user: { select: { id: true, name: true } },
             },
           },
@@ -428,47 +446,98 @@ export class AdminService {
         skip,
         take: safeLimit,
       }),
-      prisma.cafeReviewReport.count({ where }),
+      prisma.cafeReviewPhoto.count({ where }),
+    ]);
+
+    return { data: photos, total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
+  }
+
+  async updateReviewPhotoStatus(photoId: string, status: ReviewStatus, adminId: string) {
+    const photo = await this.reviewService.moderatePhoto(photoId, status, adminId);
+    await this.activityLogService.logAction({
+      userId: adminId,
+      action: `ADMIN_${status}_REVIEW_PHOTO`,
+      entityType: 'CafeReviewPhoto',
+      entityId: photoId,
+      description: `Set review photo status to ${status}`,
+    });
+    return photo;
+  }
+
+  async getReviewResponses(filters: any) {
+    const { status, page = 1, limit = 20 } = filters;
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
+    const where: any = {};
+    if (status) where.status = status;
+
+    const [responses, total] = await Promise.all([
+      prisma.cafeReviewResponse.findMany({
+        where,
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          review: {
+            include: {
+              cafe: { select: { id: true, name: true, slug: true } },
+              user: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: safeLimit,
+      }),
+      prisma.cafeReviewResponse.count({ where }),
+    ]);
+
+    return { data: responses, total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
+  }
+
+  async updateReviewResponseStatus(responseId: string, status: ReviewStatus, adminId: string, moderationNotes?: string) {
+    const response = await this.reviewService.moderateOwnerResponse(responseId, status, adminId, moderationNotes);
+    await this.activityLogService.logAction({
+      userId: adminId,
+      action: `ADMIN_${status}_REVIEW_RESPONSE`,
+      entityType: 'CafeReviewResponse',
+      entityId: responseId,
+      description: `Set review response status to ${status}`,
+    });
+    return response;
+  }
+
+  async checkRatingsIntegrity(cafeId?: string) {
+    return this.reviewService.checkRatingsIntegrity(cafeId);
+  }
+
+  async repairRatings(cafeId?: string, adminId?: string) {
+    const result = await this.reviewService.repairRatings(cafeId);
+    if (adminId) {
+      await this.activityLogService.logAction({
+        userId: adminId,
+        action: 'ADMIN_REPAIRED_RATINGS',
+        entityType: 'Cafe',
+        entityId: cafeId || 'ALL',
+        description: `Repaired ratings for ${result.repairedCount} cafes`,
+      });
+    }
+    return result;
+  }
+
+  async getCommunityStats() {
+    const [pendingReviews, pendingReports, approvedReviewsCount, approvedPhotosCount] = await Promise.all([
+      prisma.cafeReview.count({ where: { status: 'PENDING' } }),
+      prisma.cafeReviewReport.count({ where: { status: 'PENDING' } }),
+      prisma.cafeReview.count({ where: { status: 'APPROVED' } }),
+      prisma.cafeReviewPhoto.count({ where: { status: 'APPROVED' } }),
     ]);
 
     return {
-      data,
-      pagination: {
-        page: safePage,
-        limit: safeLimit,
-        total,
-        totalPages: Math.ceil(total / safeLimit),
-      },
+      pendingReviews,
+      pendingReports,
+      approvedReviewsCount,
+      approvedPhotosCount,
     };
-  }
-
-  async resolveReviewReport(reportId: string, adminId: string, payload: { status?: string; actionTaken?: string; resolutionNotes?: string }) {
-    const report = await prisma.cafeReviewReport.findUnique({ where: { id: reportId } });
-    if (!report) {
-      throw new Error('Review report not found');
-    }
-
-    const status = payload.status === 'DISMISSED' ? 'DISMISSED' : 'RESOLVED';
-    const resolved = await prisma.cafeReviewReport.update({
-      where: { id: reportId },
-      data: {
-        status: status as any,
-        resolvedAt: new Date(),
-        resolvedById: adminId,
-        actionTaken: payload.actionTaken || status,
-        resolutionNotes: payload.resolutionNotes || null,
-      },
-    });
-
-    await this.activityLogService.logAction({
-      userId: adminId,
-      action: `ADMIN_${status}_REVIEW_REPORT`,
-      entityType: 'CafeReviewReport',
-      entityId: reportId,
-      description: `Resolved review report ${reportId} with action ${status}`,
-    });
-
-    return resolved;
   }
 
   // --- Cafes ---

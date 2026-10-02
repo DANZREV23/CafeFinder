@@ -589,35 +589,6 @@ async function main() {
 
   // 4b. Seed owner claim scenarios
   await prisma.cafe.update({ where: { id: createdCafes[0].id }, data: { ownerId: owner.id } });
-  const demoCafeId = createdCafes[0].id;
-  const demoNow = new Date();
-  const hours = (value: number) => new Date(demoNow.getTime() + value * 60 * 60 * 1000);
-  await prisma.cafeEvent.createMany({ data: [
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Latte Art Workshop', slug: 'demo-latte-art-workshop', shortDescription: 'A fictional practice session for the CafeFinder demo.', description: 'Development-only event data. No registration or real-world event is being advertised.', eventType: 'WORKSHOP', status: 'PUBLISHED', startAt: hours(72), endAt: hours(75), timezone: 'Asia/Manila', allDay: false, location: 'Demo tasting room', publishedAt: demoNow },
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Coffee Tasting Review Queue', slug: 'demo-coffee-tasting-pending', description: 'Fictional pending event used to exercise moderation.', eventType: 'TASTING', status: 'PENDING_REVIEW', startAt: hours(120), endAt: hours(122), timezone: 'Asia/Manila' },
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Past Brewing Class', slug: 'demo-past-brewing-class', description: 'Fictional historical event used to test expiry handling.', eventType: 'CLASS', status: 'EXPIRED', startAt: hours(-96), endAt: hours(-94), timezone: 'Asia/Manila' },
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Rejected Event', slug: 'demo-rejected-event', description: 'Fictional rejected content for moderation testing.', eventType: 'OTHER', status: 'REJECTED', startAt: hours(144), endAt: hours(146), timezone: 'Asia/Manila' },
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Cancelled Meetup', slug: 'demo-cancelled-meetup', description: 'Fictional cancelled content for lifecycle testing.', eventType: 'COMMUNITY', status: 'CANCELLED', startAt: hours(168), endAt: hours(170), timezone: 'Asia/Manila' }
-  ] });
-  await prisma.cafeSpecial.createMany({ data: [
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Seasonal Latte', slug: 'demo-seasonal-latte', shortDescription: 'A fictional seasonal special for local development.', description: 'Development-only data. This offer has no real redemption value.', specialType: 'SEASONAL', status: 'PUBLISHED', startAt: hours(-24), endAt: hours(240), timezone: 'Asia/Manila', terms: 'Demo data only.', publishedAt: demoNow },
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Opening Week Bundle', slug: 'demo-opening-week-bundle', description: 'Fictional future seasonal promotion for discovery testing.', specialType: 'LIMITED_TIME', status: 'PUBLISHED', startAt: hours(48), endAt: hours(240), timezone: 'Asia/Manila', discountPercent: 10, publishedAt: demoNow },
-    { cafeId: demoCafeId, createdById: owner.id, title: 'Demo Pending Student Offer', slug: 'demo-pending-student-offer', description: 'Fictional special in the admin review queue.', specialType: 'STUDENT', status: 'PENDING_REVIEW', startAt: hours(24), endAt: hours(144), timezone: 'Asia/Manila' }
-  ] });
-  await prisma.cafeAnnouncement.create({ data: {
-    cafeId: demoCafeId,
-    createdById: owner.id,
-    title: 'Demo Holiday Hours Notice',
-    slug: 'demo-holiday-hours-notice',
-    content: 'Fictional notice used only for development and demonstration.',
-    type: 'HOLIDAY_HOURS',
-    priority: 'IMPORTANT',
-    status: 'PUBLISHED',
-    startAt: hours(-1),
-    endAt: hours(72),
-    timezone: 'Asia/Manila',
-    publishedAt: demoNow
-  } });
   await prisma.cafeOwnerClaim.create({
     data: {
       cafeId: createdCafes[0].id,

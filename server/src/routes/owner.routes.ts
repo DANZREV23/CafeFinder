@@ -4,22 +4,12 @@ import { OwnerController } from '../controllers/ownerController.js';
 import { OwnerAnalyticsController } from '../controllers/ownerAnalyticsController.js';
 import { uploadOwnerPhoto } from '../middleware/uploadMiddleware.js';
 import { submissionRateLimit } from '../config/security.js';
-import { TimeSensitiveController } from '../controllers/timeSensitiveController.js';
 
 const router = Router();
 const controller = new OwnerController();
 const analyticsController = new OwnerAnalyticsController();
-const timeSensitiveController = new TimeSensitiveController();
 
 router.use(requireAuth, requireRole('OWNER', 'ADMIN'));
-for (const kind of ['events', 'specials', 'announcements']) {
-	router.get(`/${kind}`, (req, res, next) => timeSensitiveController.listOwned(req, res, next, kind));
-	router.post(`/${kind}`, submissionRateLimit, (req, res, next) => timeSensitiveController.create(req, res, next, kind));
-	router.put(`/${kind}/:id`, submissionRateLimit, (req, res, next) => timeSensitiveController.update(req, res, next, kind));
-	router.post(`/${kind}/:id/submit`, submissionRateLimit, (req, res, next) => timeSensitiveController.submit(req, res, next, kind));
-	router.post(`/${kind}/:id/cancel`, (req, res, next) => timeSensitiveController.cancel(req, res, next, kind));
-	router.post(`/${kind}/:id/archive`, (req, res, next) => timeSensitiveController.archive(req, res, next, kind));
-}
 router.get('/dashboard', controller.getDashboard);
 router.get('/cafes', controller.getCafes);
 router.get('/cafes/:id', controller.getCafe);

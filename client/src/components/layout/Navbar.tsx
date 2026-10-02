@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Coffee, Search, User, LogOut, LayoutDashboard, Settings, Heart, ShieldCheck, ClipboardList, PlusCircle, BarChart3 } from "lucide-react";
+import { Menu, X, Coffee, Search, User, LogOut, LayoutDashboard, Settings, Heart, ShieldCheck, ClipboardList, PlusCircle, BarChart3, BookOpen, Info } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -290,23 +290,37 @@ export function Navbar() {
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-brand-border pb-safe">
-        <div className="flex justify-around items-center h-16">
+        <div className="flex justify-around items-center h-16 px-2">
           <Link to="/" className={cn(
-            "flex flex-col items-center gap-1",
+            "flex flex-col items-center gap-1 min-w-[50px]",
             location.pathname === "/" ? "text-brand-coffee" : "text-brand-muted"
           )}>
             <Coffee className="h-5 w-5" />
             <span className="text-[10px] font-medium">Home</span>
           </Link>
           <Link to="/explore" className={cn(
-            "flex flex-col items-center gap-1",
+            "flex flex-col items-center gap-1 min-w-[50px]",
             location.pathname === "/explore" ? "text-brand-coffee" : "text-brand-muted"
           )}>
             <Search className="h-5 w-5" />
             <span className="text-[10px] font-medium">Explore</span>
           </Link>
+          <Link to="/blog" className={cn(
+            "flex flex-col items-center gap-1 min-w-[50px]",
+            location.pathname.startsWith("/blog") ? "text-brand-coffee" : "text-brand-muted"
+          )}>
+            <BookOpen className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Blog</span>
+          </Link>
+          <Link to="/about" className={cn(
+            "flex flex-col items-center gap-1 min-w-[50px]",
+            location.pathname === "/about" ? "text-brand-coffee" : "text-brand-muted"
+          )}>
+            <Info className="h-5 w-5" />
+            <span className="text-[10px] font-medium">About</span>
+          </Link>
           <Link to={isAuthenticated ? "/profile" : "/login"} className={cn(
-            "flex flex-col items-center gap-1",
+            "flex flex-col items-center gap-1 min-w-[50px]",
             location.pathname === "/profile" || location.pathname === "/login" ? "text-brand-coffee" : "text-brand-muted"
           )}>
             <User className="h-5 w-5" />

@@ -95,13 +95,6 @@ export default function OwnerDashboardPage() {
               Manage Cafes <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
-
-          <Link to="/owner/events" className="rounded-[40px] border border-brand-border bg-white p-8 hover:border-brand-coffee transition-all group shadow-sm hover:shadow-xl">
-            <ClipboardList className="w-9 h-9 text-brand-coffee mb-6" />
-            <h2 className="text-xl font-serif font-bold text-brand-charcoal">Events, specials & updates</h2>
-            <p className="mt-2 text-brand-muted leading-relaxed font-medium">Publish timely cafe information through the review workflow.</p>
-            <div className="mt-6 flex items-center gap-2 text-sm font-bold text-brand-coffee">Manage content <ArrowRight className="w-4 h-4" /></div>
-          </Link>
           
           <Link to={analyticsLink} className="rounded-[40px] border border-brand-border bg-white p-10 hover:border-brand-coffee transition-all group shadow-sm hover:shadow-xl">
             <BarChart3 className="w-10 h-10 text-brand-coffee mb-8 group-hover:scale-110 transition-transform duration-500" />

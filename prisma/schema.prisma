@@ -23,11 +23,6 @@ enum UserStatus {
   SUSPENDED
 }
 
-enum CollectionVisibility {
-  PRIVATE
-  PUBLIC
-}
-
 enum CafeStatus {
   DRAFT
   PENDING_REVIEW
@@ -85,7 +80,7 @@ enum TimeSensitiveStatus {
   ARCHIVED
 }
 
-enum CafeEventType {
+enum EventType {
   WORKSHOP
   TASTING
   LIVE_MUSIC
@@ -98,7 +93,7 @@ enum CafeEventType {
   OTHER
 }
 
-enum CafeSpecialType {
+enum SpecialType {
   DISCOUNT
   BOGO
   HAPPY_HOUR
@@ -115,23 +110,6 @@ enum AnnouncementPriority {
   NORMAL
   IMPORTANT
   URGENT
-}
-
-enum AnnouncementStatus {
-  DRAFT
-  PENDING_REVIEW
-  PUBLISHED
-  REJECTED
-  ARCHIVED
-}
-
-enum CafeAnnouncementType {
-  TEMPORARY_CLOSURE
-  HOLIDAY_HOURS
-  OPENING
-  RENOVATION
-  MENU_UPDATE
-  OTHER
 }
 
 model MediaAsset {
@@ -157,9 +135,6 @@ model MediaAsset {
   cafePhotos      CafePhoto[]
   blogPosts       BlogPost[] @relation("BlogPostCover")
   curatedLists    CuratedList[] @relation("CuratedListCover")
-  cafeEvents      CafeEvent[] @relation("CafeEventCover")
-  cafeSpecials    CafeSpecial[] @relation("CafeSpecialCover")
-  cafeAnnouncements CafeAnnouncement[] @relation("CafeAnnouncementCover")
 
   @@index([uploadedById])
   @@index([mimeType])
@@ -262,10 +237,12 @@ model User {
   resolvedReports CafeReviewReport[] @relation("ReportResolver")
   reviewResponses CafeReviewResponse[] @relation("ReviewResponseOwner")
   reviewRevisions CafeReviewRevision[]
-  createdEvents CafeEvent[] @relation("CafeEventCreator")
-  createdSpecials CafeSpecial[] @relation("CafeSpecialCreator")
-  createdAnnouncements CafeAnnouncement[] @relation("CafeAnnouncementCreator")
-  collections UserCollection[]
+  createdEvents          CafeEvent[]          @relation("UserEvents")
+  moderatedEvents        CafeEvent[]          @relation("EventModerator")
+  createdSpecials        CafeSpecial[]        @relation("UserSpecials")
+  moderatedSpecials      CafeSpecial[]        @relation("SpecialModerator")
+  createdAnnouncements   CafeAnnouncement[]   @relation("UserAnnouncements")
+  moderatedAnnouncements CafeAnnouncement[]   @relation("AnnouncementModerator")
 
   @@map("users")
 }
@@ -333,8 +310,6 @@ model Cafe {
   events         CafeEvent[]
   specials       CafeSpecial[]
   announcements  CafeAnnouncement[]
-  collectionCovers UserCollection[] @relation("CollectionCoverCafe")
-  collectionItems UserCollectionItem[]
 
   @@index([status])
   @@index([city])
@@ -346,109 +321,6 @@ model Cafe {
   @@index([priceRange])
   @@index([verified])
   @@map("cafes")
-}
-
-model CafeEvent {
-  id                String             @id @default(cuid())
-  cafeId            String
-  title             String             @db.VarChar(160)
-  slug              String             @db.VarChar(180)
-  shortDescription  String?            @db.VarChar(240)
-  description       String             @db.Text
-  eventType         CafeEventType      @default(OTHER)
-  status            TimeSensitiveStatus @default(DRAFT)
-  startAt           DateTime
-  endAt             DateTime
-  timezone          String             @default("UTC") @db.VarChar(64)
-  allDay            Boolean            @default(false)
-  location          String?            @db.VarChar(200)
-  capacity          Int?
-  registrationUrl   String?            @db.Text
-  price             Decimal?           @db.Decimal(10, 2)
-  currency          String?            @db.VarChar(3)
-  coverPhotoId      String?
-  isFeatured        Boolean            @default(false)
-  createdById       String
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  publishedAt       DateTime?
-
-  cafe       Cafe        @relation(fields: [cafeId], references: [id], onDelete: Cascade)
-  createdBy  User        @relation("CafeEventCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  coverPhoto MediaAsset? @relation("CafeEventCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
-
-  @@unique([cafeId, slug])
-  @@index([status, startAt, endAt])
-  @@index([cafeId, status, startAt])
-  @@index([eventType, status, startAt])
-  @@index([publishedAt])
-  @@map("cafe_events")
-}
-
-model CafeSpecial {
-  id                     String             @id @default(cuid())
-  cafeId                 String
-  title                  String             @db.VarChar(160)
-  slug                   String             @db.VarChar(180)
-  shortDescription       String?            @db.VarChar(240)
-  description            String             @db.Text
-  specialType            CafeSpecialType    @default(OTHER)
-  status                 TimeSensitiveStatus @default(DRAFT)
-  startAt                DateTime
-  endAt                  DateTime
-  timezone               String             @default("UTC") @db.VarChar(64)
-  terms                  String?            @db.Text
-  redemptionInstructions String?            @db.Text
-  price                  Decimal?           @db.Decimal(10, 2)
-  discountPercent        Decimal?           @db.Decimal(5, 2)
-  currency               String?            @db.VarChar(3)
-  coverPhotoId           String?
-  isFeatured             Boolean            @default(false)
-  createdById            String
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
-  publishedAt            DateTime?
-
-  cafe       Cafe        @relation(fields: [cafeId], references: [id], onDelete: Cascade)
-  createdBy  User        @relation("CafeSpecialCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  coverPhoto MediaAsset? @relation("CafeSpecialCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
-
-  @@unique([cafeId, slug])
-  @@index([status, startAt, endAt])
-  @@index([cafeId, status, startAt])
-  @@index([specialType, status, startAt])
-  @@index([publishedAt])
-  @@map("cafe_specials")
-}
-
-model CafeAnnouncement {
-  id           String               @id @default(cuid())
-  cafeId       String
-  title        String               @db.VarChar(160)
-  slug         String               @db.VarChar(180)
-  content      String               @db.Text
-  type         CafeAnnouncementType @default(OTHER)
-  status       TimeSensitiveStatus  @default(DRAFT)
-  startAt      DateTime
-  endAt        DateTime
-  timezone     String               @default("UTC") @db.VarChar(64)
-  priority     AnnouncementPriority @default(NORMAL)
-  coverPhotoId String?
-  createdById  String
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  publishedAt  DateTime?
-
-  cafe       Cafe        @relation(fields: [cafeId], references: [id], onDelete: Cascade)
-  createdBy  User        @relation("CafeAnnouncementCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  coverPhoto MediaAsset? @relation("CafeAnnouncementCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
-
-  @@unique([cafeId, slug])
-  @@index([status, startAt, endAt])
-  @@index([cafeId, status, startAt])
-  @@index([priority, status, startAt])
-  @@index([publishedAt])
-  @@map("cafe_announcements")
 }
 
 model CafeSubmission {
@@ -640,7 +512,6 @@ model CafeReviewReport {
   reporter   User       @relation("ReviewReporter", fields: [reporterId], references: [id], onDelete: Cascade)
   resolvedBy User?      @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
 
-  @@unique([reviewId, reporterId])
   @@index([reviewId])
   @@index([reporterId])
   @@index([status])
@@ -771,49 +642,6 @@ model CafeFavorite {
   @@index([userId, createdAt])
   @@index([cafeId, createdAt])
   @@map("cafe_favorites")
-}
-
-model UserCollection {
-  id          String              @id @default(cuid())
-  userId      String
-  name        String              @db.VarChar(100)
-  slug        String              @db.VarChar(120)
-  description String?             @db.VarChar(500)
-  visibility  CollectionVisibility @default(PRIVATE)
-  coverCafeId String?
-  sortOrder   Int                 @default(0)
-  publishedAt DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  user  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coverCafe Cafe?            @relation("CollectionCoverCafe", fields: [coverCafeId], references: [id], onDelete: SetNull)
-  items UserCollectionItem[]
-
-  @@unique([slug])
-  @@index([userId])
-  @@index([userId, visibility])
-  @@index([visibility, updatedAt])
-  @@index([coverCafeId])
-  @@map("user_collections")
-}
-
-model UserCollectionItem {
-  id           String   @id @default(cuid())
-  collectionId String
-  cafeId       String
-  note         String?  @db.VarChar(500)
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  collection UserCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  cafe       Cafe           @relation(fields: [cafeId], references: [id], onDelete: Cascade)
-
-  @@unique([collectionId, cafeId])
-  @@index([collectionId, sortOrder])
-  @@index([cafeId])
-  @@map("user_collection_items")
 }
 
 model BlogPost {
@@ -1222,4 +1050,125 @@ model MaintenanceJobLock {
   processId String?
 
   @@map("maintenance_job_locks")
+}
+
+model CafeEvent {
+  id               String              @id @default(cuid())
+  cafeId           String
+  title            String
+  slug             String
+  shortDescription String?             @db.Text
+  description      String              @db.Text
+  eventType        EventType           @default(COMMUNITY)
+  status           TimeSensitiveStatus @default(DRAFT)
+  startAt          DateTime
+  endAt            DateTime
+  timezone         String              @default("Asia/Manila")
+  allDay           Boolean             @default(false)
+  location         String?
+  capacity         Int?
+  registrationUrl  String?             @db.Text
+  price            Decimal?            @db.Decimal(10, 2)
+  currency         String              @default("PHP")
+  coverPhotoId     String?
+  coverPhotoUrl    String?             @db.Text
+  isFeatured       Boolean             @default(false)
+  createdById      String
+  moderationNotes  String?             @db.Text
+  moderatedById    String?
+  moderatedAt      DateTime?
+  publishedAt      DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  cafe             Cafe                @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  createdBy        User                @relation("UserEvents", fields: [createdById], references: [id], onDelete: Cascade)
+  moderatedBy      User?               @relation("EventModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  @@unique([cafeId, slug])
+  @@index([cafeId])
+  @@index([status])
+  @@index([startAt])
+  @@index([endAt])
+  @@index([eventType])
+  @@index([isFeatured])
+  @@index([createdById])
+  @@map("cafe_events")
+}
+
+model CafeSpecial {
+  id                     String              @id @default(cuid())
+  cafeId                 String
+  title                  String
+  slug                   String
+  shortDescription       String?             @db.Text
+  description            String              @db.Text
+  specialType            SpecialType         @default(SEASONAL)
+  status                 TimeSensitiveStatus @default(DRAFT)
+  startAt                DateTime
+  endAt                  DateTime
+  timezone               String              @default("Asia/Manila")
+  terms                  String?             @db.Text
+  redemptionInstructions String?             @db.Text
+  price                  Decimal?            @db.Decimal(10, 2)
+  discountPercent        Int?
+  currency               String              @default("PHP")
+  coverPhotoId           String?
+  coverPhotoUrl          String?             @db.Text
+  isFeatured             Boolean             @default(false)
+  createdById            String
+  moderationNotes        String?             @db.Text
+  moderatedById          String?
+  moderatedAt            DateTime?
+  publishedAt            DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  cafe                   Cafe                @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  createdBy              User                @relation("UserSpecials", fields: [createdById], references: [id], onDelete: Cascade)
+  moderatedBy            User?               @relation("SpecialModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  @@unique([cafeId, slug])
+  @@index([cafeId])
+  @@index([status])
+  @@index([startAt])
+  @@index([endAt])
+  @@index([specialType])
+  @@index([isFeatured])
+  @@index([createdById])
+  @@map("cafe_specials")
+}
+
+model CafeAnnouncement {
+  id              String               @id @default(cuid())
+  cafeId          String
+  title           String
+  slug            String
+  content         String               @db.Text
+  priority        AnnouncementPriority @default(NORMAL)
+  status          TimeSensitiveStatus  @default(DRAFT)
+  startAt         DateTime             @default(now())
+  endAt           DateTime?
+  timezone        String               @default("Asia/Manila")
+  coverPhotoId    String?
+  coverPhotoUrl   String?              @db.Text
+  createdById     String
+  moderationNotes String?              @db.Text
+  moderatedById   String?
+  moderatedAt     DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  cafe            Cafe                 @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  createdBy       User                 @relation("UserAnnouncements", fields: [createdById], references: [id], onDelete: Cascade)
+  moderatedBy     User?                @relation("AnnouncementModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+
+  @@unique([cafeId, slug])
+  @@index([cafeId])
+  @@index([status])
+  @@index([startAt])
+  @@index([priority])
+  @@index([createdById])
+  @@map("cafe_announcements")
 }

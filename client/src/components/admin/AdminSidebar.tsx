@@ -17,7 +17,8 @@ import {
   Rocket,
   Clock,
   Bell,
-  Sparkles
+  Sparkles,
+  Flag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
@@ -37,9 +38,9 @@ const MENU_ITEMS = [
     items: [
       { id: 'submissions', labelKey: 'admin.submissions', icon: Coffee, path: '/admin/submissions' },
       { id: 'reviews', labelKey: 'admin.reviews', icon: Star, path: '/admin/reviews' },
+      { id: 'review-reports', labelKey: 'admin.reviewReports', icon: Flag, path: '/admin/review-reports' },
           { id: 'claims', labelKey: 'admin.claims', icon: ShieldCheck, path: '/admin/claims' },
           { id: 'change-requests', labelKey: 'admin.changeRequests', icon: FileText, path: '/admin/change-requests' },
-          { id: 'time-sensitive', labelKey: 'admin.timeSensitive', icon: Clock, path: '/admin/time-sensitive' },
     ]
   },
   { 

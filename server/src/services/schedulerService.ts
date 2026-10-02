@@ -9,7 +9,6 @@ import { EmailJobStatus } from '@prisma/client';
 import { jobRunnerService, JobResult } from './jobRunnerService.js';
 import { dataIntegrityService } from './dataIntegrityService.js';
 import { backupService } from './backupService.js';
-import { expireTimeSensitiveContent } from './timeSensitiveMaintenanceService.js';
 import os from 'os';
 
 export class SchedulerService {
@@ -140,12 +139,6 @@ export class SchedulerService {
       });
     }, 5 * 60 * 1000);
     this.intervals.push(publicationInterval);
-
-    // Time-sensitive content expiration: every 5 minutes, in bounded batches
-    const timeSensitiveInterval = setInterval(async () => {
-      await jobRunnerService.runJob('expire_time_sensitive_content', expireTimeSensitiveContent);
-    }, 5 * 60 * 1000);
-    this.intervals.push(timeSensitiveInterval);
 
     // Release Cleanup: Weekly
     const releaseInterval = setInterval(async () => {

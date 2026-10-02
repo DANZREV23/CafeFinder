@@ -11,6 +11,8 @@ const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100).optional(),
   email: z.string().email('Invalid email address').optional(),
   avatarUrl: z.string().url('Invalid avatar URL').optional().or(z.literal('')),
+  bio: z.string().max(500).optional(),
+  isProfilePublic: z.boolean().optional(),
 });
 
 export class UserController {
@@ -127,6 +129,29 @@ export class UserController {
       const { userPreferenceService } = await import('../services/userPreferenceService.js');
       const result = await userPreferenceService.resetPreferences(req.user.id);
       res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPublicProfile(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const profile = await userService.getPublicProfile(id);
+      res.json({ success: true, data: profile });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMyContributions(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: { message: 'Not authenticated' } });
+      }
+
+      const contributions = await userService.getMyContributions(req.user.id);
+      res.json({ success: true, data: contributions });
     } catch (error) {
       next(error);
     }

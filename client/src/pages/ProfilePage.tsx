@@ -31,6 +31,8 @@ const ProfilePage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
+    bio: user?.bio || '',
+    isProfilePublic: user?.isProfilePublic !== undefined ? user.isProfilePublic : true,
   });
 
   // Discovery Preferences State
@@ -155,6 +157,8 @@ const ProfilePage: React.FC = () => {
     setFormData({
       name: user.name,
       email: user.email,
+      bio: user.bio || '',
+      isProfilePublic: user.isProfilePublic !== undefined ? user.isProfilePublic : true,
     });
     setIsEditing(true);
   };
@@ -287,13 +291,22 @@ const ProfilePage: React.FC = () => {
               {user.role}
             </div>
             <div className="w-full h-px bg-brand-border mb-6" />
-            <Link to="/favorites" className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-brand-background transition-colors group">
-              <div className="flex items-center gap-3">
-                <Heart size={18} className="text-rose-500" />
-                <span className="font-bold text-brand-charcoal">Saved Cafes</span>
-              </div>
-              <ChevronRight size={16} className="text-brand-muted group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <div className="w-full space-y-1">
+              <Link to="/favorites" className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-brand-background transition-colors group">
+                <div className="flex items-center gap-3">
+                  <Heart size={18} className="text-rose-500" />
+                  <span className="font-bold text-brand-charcoal">Saved Cafes</span>
+                </div>
+                <ChevronRight size={16} className="text-brand-muted group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link to={`/users/${user.id}`} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-brand-background transition-colors group">
+                <div className="flex items-center gap-3">
+                  <User size={18} className="text-brand-coffee" />
+                  <span className="font-bold text-brand-charcoal">Public Profile</span>
+                </div>
+                <ChevronRight size={16} className="text-brand-muted group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </Card>
 
           <div className="md:col-span-2 space-y-6">
@@ -365,6 +378,39 @@ const ProfilePage: React.FC = () => {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-brand-muted uppercase tracking-wider">Bio & Coffee Passion</label>
+                      <span className="text-xs text-brand-muted">{formData.bio.length}/500</span>
+                    </div>
+                    <textarea
+                      name="bio"
+                      value={formData.bio}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value.slice(0, 500) }))}
+                      placeholder="Share a bit about your coffee tastes, favorite brewing styles, or cafe memories..."
+                      rows={3}
+                      className="w-full p-3 bg-brand-background border-brand-border rounded-xl focus:ring-2 focus:ring-brand-coffee focus:border-transparent outline-none transition-all font-medium text-brand-black text-sm resize-none"
+                    />
+                  </div>
+
+                  <div className="pt-2 border-t border-brand-border space-y-2">
+                    <label className="text-xs font-bold text-brand-muted uppercase tracking-wider block">Community Privacy</label>
+                    <label className="flex items-start gap-3 p-3 bg-brand-background border border-brand-border rounded-xl cursor-pointer hover:bg-stone-50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={formData.isProfilePublic}
+                        onChange={(e) => setFormData(prev => ({ ...prev, isProfilePublic: e.target.checked }))}
+                        className="mt-0.5 rounded text-brand-coffee focus:ring-brand-coffee w-4 h-4"
+                      />
+                      <div>
+                        <div className="text-sm font-semibold text-brand-charcoal">Public Community Profile</div>
+                        <div className="text-xs text-brand-muted">
+                          When checked, other coffee lovers can view your reviews, photos, and public badges at /users/{user.id}. When unchecked, your profile is hidden from public discovery.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
                 </form>
               ) : (
                 <div className="space-y-6">
@@ -385,6 +431,42 @@ const ProfilePage: React.FC = () => {
                     <div>
                       <p className="text-xs font-bold text-brand-muted uppercase tracking-wider">Email Address</p>
                       <p className="text-brand-black font-medium">{user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-brand-background rounded-lg flex items-center justify-center text-brand-muted shrink-0">
+                      <Sparkles size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-brand-muted uppercase tracking-wider">Bio</p>
+                      <p className="text-brand-black font-medium text-sm mt-0.5">
+                        {user.bio ? user.bio : <span className="text-brand-muted italic">No bio added yet. Click &quot;Edit Profile&quot; to share your coffee journey!</span>}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-brand-background rounded-lg flex items-center justify-center text-brand-muted">
+                      <Lock size={20} />
+                    </div>
+                    <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-bold text-brand-muted uppercase tracking-wider">Community Visibility</p>
+                        <p className="text-brand-black font-medium text-sm">
+                          {user.isProfilePublic !== false ? (
+                            <span className="text-emerald-700 font-semibold">Public Profile (Active)</span>
+                          ) : (
+                            <span className="text-stone-600 font-semibold">Private (Hidden from directory)</span>
+                          )}
+                        </p>
+                      </div>
+                      <Link
+                        to={`/users/${user.id}`}
+                        className="text-xs font-bold text-brand-coffee hover:underline inline-flex items-center gap-1"
+                      >
+                        Preview public view &rarr;
+                      </Link>
                     </div>
                   </div>
 
@@ -433,7 +515,7 @@ const ProfilePage: React.FC = () => {
                   <Label htmlFor="timezone-select">{t("common.timezone")}</Label>
                   <Select value={timezone} onValueChange={setTimezone}>
                     <SelectTrigger id="timezone-select">
-                      <SelectValue placeholder={t("admin.selectTimezone")} />
+                      <SelectValue placeholder={t("common.selectTimezone")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Asia/Manila">Manila (PHT)</SelectItem>
@@ -516,10 +598,10 @@ const ProfilePage: React.FC = () => {
                     </label>
                     <div className="flex gap-2">
                       {[
-                        { level: 1, label: '₱ (Budget)' },
-                        { level: 2, label: '₱₱ (Standard)' },
-                        { level: 3, label: '₱₱₱ (Upscale)' },
-                        { level: 4, label: '₱₱₱₱ (Premium)' },
+                        { level: 1, label: '$ (Budget)' },
+                        { level: 2, label: '$$ (Standard)' },
+                        { level: 3, label: '$$$ (Upscale)' },
+                        { level: 4, label: '$$$$ (Premium)' },
                       ].map(({ level, label }) => {
                         const isSelected = preferences.preferredPriceRange === level;
                         return (

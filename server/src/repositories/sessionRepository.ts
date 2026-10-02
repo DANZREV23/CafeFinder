@@ -20,6 +20,8 @@ export class SessionRepository {
             role: true,
             status: true,
             avatarUrl: true,
+            bio: true,
+            isProfilePublic: true,
           },
         },
       },

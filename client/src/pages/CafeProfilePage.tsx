@@ -28,14 +28,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FavoriteButton } from "@/components/cafe/FavoriteButton";
-import { CollectionSaveButton } from "@/components/cafe/CollectionSaveButton";
 import { ShareButtons } from "@/components/common/ShareButtons";
 import { SEO } from "@/components/common/SEO";
 import { generateCafeJsonLd, generateBreadcrumbJsonLd } from "@/utils/seoUtils";
 import { CafeGallery } from "@/components/cafe/CafeGallery";
 import { RelatedCafes } from "@/components/cafe/RelatedCafes";
 import { CafeMenuHighlights } from "@/components/cafe/CafeMenuHighlights";
-import { CafeTimeSensitiveSections } from "@/components/cafe/CafeTimeSensitiveSections";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { WifiOff } from "lucide-react";
 
@@ -44,10 +42,13 @@ import { CafeMap } from "@/components/map/CafeMap";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/i18n";
-import reviewService, { Review, ReviewStats } from "@/services/reviewService";
+import reviewService, { Review, ReviewStats, ReviewFilterParams, ReviewResponse } from "@/services/reviewService";
 import { ReviewSummary } from "@/components/reviews/ReviewSummary";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { VisitorPhotoGallery } from "@/components/reviews/VisitorPhotoGallery";
+import { ReportModal } from "@/components/reviews/ReportModal";
+import { OwnerResponseModal } from "@/components/reviews/OwnerResponseModal";
 
 export default function CafeProfilePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -66,12 +67,28 @@ export default function CafeProfilePage() {
   const [editingReview, setEditingReview] = React.useState<Review | null>(null);
   const [reviewTotal, setReviewTotal] = React.useState(0);
   const [reviewPage, setReviewPage] = React.useState(1);
+  const [reviewFilters, setReviewFilters] = React.useState<ReviewFilterParams>({
+    sort: 'newest',
+    rating: undefined,
+    hasPhotos: false,
+  });
 
-  const fetchReviews = async (page = 1, append = false) => {
+  // Reporting and owner response modal states
+  const [reportingReview, setReportingReview] = React.useState<Review | null>(null);
+  const [respondingReview, setRespondingReview] = React.useState<Review | null>(null);
+  const [editingResponse, setEditingResponse] = React.useState<ReviewResponse | null>(null);
+
+  const isCafeOwner = Boolean(user && cafe && (cafe.ownerId === user.id || (user.role === 'OWNER' && (cafe as any).claimedBy === user.id)));
+
+  const fetchReviews = async (page = 1, append = false, currentFilters = reviewFilters) => {
     if (!cafe?.id) return;
     setReviewsLoading(true);
     try {
-      const response = await reviewService.getCafeReviews(cafe.id, page);
+      const response = await reviewService.getCafeReviews(cafe.id, {
+        page,
+        limit: 10,
+        ...currentFilters,
+      });
       if (response.success) {
         setReviews(prev => append ? [...prev, ...response.data] : response.data);
         setReviewTotal(response.pagination.total);
@@ -80,6 +97,38 @@ export default function CafeProfilePage() {
       console.error("Failed to fetch reviews", err);
     } finally {
       setReviewsLoading(false);
+    }
+  };
+
+  const handleFilterChange = (newFilters: Partial<ReviewFilterParams>) => {
+    const updated = { ...reviewFilters, ...newFilters };
+    setReviewFilters(updated);
+    setReviewPage(1);
+    fetchReviews(1, false, updated);
+  };
+
+  const handleHelpfulToggle = async (reviewId: string) => {
+    if (!isAuthenticated) {
+      window.location.href = '/login';
+      return;
+    }
+    try {
+      const res = await reviewService.toggleHelpful(reviewId);
+      if (res.success) {
+        setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, isHelpful: res.data.isHelpful, helpfulCount: res.data.helpfulCount } : r));
+      }
+    } catch (err) {
+      console.error("Failed to toggle helpful", err);
+    }
+  };
+
+  const handleDeleteResponse = async (responseId: string) => {
+    if (!window.confirm("Are you sure you want to remove your owner response?")) return;
+    try {
+      await reviewService.deleteResponse(responseId);
+      fetchReviews(reviewPage, false);
+    } catch (err) {
+      console.error("Failed to delete response", err);
     }
   };
 
@@ -327,7 +376,6 @@ export default function CafeProfilePage() {
                 variant="outline"
                 className="h-9 px-4 rounded-xl border-brand-border hover:bg-rose-50 hover:border-rose-200"
               />
-              {isAuthenticated && <CollectionSaveButton cafeId={cafe.id} />}
               <ShareButtons 
                 url={window.location.href}
                 title={cafe.name}
@@ -448,7 +496,9 @@ export default function CafeProfilePage() {
               {/* Menu Highlights */}
               <CafeMenuHighlights />
 
-              <CafeTimeSensitiveSections cafeId={cafe.id} />
+              {/* Reviews Section */}
+              {/* Community Visitor Photos */}
+              <VisitorPhotoGallery cafeId={cafe.id} />
 
               {/* Reviews Section */}
               <section id="reviews" className="space-y-12 pt-8 border-t border-brand-border" aria-labelledby="reviews-heading">
@@ -483,11 +533,43 @@ export default function CafeProfilePage() {
                   total={reviewTotal}
                   myReview={myReview}
                   isLoading={reviewsLoading}
+                  filters={reviewFilters}
+                  onFilterChange={handleFilterChange}
                   onLoadMore={handleLoadMoreReviews}
+                  onHelpfulToggle={handleHelpfulToggle}
+                  onReport={(r) => setReportingReview(r)}
+                  isCafeOwner={isCafeOwner}
+                  cafeName={cafe.name}
+                  onRespond={(r) => setRespondingReview(r)}
+                  onEditResponse={(res) => setEditingResponse(res)}
+                  onDeleteResponse={handleDeleteResponse}
                   onEditReview={(review) => setEditingReview(review)}
                   onDeleteReview={handleDeleteReview}
                 />
               </section>
+
+              {/* Modals */}
+              <ReportModal
+                isOpen={reportingReview !== null}
+                onClose={() => setReportingReview(null)}
+                reviewId={reportingReview?.id || null}
+                reviewerName={reportingReview?.reviewer.name}
+              />
+
+              <OwnerResponseModal
+                isOpen={respondingReview !== null || editingResponse !== null}
+                onClose={() => {
+                  setRespondingReview(null);
+                  setEditingResponse(null);
+                }}
+                reviewId={respondingReview?.id || null}
+                cafeName={cafe.name}
+                reviewerName={respondingReview?.reviewer.name}
+                existingResponse={editingResponse}
+                onResponseSaved={() => {
+                  fetchReviews(reviewPage, false);
+                }}
+              />
 
               {/* Related Cafes */}
               {cafe.relatedCafes && cafe.relatedCafes.length > 0 && (

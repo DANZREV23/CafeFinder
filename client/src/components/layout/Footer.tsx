@@ -43,8 +43,9 @@ export function Footer() {
             <h4 id="footer-discover-heading" className="font-serif font-bold text-brand-charcoal mb-6">Discover</h4>
             <ul className="space-y-4">
               <li><Link to="/explore" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Explore Cafes</Link></li>
+              <li><Link to="/blog" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Coffee Blog</Link></li>
+              <li><Link to="/about" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">About Us</Link></li>
               <li><Link to="/explore?filter=specialty" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Specialty Coffee</Link></li>
-              <li><Link to="/explore?filter=work" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Best for Work</Link></li>
               <li><Link to="/lists" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Curated Lists</Link></li>
             </ul>
           </nav>
@@ -57,8 +58,6 @@ export function Footer() {
               <li><Link to="/submit-cafe" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">{t("nav.submitCafe")}</Link></li>
               <li><Link to="/owner/dashboard" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Owner Dashboard</Link></li>
               <li><Link to="/owner/resources" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Business Resources</Link></li>
-                <li><Link to="/events" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Cafe Events</Link></li>
-                <li><Link to="/specials" className="text-sm text-brand-muted hover:text-brand-coffee transition-colors">Cafe Specials</Link></li>
             </ul>
           </nav>
 

@@ -24,7 +24,7 @@ Sitemap: ${APP_URL}/sitemap.xml
 
 router.get('/sitemap.xml', async (req, res) => {
   try {
-    const [cafes, posts, lists, events, specials] = await Promise.all([
+    const [cafes, posts, lists] = await Promise.all([
       prisma.cafe.findMany({
         where: { status: 'PUBLISHED' },
         select: { slug: true, updatedAt: true }
@@ -36,18 +36,6 @@ router.get('/sitemap.xml', async (req, res) => {
       prisma.curatedList.findMany({
         where: { status: 'PUBLISHED' },
         select: { slug: true, updatedAt: true }
-      }),
-      prisma.cafeEvent.findMany({
-        where: { status: 'PUBLISHED', endAt: { gte: new Date() }, cafe: { status: 'PUBLISHED' } },
-        select: { slug: true, updatedAt: true, cafe: { select: { slug: true } } },
-        orderBy: { updatedAt: 'desc' },
-        take: 5000
-      }),
-      prisma.cafeSpecial.findMany({
-        where: { status: 'PUBLISHED', endAt: { gte: new Date() }, cafe: { status: 'PUBLISHED' } },
-        select: { slug: true, updatedAt: true, cafe: { select: { slug: true } } },
-        orderBy: { updatedAt: 'desc' },
-        take: 5000
       })
     ]);
 
@@ -56,8 +44,6 @@ router.get('/sitemap.xml', async (req, res) => {
       '/explore',
       '/blog',
       '/lists',
-      '/events',
-      '/specials',
       '/about',
       '/contact'
     ];
@@ -105,16 +91,6 @@ router.get('/sitemap.xml', async (req, res) => {
     <lastmod>${list.updatedAt.toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
-  </url>`;
-    });
-
-    [...events.map(event => ({ ...event, kind: 'events' })), ...specials.map(special => ({ ...special, kind: 'specials' }))].forEach(content => {
-      sitemap += `
-  <url>
-    <loc>${APP_URL}/${content.kind}/${content.cafe.slug}/${content.slug}</loc>
-    <lastmod>${content.updatedAt.toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
   </url>`;
     });
 

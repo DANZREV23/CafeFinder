@@ -9,7 +9,6 @@ import { DiscoveryCTA } from '../components/home/DiscoveryCTA';
 import { TestimonialsSection } from '../components/home/TestimonialsSection';
 import { BlogPreview } from '../components/home/BlogPreview';
 import { OwnerCTA } from '../components/home/OwnerCTA';
-import { TimeSensitiveHighlights } from '../components/home/TimeSensitiveHighlights';
 
 import { MainLayout } from '@/components/layout/MainLayout';
 import { SEO } from '@/components/common/SEO';
@@ -28,8 +27,6 @@ const HomePage: React.FC = () => {
         className="flex flex-col w-full"
       >
         <HeroSearch />
-
-        <TimeSensitiveHighlights />
         
         <RecommendedForYou />
 

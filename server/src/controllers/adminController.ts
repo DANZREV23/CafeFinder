@@ -9,7 +9,6 @@ import { deploymentService } from '../services/deploymentService.js';
 import { cleanupService } from '../services/cleanupService.js';
 import { alertService } from '../services/alertService.js';
 import { operationalService } from '../services/operationalService.js';
-import { expireTimeSensitiveContent } from '../services/timeSensitiveMaintenanceService.js';
 import { AlertSeverity, AlertStatus, CafeStatus, ReviewStatus, UserStatus } from '@prisma/client';
 
 export class AdminController {
@@ -254,15 +253,23 @@ export class AdminController {
     }
   };
 
+  removeReview = async (req: AuthRequest, res: Response) => {
+    try {
+      const result = await this.adminService.moderateReview(req.params.id, req.user!.id, 'REMOVED' as ReviewStatus);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
   getReviewReports = async (req: AuthRequest, res: Response) => {
     try {
       const filters = {
-        status: req.query.status as string,
-        search: req.query.search as string,
+        status: req.query.status as any,
+        reason: req.query.reason as any,
         page: Math.max(parseInt(req.query.page as string) || 1, 1),
         limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50),
       };
-
       const result = await this.adminService.getReviewReports(filters);
       res.json({ success: true, ...result });
     } catch (error: any) {
@@ -273,15 +280,101 @@ export class AdminController {
   resolveReviewReport = async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { status, actionTaken, resolutionNotes } = req.body || {};
-      const result = await this.adminService.resolveReviewReport(id, req.user!.id, {
-        status,
-        actionTaken,
-        resolutionNotes,
-      });
+      const { actionTaken, resolutionNotes } = req.body;
+      const result = await this.adminService.resolveReviewReport(id, req.user!.id, actionTaken, resolutionNotes);
       res.json({ success: true, data: result });
     } catch (error: any) {
       res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  dismissReviewReport = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { resolutionNotes } = req.body;
+      const result = await this.adminService.dismissReviewReport(id, req.user!.id, resolutionNotes);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getReviewPhotos = async (req: AuthRequest, res: Response) => {
+    try {
+      const filters = {
+        status: req.query.status as any,
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50),
+      };
+      const result = await this.adminService.getReviewPhotos(filters);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  updateReviewPhotoStatus = async (req: AuthRequest, res: Response) => {
+    try {
+      const { photoId } = req.params;
+      const { status } = req.body;
+      const result = await this.adminService.updateReviewPhotoStatus(photoId, status as ReviewStatus, req.user!.id);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getReviewResponses = async (req: AuthRequest, res: Response) => {
+    try {
+      const filters = {
+        status: req.query.status as any,
+        page: Math.max(parseInt(req.query.page as string) || 1, 1),
+        limit: Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50),
+      };
+      const result = await this.adminService.getReviewResponses(filters);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  updateReviewResponseStatus = async (req: AuthRequest, res: Response) => {
+    try {
+      const { responseId } = req.params;
+      const { status, moderationNotes } = req.body;
+      const result = await this.adminService.updateReviewResponseStatus(responseId, status as ReviewStatus, req.user!.id, moderationNotes);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  checkRatingsIntegrity = async (req: AuthRequest, res: Response) => {
+    try {
+      const cafeId = req.query.cafeId ? String(req.query.cafeId) : undefined;
+      const result = await this.adminService.checkRatingsIntegrity(cafeId);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  repairRatings = async (req: AuthRequest, res: Response) => {
+    try {
+      const cafeId = req.body.cafeId ? String(req.body.cafeId) : undefined;
+      const result = await this.adminService.repairRatings(cafeId, req.user!.id);
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getCommunityStats = async (req: AuthRequest, res: Response) => {
+    try {
+      const result = await this.adminService.getCommunityStats();
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
     }
   };
 
@@ -609,9 +702,6 @@ export class AdminController {
              const report = await dataIntegrityService.getIntegrityReport();
              return { processedCount: 1, successCount: 1, failureCount: 0, message: 'Scan complete' };
           });
-          break;
-        case 'expire_time_sensitive_content':
-          executionId = await jobRunnerService.runJob('expire_time_sensitive_content', expireTimeSensitiveContent);
           break;
         case 'recalculate-ratings':
           executionId = await jobRunnerService.runJob('recalculate-ratings', () => dataIntegrityService.recalculateAllCafeRatings());

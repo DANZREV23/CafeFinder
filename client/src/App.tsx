@@ -21,14 +21,12 @@ const HomePage = lazy(() => import('@/pages/HomePage'));
 const ExplorePage = lazy(() => import('@/pages/ExplorePage'));
 const CafeProfilePage = lazy(() => import('@/pages/CafeProfilePage'));
 const CafeMenuPage = lazy(() => import('@/pages/CafeMenuPage'));
+const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'));
-const CollectionsPage = lazy(() => import('@/pages/CollectionsPage'));
-const CollectionDetailPage = lazy(() => import('@/pages/CollectionDetailPage'));
-const PublicCollectionPage = lazy(() => import('@/pages/PublicCollectionPage'));
 const CafeClaimPage = lazy(() => import('@/pages/CafeClaimPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/OwnerDashboardPage'));
 const OwnerCafesPage = lazy(() => import('@/pages/OwnerCafesPage'));
@@ -48,14 +46,12 @@ const OwnerClaimDetailsPage = lazy(() => import('./pages/OwnerClaimDetailsPage')
 const SubmitCafePage = lazy(() => import('./pages/SubmitCafePage'));
 const MySubmissionsPage = lazy(() => import('./pages/MySubmissionsPage'));
 const SubmissionDetailsPage = lazy(() => import('./pages/SubmissionDetailsPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));const AboutPage = lazy(() => import('@/pages/AboutPage'));const BlogListPage = lazy(() => import('./pages/blog/BlogListPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const BlogListPage = lazy(() => import('./pages/blog/BlogListPage'));
 const BlogPostPage = lazy(() => import('./pages/blog/BlogPostPage'));
 const ListsPage = lazy(() => import('./pages/lists/ListsPage'));
 const ListPage = lazy(() => import('./pages/lists/ListPage'));
 const OfflinePage = lazy(() => import('./pages/OfflinePage'));
-const TimeSensitiveDirectoryPage = lazy(() => import('./pages/TimeSensitivePages').then(module => ({ default: module.TimeSensitiveDirectoryPage })));
-const TimeSensitiveDetailPage = lazy(() => import('./pages/TimeSensitivePages').then(module => ({ default: module.TimeSensitiveDetailPage })));
-const OwnerTimeSensitivePage = lazy(() => import('./pages/TimeSensitivePages').then(module => ({ default: module.OwnerTimeSensitivePage })));
 
 // Admin Pages
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
@@ -86,7 +82,8 @@ const AdminMediaLibraryPage = lazy(() => import('./pages/admin/AdminMediaLibrary
 const AdminContentQualityPage = lazy(() => import('./pages/admin/AdminContentQualityPage').then(m => ({ default: m.AdminContentQualityPage })));
 const AdminRedirectsPage = lazy(() => import('./pages/admin/AdminRedirectsPage').then(m => ({ default: m.AdminRedirectsPage })));
 const AdminTestimonialsPage = lazy(() => import('./pages/admin/AdminTestimonialsPage').then(m => ({ default: m.AdminTestimonialsPage })));
-const AdminTimeSensitivePage = lazy(() => import('./pages/admin/AdminTimeSensitivePage'));
+const AdminReviewReportsPage = lazy(() => import('./pages/admin/AdminReviewReportsPage'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 
 export default function App() {
   return (
@@ -112,13 +109,6 @@ export default function App() {
                 {/* Curated Lists Routes */}
                 <Route path="/lists" element={<ListsPage />} />
                 <Route path="/lists/:slug" element={<ListPage />} />
-                <Route path="/collections/:slug" element={<PublicCollectionPage />} />
-                <Route path="/events" element={<TimeSensitiveDirectoryPage kind="events" />} />
-                <Route path="/events/:cafeSlug/:slug" element={<TimeSensitiveDetailPage kind="events" />} />
-                <Route path="/specials" element={<TimeSensitiveDirectoryPage kind="specials" />} />
-                <Route path="/specials/:cafeSlug/:slug" element={<TimeSensitiveDetailPage kind="specials" />} />
-                <Route path="/announcements" element={<TimeSensitiveDirectoryPage kind="announcements" />} />
-                <Route path="/announcements/:cafeSlug/:slug" element={<TimeSensitiveDetailPage kind="announcements" />} />
 
                 <Route path="/offline" element={<OfflinePage />} />
 
@@ -148,13 +138,12 @@ export default function App() {
                     <FavoritesPage />
                   </ProtectedRoute>
                 } />
-                <Route path="/dashboard/collections" element={<ProtectedRoute><CollectionsPage /></ProtectedRoute>} />
-                <Route path="/dashboard/collections/:slug" element={<ProtectedRoute><CollectionDetailPage /></ProtectedRoute>} />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <ProfilePage />
                   </ProtectedRoute>
                 } />
+                <Route path="/users/:id" element={<PublicProfilePage />} />
                 
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
@@ -167,15 +156,6 @@ export default function App() {
                     <OwnerDashboardPage />
                   </RoleRoute>
                 } />
-                <Route path="/owner/events" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="events" /></RoleRoute>} />
-                <Route path="/owner/events/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="events" /></RoleRoute>} />
-                <Route path="/owner/events/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="events" /></RoleRoute>} />
-                <Route path="/owner/specials" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="specials" /></RoleRoute>} />
-                <Route path="/owner/specials/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="specials" /></RoleRoute>} />
-                <Route path="/owner/specials/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="specials" /></RoleRoute>} />
-                <Route path="/owner/announcements" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="announcements" /></RoleRoute>} />
-                <Route path="/owner/announcements/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="announcements" /></RoleRoute>} />
-                <Route path="/owner/announcements/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerTimeSensitivePage kind="announcements" /></RoleRoute>} />
                 <Route path="/owner/cafes" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafesPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeDetailsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/edit" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeEditPage /></RoleRoute>} />
@@ -201,6 +181,7 @@ export default function App() {
                   <Route path="submissions/:id" element={<AdminSubmissionDetailsPage />} />
                   <Route path="reviews" element={<AdminReviewsPage />} />
                   <Route path="reviews/:id" element={<AdminReviewDetailsPage />} />
+                  <Route path="review-reports" element={<AdminReviewReportsPage />} />
                   <Route path="cafes" element={<AdminCafesPage />} />
                   <Route path="users" element={<AdminUsersPage />} />
                   <Route path="activity" element={<AdminActivityLogPage />} />
@@ -215,7 +196,6 @@ export default function App() {
                   <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                   <Route path="change-requests" element={<AdminChangeRequestsPage />} />
                   <Route path="change-requests/:id" element={<AdminChangeRequestDetailsPage />} />
-                  <Route path="time-sensitive" element={<AdminTimeSensitivePage />} />
                   
                   {/* Blog Management */}
                   <Route path="blog" element={<AdminBlogPage />} />

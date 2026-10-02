@@ -12,12 +12,14 @@ const userController = new UserController();
 
 router.get('/me/favorites', requireAuth, favoriteController.getMyFavorites);
 router.get('/me/dashboard', requireAuth, dashboardController.getDashboardData);
+router.get('/me/contributions', requireAuth, userController.getMyContributions);
 
 // Profile routes
 router.patch('/profile', requireAuth, userController.updateProfile);
 router.post('/profile/avatar', requireAuth, uploadAvatar.single('avatar'), userController.uploadAvatar);
 router.get('/me/export', requireAuth, userController.exportUserData);
 router.post('/me/deactivate', requireAuth, userController.deactivateAccount);
+router.get('/:id/public-profile', userController.getPublicProfile);
 
 // Explicit user discovery preferences
 router.get('/preferences', requireAuth, userController.getPreferences);
