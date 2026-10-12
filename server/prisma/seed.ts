@@ -1,27 +1,18 @@
-import { PrismaClient, Role, UserStatus, CafeStatus, ReviewStatus, PostStatus, TestimonialStatus } from '@prisma/client';
+import { Role, UserStatus, CafeStatus, ReviewStatus, PostStatus, TestimonialStatus } from '@prisma/client';
 import { fileURLToPath } from 'url';
-import path from 'path';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
-import { startLocalPostgresServer, stopLocalPostgresServer } from '../src/config/localDbServer.js';
+import { prisma, connectWithRetry } from '../src/config/database.js';
 
 dotenv.config();
 
-async function main() {
+export async function seedDatabase(skipConnect = false) {
   console.log('🌱 Starting seed...');
 
-  // Ensure local DB is running if needed
-  const databaseUrl = process.env.PRISMA_DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5442/cloud_sql_development_database?sslmode=disable&statement_cache_size=0';
-  process.env.PRISMA_DATABASE_URL = databaseUrl;
-  console.log(`[Seed]: Using database URL: ${databaseUrl.replace(/:[^@:]+@/, ':****@')}`);
-
-  const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl,
-      },
-    },
-  });
+  if (!skipConnect) {
+    // Ensure DB (Cloud SQL or local PGlite on 5445) is connected
+    await connectWithRetry();
+  }
 
   try {
     // 1. Clean existing data
@@ -775,6 +766,7 @@ async function main() {
       description: 'The best spots in Davao for deep work, fast Wi-Fi, and endless refills.',
       coverImage: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&q=80&w=1200',
       featured: true,
+      status: PostStatus.PUBLISHED,
     }
   });
 
@@ -785,6 +777,7 @@ async function main() {
       description: 'Instagram-worthy interiors paired with exceptional Davao coffee and food.',
       coverImage: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&q=80&w=1200',
       featured: true,
+      status: PostStatus.PUBLISHED,
     }
   });
 
@@ -795,6 +788,7 @@ async function main() {
       description: 'For the serious enthusiasts: where to find the rarest Mindanao roasts and best techniques.',
       coverImage: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1200',
       featured: true,
+      status: PostStatus.PUBLISHED,
     }
   });
 
@@ -884,13 +878,18 @@ async function main() {
   } catch (error) {
     console.error('❌ Seed failed:', error);
     throw error;
-  } finally {
-    await prisma.$disconnect();
-    // await stopLocalPostgresServer();
   }
 }
 
-main()
-  .catch((e) => {
-    process.exit(1);
-  });
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isDirectRun) {
+  seedDatabase()
+    .then(async () => {
+      await prisma.$disconnect();
+      process.exit(0);
+    })
+    .catch(async () => {
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}

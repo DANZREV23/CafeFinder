@@ -8,6 +8,10 @@ import { sanitizePlain } from '../utils/sanitization.js';
 
 import { MenuRepository } from '../repositories/menuRepository.js';
 import { mapToMenuDto } from '../dtos/menuDto.js';
+import { EventService } from './eventService.js';
+import { SpecialService } from './specialService.js';
+import { AnnouncementService } from './announcementService.js';
+import { PromotionService } from './promotionService.js';
 
 const fail = (message: string, status = 400) => Object.assign(new Error(message), { status });
 const ownerCafeInclude = {
@@ -19,6 +23,10 @@ const ownerCafeInclude = {
 
 export class OwnerService {
   private activityLogs = new ActivityLogService();
+  private eventService = new EventService();
+  private specialService = new SpecialService();
+  private announcementService = new AnnouncementService();
+  private promotionService = new PromotionService();
 
   private async requireCafe(cafeId: string, userId: string, isAdmin: boolean) {
     const cafe = await prisma.cafe.findFirst({ where: { id: cafeId, ...(isAdmin ? {} : { ownerId: userId }) } });
@@ -28,15 +36,17 @@ export class OwnerService {
 
   async getDashboard(userId: string, isAdmin: boolean): Promise<OwnerDashboardDto> {
     const cafeWhere = isAdmin ? {} : { ownerId: userId };
-    const [claimedCafes, pendingClaims, publishedCafes, pendingChangeRequests, reviews, rating] = await Promise.all([
+    const [claimedCafes, pendingClaims, publishedCafes, pendingChangeRequests, reviews, rating, unreadInquiries, totalInquiries] = await Promise.all([
       prisma.cafe.count({ where: cafeWhere }),
       prisma.cafeOwnerClaim.count({ where: { userId, status: ClaimStatus.PENDING } }),
       prisma.cafe.count({ where: { ...cafeWhere, status: CafeStatus.PUBLISHED } }),
       prisma.cafeChangeRequest.count({ where: { ...(isAdmin ? {} : { requestedById: userId }), status: CafeChangeRequestStatus.PENDING } }),
       prisma.cafeReview.count({ where: { cafe: cafeWhere, status: { in: [ReviewStatus.PENDING, ReviewStatus.APPROVED] } } }),
-      prisma.cafe.aggregate({ where: { ...cafeWhere, status: CafeStatus.PUBLISHED }, _avg: { ratingAverage: true } })
+      prisma.cafe.aggregate({ where: { ...cafeWhere, status: CafeStatus.PUBLISHED }, _avg: { ratingAverage: true } }),
+      prisma.cafeInquiry.count({ where: { cafe: cafeWhere, status: 'NEW' } }),
+      prisma.cafeInquiry.count({ where: { cafe: cafeWhere } })
     ]);
-    return { isAdministrativeAccess: isAdmin, claimedCafes, pendingClaims, publishedCafes, pendingChangeRequests, totalReviews: reviews, averageRating: Number(rating._avg.ratingAverage || 0) };
+    return { isAdministrativeAccess: isAdmin, claimedCafes, pendingClaims, publishedCafes, pendingChangeRequests, totalReviews: reviews, averageRating: Number(rating._avg.ratingAverage || 0), unreadInquiries, totalInquiries };
   }
 
   async getOwnedCafes(userId: string, isAdmin: boolean, page = 1, limit = 20) {
@@ -379,6 +389,78 @@ export class OwnerService {
     await this.menuRepository.deleteItem(itemId);
     await this.activityLogs.logAction({ userId, action: 'OWNER_DELETED_MENU_ITEM', entityType: 'MenuItem', entityId: itemId, description: `Deleted item ${item.name}` });
     return { message: 'Item deleted' };
+  }
+
+  // Events
+  async getEvents(cafeId: string, userId: string, isAdmin: boolean) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    return this.eventService.getCafeEvents(cafeId);
+  }
+
+  async createEvent(cafeId: string, userId: string, isAdmin: boolean, data: any) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    return this.eventService.createEvent({
+      ...data,
+      cafe: { connect: { id: cafeId } },
+      createdBy: { connect: { id: userId } }
+    });
+  }
+
+  async publishEvent(cafeId: string, eventId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const event = await this.eventService.getEventById(eventId);
+    if (!event || event.cafeId !== cafe.id) throw fail('Event not found', 404);
+    return this.eventService.publishEvent(eventId);
+  }
+
+  // Specials
+  async getSpecials(cafeId: string, userId: string, isAdmin: boolean) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    return this.specialService.getCafeSpecials(cafeId);
+  }
+
+  async createSpecial(cafeId: string, userId: string, isAdmin: boolean, data: any) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    return this.specialService.createSpecial({
+      ...data,
+      cafe: { connect: { id: cafeId } },
+      createdBy: { connect: { id: userId } }
+    });
+  }
+
+  async publishSpecial(cafeId: string, specialId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const special = await this.specialService.getSpecialById(specialId);
+    if (!special || special.cafeId !== cafe.id) throw fail('Special not found', 404);
+    return this.specialService.publishSpecial(specialId);
+  }
+
+  // Announcements
+  async getAnnouncements(cafeId: string, userId: string, isAdmin: boolean) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    return this.announcementService.getCafeAnnouncements(cafeId);
+  }
+
+  async createAnnouncement(cafeId: string, userId: string, isAdmin: boolean, data: any) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    return this.announcementService.createAnnouncement({
+      ...data,
+      cafe: { connect: { id: cafeId } },
+      createdBy: { connect: { id: userId } }
+    });
+  }
+
+  async publishAnnouncement(cafeId: string, announcementId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const announcement = await this.announcementService.getAnnouncementById(announcementId);
+    if (!announcement || announcement.cafeId !== cafe.id) throw fail('Announcement not found', 404);
+    return this.announcementService.publishAnnouncement(announcementId);
+  }
+
+  async notifyMenuUpdate(cafeId: string, userId: string, isAdmin: boolean, menuName: string) {
+    await this.requireCafe(cafeId, userId, isAdmin);
+    await this.promotionService.notifyMenuUpdate(cafeId, menuName);
+    return { success: true };
   }
 
   private mapSummary(cafe: any): OwnerCafeSummaryDto {

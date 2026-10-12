@@ -12,6 +12,9 @@ export const getDatabaseUrl = () => {
   console.log('[DatabaseConfig]: process.env.SQL_ADMIN_USER:', process.env.SQL_ADMIN_USER);
   
   if (envUrl && envUrl.includes('://')) {
+    if (envUrl.includes('5445') || envUrl.includes('5442')) {
+      return LOCAL_DATABASE_URL;
+    }
     return envUrl;
   }
 
@@ -26,9 +29,13 @@ export const getDatabaseUrl = () => {
   const dbPass = process.env.DB_PASSWORD;
 
   if (sqlUser && sqlPass && sqlHost && sqlDb) {
-    // Correct format for Prisma with Cloud SQL Unix sockets (PostgreSQL)
-    // We use localhost as a placeholder and pass the socket directory via the host parameter
-    return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connect_timeout=3`;
+    const socketExists = !sqlHost.startsWith('/') || fs.existsSync(path.join(sqlHost, '.s.PGSQL.5432'));
+    if (socketExists) {
+      // Correct format for Prisma with Cloud SQL Unix sockets (PostgreSQL)
+      // We use localhost as a placeholder and pass the socket directory via the host parameter
+      return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connect_timeout=3`;
+    }
+    console.log('[DatabaseConfig]: Cloud SQL socket not active on disk, using local PostgreSQL URL.');
   }
 
   if (dbHost && dbUser && dbPass) {
@@ -135,14 +142,28 @@ export const createPrismaClient = (url?: string) => {
       try {
         return await next(params);
       } catch (error: any) {
-        const isTransientError = 
-          error.message?.includes('E57P01') || 
-          error.code === 'P2024' || 
-          error.message?.includes('connection');
+        const msg = String(error?.message || '');
+        const isLocalConnError =
+          msg.includes('5445') ||
+          error?.code === 'P1001' ||
+          msg.includes("Can't reach database server");
+
+        const isTransientError =
+          isLocalConnError ||
+          msg.includes('E57P01') ||
+          error?.code === 'P2024' ||
+          msg.includes('connection') ||
+          msg.includes('UnexpectedMessage') ||
+          msg.includes('Closed');
 
         if (isTransientError && retries < maxRetries - 1) {
           retries++;
-          const waitTime = delay * Math.pow(2, retries - 1);
+          if (isLocalConnError) {
+            try {
+              await startLocalPostgresServer();
+            } catch (_) {}
+          }
+          const waitTime = 250 * retries;
           console.warn(`[Prisma]: Transient error detected. Retrying in ${waitTime}ms... (${retries}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
@@ -177,27 +198,25 @@ if (process.env.NODE_ENV !== 'production') {
  * Helper to ensure database connection with fast failover to local PostgreSQL.
  */
 export const connectWithRetry = async (retries = 3, delay = 1500) => {
-  // Proactively check Cloud SQL reachability to eliminate startup hang
-  if (process.env.SQL_HOST) {
-    const isCloudReady = await checkCloudSqlReady(process.env.SQL_HOST);
-    if (!isCloudReady) {
-      console.log('[Database]: Cloud SQL instance is not reachable. Launching embedded PostgreSQL service...');
-      const localUrl = await startLocalPostgresServer();
-      process.env.PRISMA_DATABASE_URL = localUrl;
-      
-      try {
-        await currentPrismaClient.$disconnect();
-      } catch (_) {}
+  // Proactively check Cloud SQL reachability or start local PGlite to eliminate startup race
+  const isCloudReady = process.env.SQL_HOST ? await checkCloudSqlReady(process.env.SQL_HOST) : false;
+  if (!isCloudReady && (!process.env.PRISMA_DATABASE_URL || process.env.PRISMA_DATABASE_URL === LOCAL_DATABASE_URL || Boolean(process.env.SQL_HOST))) {
+    console.log('[Database]: Launching embedded PostgreSQL service...');
+    const localUrl = await startLocalPostgresServer();
+    process.env.PRISMA_DATABASE_URL = localUrl;
 
-      currentPrismaClient = createPrismaClient(localUrl);
-      if (process.env.NODE_ENV !== 'production') {
-        globalForPrisma.prisma = currentPrismaClient;
-      }
+    try {
+      await currentPrismaClient.$disconnect();
+    } catch (_) {}
 
-      await currentPrismaClient.$connect();
-      console.log('[Database]: Successfully connected to embedded PostgreSQL service.');
-      return true;
+    currentPrismaClient = createPrismaClient(localUrl);
+    if (process.env.NODE_ENV !== 'production') {
+      globalForPrisma.prisma = currentPrismaClient;
     }
+
+    await currentPrismaClient.$connect();
+    console.log('[Database]: Successfully connected to embedded PostgreSQL service.');
+    return true;
   }
 
   for (let i = 0; i < retries; i++) {

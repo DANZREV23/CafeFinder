@@ -115,4 +115,21 @@ export class OwnerController {
   createMenuItem = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createMenuItem(req.params.id, req.params.categoryId, req.user!.id, this.isAdmin(req), menuItemSchema.parse(req.body)) }); } catch (e) { sendError(res, e); } };
   updateMenuItem = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.updateMenuItem(req.params.id, req.params.itemId, req.user!.id, this.isAdmin(req), menuItemSchema.partial().parse(req.body)) }); } catch (e) { sendError(res, e); } };
   deleteMenuItem = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.deleteMenuItem(req.params.id, req.params.itemId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+
+  // Events
+  getEvents = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getEvents(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  createEvent = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createEvent(req.params.id, req.user!.id, this.isAdmin(req), req.body) }); } catch (e) { sendError(res, e); } };
+  publishEvent = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.publishEvent(req.params.id, req.params.eventId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+
+  // Specials
+  getSpecials = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getSpecials(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  createSpecial = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createSpecial(req.params.id, req.user!.id, this.isAdmin(req), req.body) }); } catch (e) { sendError(res, e); } };
+  publishSpecial = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.publishSpecial(req.params.id, req.params.specialId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+
+  // Announcements
+  getAnnouncements = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getAnnouncements(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  createAnnouncement = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createAnnouncement(req.params.id, req.user!.id, this.isAdmin(req), req.body) }); } catch (e) { sendError(res, e); } };
+  publishAnnouncement = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.publishAnnouncement(req.params.id, req.params.announcementId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+
+  notifyMenuUpdate = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.notifyMenuUpdate(req.params.id, req.user!.id, this.isAdmin(req), req.body.menuName) }); } catch (e) { sendError(res, e); } };
 }

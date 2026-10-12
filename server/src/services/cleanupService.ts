@@ -19,6 +19,7 @@ export class CleanupService {
       this.cleanupAnalytics(),
       this.cleanupJobHistory(),
       this.cleanupTempFiles(),
+      this.cleanupInquiries(),
     ]);
     
     let totalProcessed = 0;
@@ -269,6 +270,38 @@ export class CleanupService {
       return { processedCount: removedCount, successCount: removedCount, failureCount: 0 };
     } catch (err: any) {
       logger.error('Failed to cleanup temp files', err);
+      return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
+    }
+  }
+
+  async cleanupInquiries(): Promise<JobResult> {
+    try {
+      const retentionDays = parseInt(process.env.INQUIRY_PII_RETENTION_DAYS || '90');
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - retentionDays);
+
+      // Anonymize IP hashes and guest emails on old closed/spam inquiries while preserving audit lifecycle
+      const result = await prisma.cafeInquiry.updateMany({
+        where: {
+          updatedAt: { lt: cutoff },
+          status: { in: ['CLOSED', 'SPAM'] },
+          OR: [
+            { ipAddressHash: { not: null } },
+            { guestEmail: { not: null } },
+          ],
+        },
+        data: {
+          ipAddressHash: null,
+          guestEmail: null,
+        },
+      });
+
+      if (result.count > 0) {
+        logger.info(`Anonymized PII on ${result.count} archived inquiries.`);
+      }
+      return { processedCount: result.count, successCount: result.count, failureCount: 0 };
+    } catch (err: any) {
+      logger.error('Failed to cleanup inquiries PII', err);
       return { processedCount: 0, successCount: 0, failureCount: 1, message: err.message };
     }
   }

@@ -87,6 +87,9 @@ export interface PublicCafeProfileDto {
     photos: { url: string }[];
   }[];
   relatedCafes: any[];
+  events?: any[];
+  specials?: any[];
+  announcements?: any[];
   isFavorite: boolean;
   claimStatus: 'AVAILABLE' | 'PENDING' | 'MANAGED' | 'OWNED';
 }
@@ -166,5 +169,43 @@ export function mapToPublicCafeProfile(cafe: any): PublicCafeProfileDto {
     })),
     isFavorite: cafe.favorites ? cafe.favorites.length > 0 : false,
     claimStatus: cafe.claimStatus || 'AVAILABLE',
+    events: (cafe.events || []).map((ev: any) => ({
+      id: ev.id,
+      title: ev.title,
+      slug: ev.slug,
+      shortDescription: ev.shortDescription,
+      description: ev.description,
+      eventType: ev.eventType,
+      startAt: ev.startAt,
+      endAt: ev.endAt,
+      location: ev.location,
+      price: ev.price ? parseFloat(ev.price.toString()) : null,
+      currency: ev.currency,
+      coverPhotoUrl: ev.coverPhotoUrl,
+    })),
+    specials: (cafe.specials || []).map((sp: any) => ({
+      id: sp.id,
+      title: sp.title,
+      slug: sp.slug,
+      shortDescription: sp.shortDescription,
+      description: sp.description,
+      specialType: sp.specialType,
+      startAt: sp.startAt,
+      endAt: sp.endAt,
+      terms: sp.terms,
+      price: sp.price ? parseFloat(sp.price.toString()) : null,
+      discountPercent: sp.discountPercent,
+      currency: sp.currency,
+      coverPhotoUrl: sp.coverPhotoUrl,
+    })),
+    announcements: (cafe.announcements || []).map((an: any) => ({
+      id: an.id,
+      title: an.title,
+      slug: an.slug,
+      content: an.content,
+      priority: an.priority,
+      startAt: an.startAt,
+      endAt: an.endAt,
+    })),
   };
 }

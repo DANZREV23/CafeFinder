@@ -3,19 +3,32 @@ import { RedirectService } from '../services/redirectService.js';
 
 const redirectService = new RedirectService();
 
+const STATIC_EXTENSION_REGEX = /\.[a-zA-Z0-9]+$/;
+
 export async function redirectMiddleware(req: Request, res: Response, next: NextFunction) {
   // Only handle GET requests for redirects
   if (req.method !== 'GET') {
     return next();
   }
 
-  // Skip API and Uploads
-  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+  // Skip API, Uploads, Vite internal/module paths, and static assets with file extensions
+  const p = req.path;
+  if (
+    p === '/' ||
+    p.startsWith('/api') ||
+    p.startsWith('/uploads') ||
+    p.startsWith('/src/') ||
+    p.startsWith('/node_modules/') ||
+    p.startsWith('/@') ||
+    p.startsWith('/assets/') ||
+    p.startsWith('/.well-known') ||
+    STATIC_EXTENSION_REGEX.test(p)
+  ) {
     return next();
   }
 
   try {
-    const redirect = await redirectService.getRedirect(req.path);
+    const redirect = await redirectService.getRedirect(p);
     if (redirect) {
       return res.redirect(redirect.statusCode, redirect.newPath);
     }

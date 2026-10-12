@@ -9,6 +9,7 @@ import { MediaController } from '../controllers/mediaController.js';
 import { EditorialController } from '../controllers/editorialController.js';
 import { RedirectController } from '../controllers/redirectController.js';
 import { TestimonialController } from '../controllers/testimonialController.js';
+import { InquiryController } from '../controllers/inquiryController.js';
 
 const router = Router();
 const adminController = new AdminController();
@@ -20,10 +21,16 @@ const mediaController = new MediaController();
 const editorialController = new EditorialController();
 const redirectController = new RedirectController();
 const testimonialController = new TestimonialController();
+const inquiryController = new InquiryController();
 
 // All admin routes require authentication and ADMIN role
 router.use(requireAuth);
 router.use(requireRole('ADMIN'));
+
+router.get('/inquiries', inquiryController.getAdminInquiries);
+router.get('/inquiries/:id', inquiryController.getOwnerInquiryById);
+router.patch('/inquiries/:id', inquiryController.updateOwnerInquiry);
+router.post('/inquiries/:id/respond', inquiryController.respondToInquiry);
 
 router.get('/claims', claimController.getAdminClaims);
 router.get('/claims/:id', claimController.getAdminClaim);
@@ -81,6 +88,12 @@ router.patch('/cafes/:id/owner', adminController.updateCafeOwner);
 // Users
 router.get('/users', adminController.getUsers);
 router.patch('/users/:id/status', adminController.updateUserStatus);
+
+// Collections
+router.get('/collections', adminController.getCollections);
+router.get('/collections/:id', adminController.getCollectionById);
+router.delete('/collections/:id', adminController.deleteCollection);
+router.patch('/collections/:id/visibility', adminController.updateCollectionVisibility);
 
 // Activity Logs
 router.get('/activity-logs', adminController.getActivityLogs);

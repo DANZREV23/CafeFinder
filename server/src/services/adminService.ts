@@ -449,7 +449,15 @@ export class AdminService {
       prisma.cafeReviewPhoto.count({ where }),
     ]);
 
-    return { data: photos, total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
+    return { 
+      data: photos, 
+      pagination: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit)
+      }
+    };
   }
 
   async updateReviewPhotoStatus(photoId: string, status: ReviewStatus, adminId: string) {
@@ -491,7 +499,15 @@ export class AdminService {
       prisma.cafeReviewResponse.count({ where }),
     ]);
 
-    return { data: responses, total, page: safePage, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) };
+    return { 
+      data: responses, 
+      pagination: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit)
+      }
+    };
   }
 
   async updateReviewResponseStatus(responseId: string, status: ReviewStatus, adminId: string, moderationNotes?: string) {

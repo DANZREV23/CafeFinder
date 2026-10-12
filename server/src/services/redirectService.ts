@@ -1,5 +1,22 @@
 import { prisma } from '../config/database.js';
 
+interface CachedRedirect {
+  id: string;
+  oldPath: string;
+  newPath: string;
+  statusCode: number;
+  isActive: boolean;
+}
+
+let redirectCache: Map<string, CachedRedirect> | null = null;
+let redirectCacheExpiresAt = 0;
+const REDIRECT_CACHE_TTL_MS = 60_000;
+
+function invalidateRedirectCache() {
+  redirectCache = null;
+  redirectCacheExpiresAt = 0;
+}
+
 export class RedirectService {
   /**
    * Create a redirect record
@@ -13,31 +30,46 @@ export class RedirectService {
     });
 
     if (existing) {
-      return prisma.contentRedirect.update({
+      const updated = await prisma.contentRedirect.update({
         where: { id: existing.id },
         data: { newPath, statusCode, isActive: true },
       });
+      invalidateRedirectCache();
+      return updated;
     }
 
-    return prisma.contentRedirect.create({
+    const created = await prisma.contentRedirect.create({
       data: {
         oldPath,
         newPath,
         statusCode,
       },
     });
+    invalidateRedirectCache();
+    return created;
   }
 
   /**
    * Get active redirect for a path
    */
   async getRedirect(path: string) {
-    return prisma.contentRedirect.findUnique({
-      where: { 
-        oldPath: path,
-        isActive: true
-      },
+    const now = Date.now();
+    if (redirectCache && now < redirectCacheExpiresAt) {
+      return redirectCache.get(path) ?? null;
+    }
+
+    const activeRedirects = await prisma.contentRedirect.findMany({
+      where: { isActive: true },
     });
+
+    const nextCache = new Map<string, CachedRedirect>();
+    for (const r of activeRedirects) {
+      nextCache.set(r.oldPath, r);
+    }
+    redirectCache = nextCache;
+    redirectCacheExpiresAt = now + REDIRECT_CACHE_TTL_MS;
+
+    return nextCache.get(path) ?? null;
   }
 
   /**
@@ -69,18 +101,22 @@ export class RedirectService {
    * Toggle redirect status
    */
   async toggleActive(id: string, isActive: boolean) {
-    return prisma.contentRedirect.update({
+    const updated = await prisma.contentRedirect.update({
       where: { id },
       data: { isActive },
     });
+    invalidateRedirectCache();
+    return updated;
   }
 
   /**
    * Delete redirect
    */
   async deleteRedirect(id: string) {
-    return prisma.contentRedirect.delete({
+    const deleted = await prisma.contentRedirect.delete({
       where: { id },
     });
+    invalidateRedirectCache();
+    return deleted;
   }
 }

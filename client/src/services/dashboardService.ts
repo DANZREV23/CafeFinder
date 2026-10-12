@@ -13,7 +13,12 @@ export interface DashboardData {
     reviewCount: number;
     submissionCount: number;
     unreadNotificationCount: number;
+    collectionCount: number;
+    followCount: number;
+    inquiryCount?: number;
+    unreadInquiryResponseCount?: number;
   };
+  recentCollections: any[];
   recentFavorites: any[];
   recentReviews: any[];
   recentSubmissions: any[];

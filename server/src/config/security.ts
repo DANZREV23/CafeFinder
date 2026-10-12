@@ -1,12 +1,13 @@
 import { rateLimit } from 'express-rate-limit';
 import { Role } from '@prisma/client';
 
-// Global rate limit: 100 requests per 15 minutes
+// Global rate limit: 1000 API requests per 15 minutes (never rate-limit Vite/static asset requests)
 export const globalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000, // Increased for a directory app but still protecting
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => !req.path.startsWith('/api'),
   message: {
     success: false,
     error: { message: 'Too many requests from this IP, please try again later.' }
@@ -47,6 +48,18 @@ export const submissionRateLimit = rateLimit({
   message: {
     success: false,
     error: { message: 'Too many submissions, please wait before trying again.' }
+  }
+});
+
+// Customer Inquiry rate limit: 5 inquiries per 15 minutes
+export const inquiryRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: { message: 'Too many inquiries submitted recently. Please wait a few minutes before sending another question.' }
   }
 });
 

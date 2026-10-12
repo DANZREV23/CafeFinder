@@ -64,6 +64,11 @@ enum PostStatus {
   ARCHIVED
 }
 
+enum CollectionVisibility {
+  PRIVATE
+  PUBLIC
+}
+
 enum TestimonialStatus {
   DRAFT
   PUBLISHED
@@ -110,6 +115,48 @@ enum AnnouncementPriority {
   NORMAL
   IMPORTANT
   URGENT
+}
+
+enum InquiryCategory {
+  GENERAL
+  HOURS
+  MENU
+  RESERVATION
+  EVENT
+  SPECIAL
+  WIFI
+  AMENITIES
+  PRIVATE_EVENT
+  ACCESSIBILITY
+  OTHER
+}
+
+enum InquiryStatus {
+  NEW
+  READ
+  IN_PROGRESS
+  RESPONDED
+  CLOSED
+  SPAM
+}
+
+enum InquiryPriority {
+  NORMAL
+  HIGH
+}
+
+enum InquirySource {
+  CAFE_PROFILE
+  EVENT
+  SPECIAL
+  EXPLORE
+  OTHER
+}
+
+enum InquirySenderRole {
+  OWNER
+  CUSTOMER
+  ADMIN
 }
 
 model MediaAsset {
@@ -237,12 +284,16 @@ model User {
   resolvedReports CafeReviewReport[] @relation("ReportResolver")
   reviewResponses CafeReviewResponse[] @relation("ReviewResponseOwner")
   reviewRevisions CafeReviewRevision[]
+  collections     UserCollection[]
+  follows         CafeFollow[]       @relation("UserFollows")
   createdEvents          CafeEvent[]          @relation("UserEvents")
   moderatedEvents        CafeEvent[]          @relation("EventModerator")
   createdSpecials        CafeSpecial[]        @relation("UserSpecials")
   moderatedSpecials      CafeSpecial[]        @relation("SpecialModerator")
   createdAnnouncements   CafeAnnouncement[]   @relation("UserAnnouncements")
   moderatedAnnouncements CafeAnnouncement[]   @relation("AnnouncementModerator")
+  inquiries              CafeInquiry[]        @relation("UserInquiries")
+  inquiryResponses       CafeInquiryResponse[] @relation("UserInquiryResponses")
 
   @@map("users")
 }
@@ -310,6 +361,10 @@ model Cafe {
   events         CafeEvent[]
   specials       CafeSpecial[]
   announcements  CafeAnnouncement[]
+  collectionItems UserCollectionItem[]
+  followers       CafeFollow[]       @relation("CafeFollowers")
+  followerCount   Int                @default(0)
+  inquiries       CafeInquiry[]
 
   @@index([status])
   @@index([city])
@@ -868,6 +923,7 @@ enum CafeAnalyticsEventType {
   PHONE_CLICK
   INSTAGRAM_CLICK
   FACEBOOK_CLICK
+  INQUIRY_SUBMITTED
 }
 
 model CafeAnalyticsEvent {
@@ -1084,6 +1140,7 @@ model CafeEvent {
   cafe             Cafe                @relation(fields: [cafeId], references: [id], onDelete: Cascade)
   createdBy        User                @relation("UserEvents", fields: [createdById], references: [id], onDelete: Cascade)
   moderatedBy      User?               @relation("EventModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+  inquiries        CafeInquiry[]
 
   @@unique([cafeId, slug])
   @@index([cafeId])
@@ -1127,6 +1184,7 @@ model CafeSpecial {
   cafe                   Cafe                @relation(fields: [cafeId], references: [id], onDelete: Cascade)
   createdBy              User                @relation("UserSpecials", fields: [createdById], references: [id], onDelete: Cascade)
   moderatedBy            User?               @relation("SpecialModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+  inquiries              CafeInquiry[]
 
   @@unique([cafeId, slug])
   @@index([cafeId])
@@ -1171,4 +1229,124 @@ model CafeAnnouncement {
   @@index([priority])
   @@index([createdById])
   @@map("cafe_announcements")
+}
+
+model UserCollection {
+  id          String               @id @default(cuid())
+  userId      String
+  name        String
+  slug        String
+  description String?              @db.Text
+  visibility  CollectionVisibility @default(PRIVATE)
+  coverCafeId String?
+  sortOrder   Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  publishedAt DateTime?
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       UserCollectionItem[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([visibility])
+  @@index([slug])
+  @@map("user_collections")
+}
+
+model UserCollectionItem {
+  id           String   @id @default(cuid())
+  collectionId String
+  cafeId       String
+  note         String?  @db.Text
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  collection   UserCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  cafe         Cafe           @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, cafeId])
+  @@index([collectionId])
+  @@index([cafeId])
+  @@map("user_collection_items")
+}
+
+model CafeFollow {
+  id                    String   @id @default(cuid())
+  userId                String
+  cafeId                String
+  eventsEnabled         Boolean  @default(true)
+  specialsEnabled       Boolean  @default(true)
+  announcementsEnabled  Boolean  @default(true)
+  menuUpdatesEnabled    Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation("UserFollows", fields: [userId], references: [id], onDelete: Cascade)
+  cafe Cafe @relation("CafeFollowers", fields: [cafeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cafeId])
+  @@index([userId])
+  @@index([cafeId])
+  @@index([userId, createdAt])
+  @@index([cafeId, createdAt])
+  @@map("cafe_follows")
+}
+
+model CafeInquiry {
+  id                  String                @id @default(cuid())
+  cafeId              String
+  userId              String?
+  guestName           String?
+  guestEmail          String?
+  subject             String                @db.VarChar(150)
+  message             String                @db.Text
+  category            InquiryCategory       @default(GENERAL)
+  status              InquiryStatus         @default(NEW)
+  priority            InquiryPriority       @default(NORMAL)
+  source              InquirySource         @default(CAFE_PROFILE)
+  eventId             String?
+  specialId           String?
+  hasUnreadResponse   Boolean               @default(false)
+  ipAddressHash       String?               @db.VarChar(64)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  readAt              DateTime?
+  respondedAt         DateTime?
+  closedAt            DateTime?
+
+  cafe                Cafe                  @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  user                User?                 @relation("UserInquiries", fields: [userId], references: [id], onDelete: SetNull)
+  event               CafeEvent?            @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  special             CafeSpecial?          @relation(fields: [specialId], references: [id], onDelete: SetNull)
+  responses           CafeInquiryResponse[]
+
+  @@index([cafeId])
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([cafeId, status])
+  @@index([userId, status])
+  @@map("cafe_inquiries")
+}
+
+model CafeInquiryResponse {
+  id              String            @id @default(cuid())
+  inquiryId       String
+  responderUserId String
+  senderRole      InquirySenderRole @default(OWNER)
+  message         String            @db.Text
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  inquiry         CafeInquiry       @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  responder       User              @relation("UserInquiryResponses", fields: [responderUserId], references: [id], onDelete: Cascade)
+
+  @@index([inquiryId])
+  @@index([responderUserId])
+  @@index([createdAt])
+  @@map("cafe_inquiry_responses")
 }

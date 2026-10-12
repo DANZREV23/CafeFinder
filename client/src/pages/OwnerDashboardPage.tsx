@@ -41,7 +41,7 @@ export default function OwnerDashboardPage() {
 
   const stats = [
     { label: 'Claimed Cafes', value: data?.claimedCafes, icon: Building2 },
-    { label: 'Pending Claims', value: data?.pendingClaims, icon: ClipboardList },
+    { label: 'Unread Inquiries', value: data?.unreadInquiries ?? 0, icon: MessageSquare },
     { label: 'Published Cafes', value: data?.publishedCafes, icon: ShieldCheck },
     { label: 'Total Reviews', value: data?.totalReviews, icon: MessageSquare },
     { label: 'Pending Changes', value: data?.pendingChangeRequests, icon: ClipboardList },
@@ -106,6 +106,24 @@ export default function OwnerDashboardPage() {
             </p>
             <div className="mt-8 flex items-center gap-2 text-sm font-bold text-brand-coffee">
               View Insights <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link to="/owner/inquiries" className="rounded-[40px] border border-brand-border bg-white p-10 hover:border-brand-coffee transition-all group shadow-sm hover:shadow-xl">
+            <MessageSquare className="w-10 h-10 text-brand-coffee mb-8 group-hover:scale-110 transition-transform duration-500" />
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-serif font-bold text-brand-charcoal">Customer Inquiries</h2>
+              {data?.unreadInquiries ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white">
+                  {data.unreadInquiries} new
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-2 text-brand-muted leading-relaxed font-medium">
+              View and respond to customer questions about hours, menu items, reservations, and events.
+            </p>
+            <div className="mt-8 flex items-center gap-2 text-sm font-bold text-brand-coffee">
+              Manage Inquiries <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
 

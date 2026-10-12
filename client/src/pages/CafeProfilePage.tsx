@@ -24,10 +24,19 @@ import {
   ArrowLeft,
   ExternalLink,
   Instagram,
-  Facebook
+  Facebook,
+  FolderPlus,
+  MessageCircleQuestion,
+  Calendar,
+  Sparkles,
+  Megaphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FavoriteButton } from "@/components/cafe/FavoriteButton";
+import { FollowCafeButton } from "@/components/cafe/FollowCafeButton";
+import { ContactCafeModal } from "@/components/cafe/ContactCafeModal";
+import { InquiryCategory, InquirySource } from "@/services/inquiryService";
+import { CollectionPicker } from "@/components/collections/CollectionPicker";
 import { ShareButtons } from "@/components/common/ShareButtons";
 import { SEO } from "@/components/common/SEO";
 import { generateCafeJsonLd, generateBreadcrumbJsonLd } from "@/utils/seoUtils";
@@ -77,6 +86,40 @@ export default function CafeProfilePage() {
   const [reportingReview, setReportingReview] = React.useState<Review | null>(null);
   const [respondingReview, setRespondingReview] = React.useState<Review | null>(null);
   const [editingResponse, setEditingResponse] = React.useState<ReviewResponse | null>(null);
+
+  const [isPickerOpen, setIsPickerOpen] = React.useState(false);
+  const [contactModal, setContactModal] = React.useState<{
+    isOpen: boolean;
+    category: InquiryCategory;
+    subject: string;
+    source: InquirySource;
+    eventContext?: { id: string; title: string } | null;
+    specialContext?: { id: string; title: string } | null;
+  }>({
+    isOpen: false,
+    category: 'GENERAL',
+    subject: '',
+    source: 'CAFE_PROFILE',
+    eventContext: null,
+    specialContext: null,
+  });
+
+  const openContactModal = (options?: {
+    category?: InquiryCategory;
+    subject?: string;
+    source?: InquirySource;
+    eventContext?: { id: string; title: string } | null;
+    specialContext?: { id: string; title: string } | null;
+  }) => {
+    setContactModal({
+      isOpen: true,
+      category: options?.category || 'GENERAL',
+      subject: options?.subject || '',
+      source: options?.source || 'CAFE_PROFILE',
+      eventContext: options?.eventContext || null,
+      specialContext: options?.specialContext || null,
+    });
+  };
 
   const isCafeOwner = Boolean(user && cafe && (cafe.ownerId === user.id || (user.role === 'OWNER' && (cafe as any).claimedBy === user.id)));
 
@@ -376,6 +419,31 @@ export default function CafeProfilePage() {
                 variant="outline"
                 className="h-9 px-4 rounded-xl border-brand-border hover:bg-rose-50 hover:border-rose-200"
               />
+              <FollowCafeButton
+                cafeId={cafe.id}
+                cafeName={cafe.name}
+                className="h-9 px-4"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-4 rounded-xl border-brand-border hover:bg-brand-cream"
+                onClick={() => openContactModal({ category: 'GENERAL', source: 'CAFE_PROFILE' })}
+              >
+                <MessageCircleQuestion className="w-4 h-4 mr-2 text-brand-coffee" />
+                Contact Cafe
+              </Button>
+              {isAuthenticated && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 px-4 rounded-xl border-brand-border hover:bg-brand-background"
+                  onClick={() => setIsPickerOpen(true)}
+                >
+                  <FolderPlus className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+              )}
               <ShareButtons 
                 url={window.location.href}
                 title={cafe.name}
@@ -496,6 +564,137 @@ export default function CafeProfilePage() {
               {/* Menu Highlights */}
               <CafeMenuHighlights />
 
+              {/* Events, Specials & Announcements */}
+              {((cafe.announcements && cafe.announcements.length > 0) ||
+                (cafe.events && cafe.events.length > 0) ||
+                (cafe.specials && cafe.specials.length > 0)) && (
+                <section className="space-y-8 pt-8 border-t border-brand-border" aria-labelledby="whats-happening-heading">
+                  <h2 id="whats-happening-heading" className="text-3xl font-serif font-bold text-brand-charcoal">
+                    Events, Specials & Updates
+                  </h2>
+
+                  {cafe.announcements && cafe.announcements.length > 0 && (
+                    <div className="space-y-4">
+                      {cafe.announcements.map((ann) => (
+                        <div
+                          key={ann.id}
+                          className="p-5 rounded-2xl border border-amber-200 bg-amber-50/70 flex items-start gap-4"
+                        >
+                          <Megaphone className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <h3 className="font-bold text-brand-charcoal text-base">{ann.title}</h3>
+                            <p className="text-sm text-brand-muted mt-1 whitespace-pre-line">{ann.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {cafe.events && cafe.events.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-bold text-brand-charcoal flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-brand-coffee" />
+                        Upcoming Events
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {cafe.events.map((ev) => (
+                          <div
+                            key={ev.id}
+                            className="p-6 rounded-3xl border border-brand-border bg-white shadow-sm flex flex-col justify-between gap-4"
+                          >
+                            <div className="space-y-2">
+                              <span className="inline-block text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-brand-cream text-brand-coffee">
+                                {ev.eventType.replace(/_/g, ' ')}
+                              </span>
+                              <h4 className="text-xl font-serif font-bold text-brand-charcoal">{ev.title}</h4>
+                              <p className="text-xs font-semibold text-brand-muted">
+                                {new Date(ev.startAt).toLocaleDateString(locale, {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })}
+                              </p>
+                              <p className="text-sm text-brand-muted line-clamp-3">
+                                {ev.shortDescription || ev.description}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full rounded-xl border-brand-coffee/30 text-brand-coffee hover:bg-brand-cream gap-2"
+                              onClick={() =>
+                                openContactModal({
+                                  category: 'EVENT',
+                                  subject: `Question about event: ${ev.title}`,
+                                  source: 'EVENT',
+                                  eventContext: { id: ev.id, title: ev.title },
+                                })
+                              }
+                            >
+                              <MessageCircleQuestion className="w-4 h-4" />
+                              Ask About This Event
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {cafe.specials && cafe.specials.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-bold text-brand-charcoal flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-brand-coffee" />
+                        Current Specials & Promotions
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {cafe.specials.map((sp) => (
+                          <div
+                            key={sp.id}
+                            className="p-6 rounded-3xl border border-brand-border bg-white shadow-sm flex flex-col justify-between gap-4"
+                          >
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="inline-block text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                                  {sp.specialType.replace(/_/g, ' ')}
+                                </span>
+                                {sp.discountPercent ? (
+                                  <span className="text-xs font-bold text-emerald-700">
+                                    {sp.discountPercent}% OFF
+                                  </span>
+                                ) : null}
+                              </div>
+                              <h4 className="text-xl font-serif font-bold text-brand-charcoal">{sp.title}</h4>
+                              <p className="text-sm text-brand-muted line-clamp-3">
+                                {sp.shortDescription || sp.description}
+                              </p>
+                              {sp.terms && (
+                                <p className="text-[11px] text-brand-muted italic">Terms: {sp.terms}</p>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full rounded-xl border-brand-coffee/30 text-brand-coffee hover:bg-brand-cream gap-2"
+                              onClick={() =>
+                                openContactModal({
+                                  category: 'SPECIAL',
+                                  subject: `Question about special: ${sp.title}`,
+                                  source: 'SPECIAL',
+                                  specialContext: { id: sp.id, title: sp.title },
+                                })
+                              }
+                            >
+                              <MessageCircleQuestion className="w-4 h-4" />
+                              Ask About This Special
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+
               {/* Reviews Section */}
               {/* Community Visitor Photos */}
               <VisitorPhotoGallery cafeId={cafe.id} />
@@ -578,6 +777,24 @@ export default function CafeProfilePage() {
                 </section>
               )}
             </div>
+
+            <CollectionPicker 
+              cafeId={cafe.id}
+              isOpen={isPickerOpen}
+              onClose={() => setIsPickerOpen(false)}
+            />
+
+            <ContactCafeModal
+              isOpen={contactModal.isOpen}
+              onClose={() => setContactModal((prev) => ({ ...prev, isOpen: false }))}
+              cafeId={cafe.id}
+              cafeName={cafe.name}
+              defaultCategory={contactModal.category}
+              defaultSubject={contactModal.subject}
+              source={contactModal.source}
+              eventContext={contactModal.eventContext}
+              specialContext={contactModal.specialContext}
+            />
 
             {/* Sidebar Sticky Area */}
             <aside className="space-y-10 lg:sticky lg:top-36 self-start">
@@ -669,6 +886,14 @@ export default function CafeProfilePage() {
                     >
                       <Navigation className="w-4 h-4" aria-hidden="true" />
                       {t("common.directions")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full h-14 border-brand-accent-warm/40 bg-brand-accent-warm/10 text-brand-accent-warm hover:bg-brand-accent-warm hover:text-white rounded-2xl gap-2 font-bold"
+                      onClick={() => openContactModal({ category: 'GENERAL', source: 'CAFE_PROFILE' })}
+                    >
+                      <MessageCircleQuestion className="w-4 h-4" aria-hidden="true" />
+                      Contact Cafe
                     </Button>
                 </div>
               </div>

@@ -9,7 +9,7 @@ import { createApp } from './app.js';
 console.log('[Server]: Importing scheduler...');
 import { schedulerService } from './services/schedulerService.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 const ENV = process.env.NODE_ENV || 'development';
 
 async function startServer() {
@@ -24,8 +24,27 @@ async function startServer() {
       console.log(`[Server]: CafeFinder API is running on http://localhost:${PORT}`);
       console.log(`[Server]: Environment: ${ENV}`);
       
-      // Start background jobs
-      schedulerService.start();
+      // Auto-seed in background if local database was freshly initialized, then start scheduler
+      void (async () => {
+        try {
+          const cafeCount = await prisma.cafe.count();
+          if (cafeCount === 0) {
+            console.log('[Server]: Empty database detected, seeding initial data in background...');
+            const { seedDatabase } = await import('../prisma/seed.js');
+            await seedDatabase(true);
+          } else {
+            // Ensure curated lists are published
+            await prisma.curatedList.updateMany({
+              where: { status: 'DRAFT' },
+              data: { status: 'PUBLISHED' },
+            });
+          }
+        } catch (seedErr: any) {
+          console.warn('[Server]: Non-fatal notice during initial seed check:', seedErr.message || seedErr);
+        } finally {
+          schedulerService.start();
+        }
+      })();
     });
 
     // Graceful shutdown

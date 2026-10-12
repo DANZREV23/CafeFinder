@@ -298,6 +298,43 @@ export const renderTemplate = (template: EmailTemplate, data: any): TemplateResu
         text: `Hello ${data.name},\n\nYour cafe profile for ${data.cafeName} has been suspended. Reason: ${data.reason || 'Not specified'}. If you believe this is an error, please contact support.\n\nCafeFinder - Discover cafes worth visiting.`,
       };
 
+    case EmailTemplate.INQUIRY_RECEIVED:
+      return {
+        subject: `New customer inquiry for ${data.cafeName}: ${data.subject}`,
+        html: getBaseLayout(
+          'New Customer Inquiry',
+          `
+          <h2>Hello ${data.ownerName},</h2>
+          <p>You have received a new customer inquiry for <strong>${data.cafeName}</strong>.</p>
+          <p><strong>Category:</strong> ${data.category}<br>
+          <strong>From:</strong> ${data.senderName}<br>
+          <strong>Subject:</strong> ${data.subject}</p>
+          <p style="padding: 16px; background-color: #f8f8f8; border-left: 4px solid #5A3825; white-space: pre-wrap;">${data.messagePreview}</p>
+          <p>Please log in to your Owner Dashboard on CafeFinder to view the full inquiry and respond securely.</p>
+          `,
+          data.inquiryUrl,
+          'View & Respond in Owner Portal'
+        ),
+        text: `Hello ${data.ownerName},\n\nYou have received a new customer inquiry for ${data.cafeName}.\n\nCategory: ${data.category}\nFrom: ${data.senderName}\nSubject: ${data.subject}\n\nMessage:\n${data.messagePreview}\n\nRespond here: ${data.inquiryUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+      };
+
+    case EmailTemplate.INQUIRY_RESPONDED:
+      return {
+        subject: `Response from ${data.cafeName}: ${data.subject}`,
+        html: getBaseLayout(
+          'Response to Your Inquiry',
+          `
+          <h2>Hello ${data.customerName},</h2>
+          <p><strong>${data.cafeName}</strong> has responded to your inquiry regarding "<strong>${data.subject}</strong>":</p>
+          <p style="padding: 16px; background-color: #f8f8f8; border-left: 4px solid #5A3825; white-space: pre-wrap;">${data.responseMessage}</p>
+          ${data.inquiryUrl ? '<p>You can view the full conversation thread and reply in your CafeFinder dashboard.</p>' : `<p>Visit <a href="${data.cafeUrl}">${data.cafeName} on CafeFinder</a> for more information.</p>`}
+          `,
+          data.inquiryUrl || data.cafeUrl,
+          data.inquiryUrl ? 'View Inquiry Thread' : 'View Cafe Profile'
+        ),
+        text: `Hello ${data.customerName},\n\n${data.cafeName} has responded to your inquiry ("${data.subject}"):\n\n${data.responseMessage}\n\n${data.inquiryUrl ? `View conversation: ${data.inquiryUrl}` : `View cafe: ${data.cafeUrl}`}\n\nCafeFinder - Discover cafes worth visiting.`,
+      };
+
     default:
       return {
         subject: 'Notification from CafeFinder',

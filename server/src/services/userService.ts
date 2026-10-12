@@ -117,26 +117,48 @@ export class UserService {
     }
 
     // Recent public approved reviews
-    const recentReviews = await prisma.cafeReview.findMany({
-      where: { userId, status: 'APPROVED' },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: {
-        id: true,
-        overallRating: true,
-        coffeeRating: true,
-        comment: true,
-        createdAt: true,
-        cafe: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            city: true,
+    const [recentReviews, publicCollections] = await Promise.all([
+      prisma.cafeReview.findMany({
+        where: { userId, status: 'APPROVED' },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          overallRating: true,
+          coffeeRating: true,
+          comment: true,
+          createdAt: true,
+          cafe: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              city: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.userCollection.findMany({
+        where: { userId, visibility: 'PUBLIC' },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+        include: {
+          _count: {
+            select: { items: true }
+          },
+          items: {
+            take: 1,
+            include: {
+              cafe: {
+                select: {
+                  photos: { where: { isCover: true }, take: 1 }
+                }
+              }
+            }
+          }
+        }
+      })
+    ]);
 
     return {
       id: user.id,
@@ -150,6 +172,7 @@ export class UserService {
       submissionCount,
       badges,
       recentReviews,
+      publicCollections,
     };
   }
 

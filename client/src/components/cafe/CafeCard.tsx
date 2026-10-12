@@ -10,7 +10,9 @@ import { CafePrice } from "./CafePrice";
 import { CafeAmenities } from "./CafeAmenities";
 import { Cafe } from "@/types";
 import { FavoriteButton } from "./FavoriteButton";
-import { Sparkles } from "lucide-react";
+import { Sparkles, FolderPlus } from "lucide-react";
+import { CollectionPicker } from "../collections/CollectionPicker";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { useI18n } from "@/i18n";
 
@@ -22,6 +24,8 @@ interface CafeCardProps {
 
 export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured = false }) => {
   const { t } = useI18n();
+  const { isAuthenticated } = useAuth();
+  const [isPickerOpen, setIsPickerOpen] = React.useState(false);
 
   return (
     <Card 
@@ -53,13 +57,26 @@ export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured 
         </div>
 
         {/* Favorite Button Overlay */}
-        <div className="absolute top-3 right-3 z-10">
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
           <FavoriteButton 
             cafeId={cafe.id} 
             cafeName={cafe.name} 
             initialIsFavorite={cafe.isFavorite}
             size="sm"
           />
+          {isAuthenticated && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsPickerOpen(true);
+              }}
+              className="p-2 bg-white/90 backdrop-blur-sm text-brand-charcoal hover:text-brand-coffee rounded-full shadow-sm transition-all hover:scale-110 active:scale-95"
+              title="Save to Collection"
+            >
+              <FolderPlus size={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -128,6 +145,11 @@ export const CafeCard: React.FC<CafeCardProps> = ({ cafe, className, isFeatured 
           </div>
         </div>
       </div>
+      <CollectionPicker 
+        cafeId={cafe.id}
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+      />
     </Card>
   );
 }

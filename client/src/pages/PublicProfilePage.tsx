@@ -14,7 +14,9 @@ import {
   Loader2, 
   CheckCircle2, 
   Camera, 
-  MapPin 
+  MapPin,
+  FolderHeart,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SEO } from '@/components/common/SEO';
@@ -29,6 +31,7 @@ interface PublicProfileData {
   reviewCount?: number;
   photoCount?: number;
   submissionCount?: number;
+  publicCollections?: any[];
   badges?: { id: string; label: string; description: string }[];
   recentReviews?: {
     id: string;
@@ -213,6 +216,50 @@ export default function PublicProfilePage() {
             </div>
           ) : (
             <div className="space-y-8">
+              {/* Public Collections */}
+              {profile.publicCollections && profile.publicCollections.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-serif font-bold text-brand-charcoal flex items-center gap-2">
+                    <FolderHeart className="w-5 h-5 text-brand-coffee" />
+                    <span>Public Discovery Boards</span>
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {profile.publicCollections.map((col) => (
+                      <Link 
+                        key={col.id} 
+                        to={`/collections/${profile.name}/${col.slug}`}
+                        className="group bg-white border border-brand-border rounded-2xl overflow-hidden hover:shadow-md transition-all flex"
+                      >
+                        <div className="w-24 h-24 bg-brand-cream shrink-0 overflow-hidden border-r border-brand-border">
+                          {col.items?.[0]?.cafe?.photos?.[0]?.url ? (
+                            <img 
+                              src={col.items[0].cafe.photos[0].url} 
+                              alt={col.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-brand-coffee/20">
+                              <FolderHeart size={24} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4 flex flex-col justify-center min-w-0">
+                          <h4 className="font-bold text-sm text-brand-charcoal truncate group-hover:text-brand-coffee transition-colors">
+                            {col.name}
+                          </h4>
+                          <p className="text-[10px] text-brand-muted font-bold uppercase tracking-widest mt-1">
+                            {col._count?.items || 0} Cafes • Updated {format(new Date(col.updatedAt), 'MMM d')}
+                          </p>
+                        </div>
+                        <div className="ml-auto flex items-center pr-4 text-brand-muted group-hover:text-brand-coffee transition-colors">
+                          <ChevronRight size={18} />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Badges Section */}
               {profile.badges && profile.badges.length > 0 && (
                 <div className="space-y-3">

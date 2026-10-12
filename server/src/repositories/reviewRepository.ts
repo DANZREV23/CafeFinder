@@ -546,7 +546,15 @@ export class ReviewRepository {
       prisma.cafeReviewReport.count({ where }),
     ]);
 
-    return { reports, total };
+    return { 
+      data: reports, 
+      pagination: {
+        total,
+        page: Math.max(page, 1),
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   async resolveReport(reportId: string, adminId: string, actionTaken: string, resolutionNotes?: string) {

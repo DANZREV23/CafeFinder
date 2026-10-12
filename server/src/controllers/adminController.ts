@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { prisma } from '../config/database.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { AdminService } from '../services/adminService.js';
 import { ActivityLogService } from '../services/activityLogService.js';
@@ -733,6 +734,109 @@ export class AdminController {
       }
 
       res.json({ success: true, data: { executionId } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  // --- Collection Moderation ---
+
+  getCollections = async (req: AuthRequest, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 20;
+      const search = req.query.search as string;
+      const visibility = req.query.visibility as any;
+
+      const skip = (page - 1) * limit;
+
+      const where: any = {};
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { user: { name: { contains: search, mode: 'insensitive' } } },
+          { user: { email: { contains: search, mode: 'insensitive' } } },
+        ];
+      }
+      if (visibility) {
+        where.visibility = visibility;
+      }
+
+      const [collections, total] = await Promise.all([
+        prisma.userCollection.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { updatedAt: 'desc' },
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            _count: { select: { items: true } },
+          },
+        }),
+        prisma.userCollection.count({ where }),
+      ]);
+
+      res.json({
+        success: true,
+        data: collections,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  getCollectionById = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const collection = await prisma.userCollection.findUnique({
+        where: { id },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          items: {
+            include: {
+              cafe: {
+                select: { id: true, name: true, slug: true, city: true }
+              }
+            }
+          }
+        }
+      });
+
+      if (!collection) {
+        return res.status(404).json({ success: false, error: { message: 'Collection not found' } });
+      }
+
+      res.json({ success: true, data: collection });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  deleteCollection = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      await prisma.userCollection.delete({ where: { id } });
+      res.json({ success: true, message: 'Collection deleted successfully' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: { message: error.message } });
+    }
+  };
+
+  updateCollectionVisibility = async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { visibility } = req.body;
+      const collection = await prisma.userCollection.update({
+        where: { id },
+        data: { visibility }
+      });
+      res.json({ success: true, data: collection });
     } catch (error: any) {
       res.status(500).json({ success: false, error: { message: error.message } });
     }

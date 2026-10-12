@@ -15,11 +15,16 @@ export class DashboardService {
       reviewCount,
       submissionCount,
       unreadNotificationCount,
+      followCount,
+      inquiryCount,
+      unreadInquiryResponseCount,
       recentFavorites,
       recentReviews,
       recentSubmissions,
       recentViews,
-      recommendations
+      recommendations,
+      collectionCount,
+      recentCollections
     ] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -35,6 +40,9 @@ export class DashboardService {
       prisma.cafeReview.count({ where: { userId } }),
       prisma.cafeSubmission.count({ where: { submittedById: userId } }),
       prisma.notification.count({ where: { userId, isRead: false } }),
+      prisma.cafeFollow.count({ where: { userId } }),
+      prisma.cafeInquiry.count({ where: { userId } }),
+      prisma.cafeInquiry.count({ where: { userId, hasUnreadResponse: true } }),
       prisma.cafeFavorite.findMany({
         where: { 
           userId,
@@ -72,7 +80,26 @@ export class DashboardService {
         take: 5
       }),
       this.userCafeViewRepository.findRecentByUserId(userId, 6),
-      this.recommendationService.getRecommendations(userId, 6)
+      this.recommendationService.getRecommendations(userId, 6),
+      prisma.userCollection.count({ where: { userId } }),
+      prisma.userCollection.findMany({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+        take: 4,
+        include: {
+          _count: { select: { items: true } },
+          items: {
+            take: 1,
+            include: {
+              cafe: {
+                select: {
+                  photos: { where: { isCover: true }, take: 1 }
+                }
+              }
+            }
+          }
+        }
+      })
     ]);
 
     return {
@@ -81,12 +108,17 @@ export class DashboardService {
         favoriteCount,
         reviewCount,
         submissionCount,
-        unreadNotificationCount
+        unreadNotificationCount,
+        collectionCount,
+        followCount,
+        inquiryCount,
+        unreadInquiryResponseCount
       },
-      recentFavorites: recentFavorites.map(f => mapToPublicCafeSummary(f.cafe)),
+      recentCollections,
+      recentFavorites: (recentFavorites as any[]).map(f => mapToPublicCafeSummary(f.cafe)),
       recentReviews,
       recentSubmissions,
-      recentViews: recentViews.map(v => mapToPublicCafeSummary(v.cafe)),
+      recentViews: (recentViews as any[]).map(v => mapToPublicCafeSummary(v.cafe)),
       recommendations: recommendations.map((r: any) => ({
         ...mapToPublicCafeSummary(r),
         recommendationReason: r.recommendationReason,

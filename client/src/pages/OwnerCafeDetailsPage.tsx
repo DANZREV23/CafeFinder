@@ -61,6 +61,7 @@ export default function OwnerCafeDetailsPage() {
     { href: `/owner/cafes/${id}/amenities`, label: 'Amenities', icon: ListChecks },
     { href: `/owner/cafes/${id}/photos`, label: 'Photos', icon: Image },
     { href: `/owner/cafes/${id}/menu`, label: 'Menu', icon: Utensils },
+    { href: `/owner/inquiries?cafeId=${id}`, label: 'Customer Inquiries', icon: MessageSquare },
     { href: `/owner/cafes/${id}/reviews`, label: 'Reviews', icon: MessageSquare },
     { href: `/owner/cafes/${id}/analytics`, label: 'Analytics', icon: BarChart3 },
     { href: `/owner/cafes/${id}/change-requests`, label: 'Change requests', icon: ShieldCheck },

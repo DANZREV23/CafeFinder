@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { Button } from '@/components/ui/Button';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { CafeListSection } from '@/components/dashboard/CafeListSection';
 import { getDashboardData, DashboardData } from '@/services/dashboardService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
-import { Loader2, Settings, User } from 'lucide-react';
+import { Loader2, Settings, User, FolderHeart, ChevronRight } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -96,6 +97,60 @@ const DashboardPage: React.FC = () => {
                     cafes={data.recommendations} 
                     actionLink={{ href: '/profile', label: 'Preferences' }}
                   />
+
+                  {/* My Collections Section */}
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-serif font-bold text-brand-charcoal">My Collections</h2>
+                        <p className="text-sm text-brand-muted">Your curated discovery boards</p>
+                      </div>
+                      <Link to="/dashboard/collections" className="text-xs font-bold uppercase tracking-widest text-brand-coffee hover:underline flex items-center gap-1">
+                        View All <ChevronRight size={14} />
+                      </Link>
+                    </div>
+
+                    {data.recentCollections && data.recentCollections.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {data.recentCollections.map((col) => (
+                          <Link 
+                            key={col.id} 
+                            to={`/dashboard/collections/${col.slug}`}
+                            className="group bg-white border border-brand-border rounded-2xl overflow-hidden hover:shadow-md transition-all flex"
+                          >
+                            <div className="w-24 h-24 bg-brand-cream shrink-0 overflow-hidden border-r border-brand-border">
+                              {col.items?.[0]?.cafe?.photos?.[0]?.url ? (
+                                <img 
+                                  src={col.items[0].cafe.photos[0].url} 
+                                  alt={col.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-brand-coffee/20">
+                                  <FolderHeart size={24} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-4 flex flex-col justify-center min-w-0">
+                              <h4 className="font-bold text-sm text-brand-charcoal truncate group-hover:text-brand-coffee transition-colors">
+                                {col.name}
+                              </h4>
+                              <p className="text-[10px] text-brand-muted font-bold uppercase tracking-widest mt-1">
+                                {col._count?.items || 0} Cafes
+                              </p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-8 bg-brand-cream/20 border border-dashed border-brand-border rounded-2xl text-center">
+                        <p className="text-sm text-brand-muted mb-4">You haven't created any collections yet.</p>
+                        <Link to="/dashboard/collections">
+                          <Button variant="outline" size="sm" className="rounded-full">Create Collection</Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                   
                   <CafeListSection 
                     title="Your Recently Viewed" 

@@ -12,6 +12,8 @@ export enum EmailTemplate {
   CHANGE_REQUEST_REJECTED = 'CHANGE_REQUEST_REJECTED',
   CAFE_PUBLISHED = 'CAFE_PUBLISHED',
   CAFE_SUSPENDED = 'CAFE_SUSPENDED',
+  INQUIRY_RECEIVED = 'INQUIRY_RECEIVED',
+  INQUIRY_RESPONDED = 'INQUIRY_RESPONDED',
 }
 
 export interface EmailOptions {
@@ -100,5 +102,22 @@ export interface EmailPayloads {
     name: string;
     cafeName: string;
     reason?: string;
+  };
+  [EmailTemplate.INQUIRY_RECEIVED]: {
+    ownerName: string;
+    cafeName: string;
+    subject: string;
+    category: string;
+    senderName: string;
+    messagePreview: string;
+    inquiryUrl: string;
+  };
+  [EmailTemplate.INQUIRY_RESPONDED]: {
+    customerName: string;
+    cafeName: string;
+    subject: string;
+    responseMessage: string;
+    inquiryUrl?: string;
+    cafeUrl: string;
   };
 }

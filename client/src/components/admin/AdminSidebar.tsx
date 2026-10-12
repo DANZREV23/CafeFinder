@@ -18,7 +18,8 @@ import {
   Clock,
   Bell,
   Sparkles,
-  Flag
+  Flag,
+  FolderHeart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
@@ -39,8 +40,10 @@ const MENU_ITEMS = [
       { id: 'submissions', labelKey: 'admin.submissions', icon: Coffee, path: '/admin/submissions' },
       { id: 'reviews', labelKey: 'admin.reviews', icon: Star, path: '/admin/reviews' },
       { id: 'review-reports', labelKey: 'admin.reviewReports', icon: Flag, path: '/admin/review-reports' },
-          { id: 'claims', labelKey: 'admin.claims', icon: ShieldCheck, path: '/admin/claims' },
-          { id: 'change-requests', labelKey: 'admin.changeRequests', icon: FileText, path: '/admin/change-requests' },
+      { id: 'collections', labelKey: 'admin.collections', icon: FolderHeart, path: '/admin/collections' },
+      { id: 'claims', labelKey: 'admin.claims', icon: ShieldCheck, path: '/admin/claims' },
+      { id: 'change-requests', labelKey: 'admin.changeRequests', icon: FileText, path: '/admin/change-requests' },
+      { id: 'inquiries', labelKey: 'admin.inquiries', icon: Bell, path: '/admin/inquiries' },
     ]
   },
   { 

@@ -142,6 +142,12 @@ export function Navbar() {
                           Saved Cafes
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard/collections" className="flex w-full items-center gap-2">
+                          <PlusCircle size={16} className="text-brand-muted" aria-hidden="true" />
+                          My Collections
+                        </Link>
+                      </DropdownMenuItem>
                       {(user?.role === "OWNER" || user?.role === "ADMIN") && (
                         <DropdownMenuItem asChild>
                           <Link to="/owner" className="flex w-full items-center gap-2">
@@ -243,6 +249,10 @@ export function Navbar() {
                     <Link to="/favorites" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
                       <Heart size={20} className="text-brand-coffee" aria-hidden="true" />
                       Saved Cafes
+                    </Link>
+                    <Link to="/dashboard/collections" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">
+                      <PlusCircle size={20} className="text-brand-coffee" aria-hidden="true" />
+                      My Collections
                     </Link>
                     {user?.role === "ADMIN" && (
                       <Link to="/admin" className="text-lg font-medium text-brand-charcoal flex items-center gap-2">

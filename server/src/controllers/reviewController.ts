@@ -411,7 +411,7 @@ export class ReviewController {
         limit,
       });
 
-      const formattedReports: ReviewReportDto[] = result.reports.map((r: any) => ({
+      const formattedReports: ReviewReportDto[] = result.data.map((r: any) => ({
         id: r.id,
         reviewId: r.reviewId,
         reporterId: r.reporterId,
@@ -440,8 +440,8 @@ export class ReviewController {
         pagination: {
           page,
           limit,
-          total: result.total,
-          totalPages: Math.ceil(result.total / limit),
+          total: result.pagination.total,
+          totalPages: result.pagination.totalPages,
         },
       });
     } catch (error) {

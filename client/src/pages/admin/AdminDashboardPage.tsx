@@ -221,6 +221,18 @@ export const AdminDashboardPage: React.FC = () => {
                   <ArrowRight className="w-4 h-4 text-stone-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
                 </Link>
              </div>
+
+             <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
+                <h3 className="font-bold text-stone-900 mb-4 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-500" />
+                  Collection Moderation
+                </h3>
+                <p className="text-sm text-stone-500 mb-6">Monitor community discovery boards and ensure quality curation.</p>
+                <Link to="/admin/collections" className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-all group">
+                  <span className="text-sm font-semibold text-stone-700">Manage Collections</span>
+                  <ArrowRight className="w-4 h-4 text-stone-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
+                </Link>
+             </div>
           </div>
         </div>
 

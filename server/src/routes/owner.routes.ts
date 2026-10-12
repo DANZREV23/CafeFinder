@@ -2,15 +2,23 @@ import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
 import { OwnerController } from '../controllers/ownerController.js';
 import { OwnerAnalyticsController } from '../controllers/ownerAnalyticsController.js';
+import { InquiryController } from '../controllers/inquiryController.js';
 import { uploadOwnerPhoto } from '../middleware/uploadMiddleware.js';
 import { submissionRateLimit } from '../config/security.js';
 
 const router = Router();
 const controller = new OwnerController();
 const analyticsController = new OwnerAnalyticsController();
+const inquiryController = new InquiryController();
 
 router.use(requireAuth, requireRole('OWNER', 'ADMIN'));
 router.get('/dashboard', controller.getDashboard);
+
+// Customer Inquiries management
+router.get('/inquiries', inquiryController.getOwnerInquiries);
+router.get('/inquiries/:id', inquiryController.getOwnerInquiryById);
+router.patch('/inquiries/:id', inquiryController.updateOwnerInquiry);
+router.post('/inquiries/:id/respond', submissionRateLimit, inquiryController.respondToInquiry);
 router.get('/cafes', controller.getCafes);
 router.get('/cafes/:id', controller.getCafe);
 router.get('/cafes/:cafeId/analytics', analyticsController.getAnalytics);
@@ -41,5 +49,22 @@ router.delete('/cafes/:id/categories/:categoryId', controller.deleteCategory);
 router.post('/cafes/:id/categories/:categoryId/items', submissionRateLimit, controller.createMenuItem);
 router.patch('/cafes/:id/items/:itemId', submissionRateLimit, controller.updateMenuItem);
 router.delete('/cafes/:id/items/:itemId', controller.deleteMenuItem);
+
+// Event management
+router.get('/cafes/:id/events', controller.getEvents);
+router.post('/cafes/:id/events', submissionRateLimit, controller.createEvent);
+router.post('/cafes/:id/events/:eventId/publish', controller.publishEvent);
+
+// Special management
+router.get('/cafes/:id/specials', controller.getSpecials);
+router.post('/cafes/:id/specials', submissionRateLimit, controller.createSpecial);
+router.post('/cafes/:id/specials/:specialId/publish', controller.publishSpecial);
+
+// Announcement management
+router.get('/cafes/:id/announcements', controller.getAnnouncements);
+router.post('/cafes/:id/announcements', submissionRateLimit, controller.createAnnouncement);
+router.post('/cafes/:id/announcements/:announcementId/publish', controller.publishAnnouncement);
+
+router.post('/cafes/:id/notify-menu-update', controller.notifyMenuUpdate);
 
 export default router;

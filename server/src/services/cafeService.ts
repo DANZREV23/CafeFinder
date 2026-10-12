@@ -87,6 +87,30 @@ export class CafeService {
             }
           }
         }
+      },
+      events: {
+        where: {
+          status: 'PUBLISHED',
+          endAt: { gte: new Date() },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 10,
+      },
+      specials: {
+        where: {
+          status: 'PUBLISHED',
+          endAt: { gte: new Date() },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 10,
+      },
+      announcements: {
+        where: {
+          status: 'PUBLISHED',
+          OR: [{ endAt: null }, { endAt: { gte: new Date() } }],
+        },
+        orderBy: [{ priority: 'desc' }, { startAt: 'desc' }],
+        take: 5,
       }
     };
 

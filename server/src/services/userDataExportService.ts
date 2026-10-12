@@ -25,6 +25,13 @@ export class UserDataExportService {
         cafeSubmissions: true,
         claims: true,
         notifications: true,
+        inquiries: {
+          include: {
+            cafe: { select: { name: true } },
+            responses: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
         activityLogs: {
           take: 100, // Limit activity log export
           orderBy: { createdAt: 'desc' }
@@ -69,6 +76,15 @@ export class UserDataExportService {
         businessName: c.businessName,
         status: c.status,
         submittedAt: c.submittedAt
+      })),
+      inquiries: user.inquiries.map(inq => ({
+        cafeName: inq.cafe.name,
+        subject: inq.subject,
+        category: inq.category,
+        message: inq.message,
+        status: inq.status,
+        createdAt: inq.createdAt,
+        responsesCount: inq.responses.length
       })),
       notifications: user.notifications.map(n => ({
         title: n.title,

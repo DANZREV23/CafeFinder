@@ -55,9 +55,9 @@ export default function AdminReviewReportsPage() {
         status: statusFilter || undefined,
       });
       if (res.success) {
-        setReports(res.data);
-        setTotalPages(res.pagination.totalPages);
-        setTotalCount(res.pagination.total);
+        setReports(res.data || []);
+        setTotalPages(res.pagination?.totalPages || 1);
+        setTotalCount(res.pagination?.total || 0);
       }
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to load reports' });
@@ -71,7 +71,7 @@ export default function AdminReviewReportsPage() {
     try {
       const res = await reviewService.getReviewPhotosAdmin({ page: 1, limit: 30 });
       if (res.success) {
-        setPhotos(res.data);
+        setPhotos(res.data || []);
       }
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to load photos' });
@@ -85,7 +85,7 @@ export default function AdminReviewReportsPage() {
     try {
       const res = await reviewService.getReviewResponsesAdmin({ page: 1, limit: 20 });
       if (res.success) {
-        setResponses(res.data);
+        setResponses(res.data || []);
       }
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to load responses' });
@@ -293,7 +293,7 @@ export default function AdminReviewReportsPage() {
               <div className="py-20 flex justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-brand-coffee" />
               </div>
-            ) : reports.length === 0 ? (
+            ) : (reports || []).length === 0 ? (
               <div className="p-12 text-center bg-white border border-dashed border-stone-200 rounded-2xl">
                 <p className="text-sm text-stone-500">No review reports in this queue.</p>
               </div>
@@ -394,7 +394,7 @@ export default function AdminReviewReportsPage() {
               <div className="py-20 flex justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-brand-coffee" />
               </div>
-            ) : photos.length === 0 ? (
+            ) : (photos || []).length === 0 ? (
               <div className="p-12 text-center bg-white border border-dashed border-stone-200 rounded-2xl">
                 <p className="text-sm text-stone-500">No review photos found.</p>
               </div>
@@ -438,7 +438,7 @@ export default function AdminReviewReportsPage() {
               <div className="py-20 flex justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-brand-coffee" />
               </div>
-            ) : responses.length === 0 ? (
+            ) : (responses || []).length === 0 ? (
               <div className="p-12 text-center bg-white border border-dashed border-stone-200 rounded-2xl">
                 <p className="text-sm text-stone-500">No owner responses found.</p>
               </div>
@@ -509,12 +509,12 @@ export default function AdminReviewReportsPage() {
               </Button>
             </div>
 
-            {discrepancies && (
+            {Array.isArray(discrepancies) && (
               <div className="space-y-3 pt-2">
-                <h4 className="font-bold text-xs uppercase tracking-wider text-stone-700">
-                  Audit Results: {discrepancies.length === 0 ? 'All 100% In Sync' : `${discrepancies.length} Mismatches Found`}
+                 <h4 className="font-bold text-xs uppercase tracking-wider text-stone-700">
+                  Audit Results: {(discrepancies || []).length === 0 ? 'All 100% In Sync' : `${(discrepancies || []).length} Mismatches Found`}
                 </h4>
-                {discrepancies.length === 0 ? (
+                {(discrepancies || []).length === 0 ? (
                   <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>All cafe rating averages and review counts are accurate and in transactional sync with approved reviews.</span>

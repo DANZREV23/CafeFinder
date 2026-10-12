@@ -93,6 +93,44 @@ export interface Cafe {
   amenities?: CafeAmenity[];
   hours?: CafeHours[];
   curatedLists?: Array<{ list: { id: string; title: string; slug: string; coverImage?: string } }>;
+  events?: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    shortDescription?: string | null;
+    description: string;
+    eventType: string;
+    startAt: string;
+    endAt: string;
+    location?: string | null;
+    price?: number | null;
+    currency?: string;
+    coverPhotoUrl?: string | null;
+  }>;
+  specials?: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    shortDescription?: string | null;
+    description: string;
+    specialType: string;
+    startAt: string;
+    endAt: string;
+    terms?: string | null;
+    price?: number | null;
+    discountPercent?: number | null;
+    currency?: string;
+    coverPhotoUrl?: string | null;
+  }>;
+  announcements?: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    content: string;
+    priority: string;
+    startAt: string;
+    endAt?: string | null;
+  }>;
   reviews?: Review[];
   relatedCafes?: Cafe[];
   isFavorite?: boolean;

@@ -21,6 +21,8 @@ export interface OwnerDashboardDto {
   totalReviews: number;
   pendingChangeRequests: number;
   averageRating: number;
+  unreadInquiries?: number;
+  totalInquiries?: number;
 }
 
 export interface OwnerReviewDto {

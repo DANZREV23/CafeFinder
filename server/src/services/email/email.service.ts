@@ -224,6 +224,59 @@ export class EmailService {
       dashboardUrl: `${this.baseUrl}/owner`,
     }, user.id);
   }
+
+  async sendInquiryReceivedEmail(
+    owner: { id: string; name: string; email: string },
+    data: {
+      inquiryId: string;
+      cafeName: string;
+      subject: string;
+      category: string;
+      senderName: string;
+      messagePreview: string;
+    }
+  ) {
+    return this.queueEmail(
+      EmailTemplate.INQUIRY_RECEIVED,
+      owner.email,
+      {
+        ownerName: owner.name,
+        cafeName: data.cafeName,
+        subject: data.subject,
+        category: data.category,
+        senderName: data.senderName,
+        messagePreview: data.messagePreview,
+        inquiryUrl: `${this.baseUrl}/owner/inquiries/${data.inquiryId}`,
+      },
+      owner.id
+    );
+  }
+
+  async sendInquiryRespondedEmail(
+    recipient: { id?: string; name: string; email: string },
+    data: {
+      inquiryId: string;
+      cafeName: string;
+      cafeSlug: string;
+      subject: string;
+      responseMessage: string;
+      isAuthenticatedUser: boolean;
+    }
+  ) {
+    return this.queueEmail(
+      EmailTemplate.INQUIRY_RESPONDED,
+      recipient.email,
+      {
+        customerName: recipient.name,
+        cafeName: data.cafeName,
+        subject: data.subject,
+        responseMessage: data.responseMessage,
+        inquiryUrl: data.isAuthenticatedUser ? `${this.baseUrl}/dashboard/inquiries/${data.inquiryId}` : undefined,
+        cafeUrl: `${this.baseUrl}/cafes/${data.cafeSlug}`,
+      },
+      recipient.id
+    );
+  }
 }
 
 export const emailService = new EmailService();

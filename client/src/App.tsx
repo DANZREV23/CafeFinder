@@ -27,6 +27,7 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const FavoritesPage = lazy(() => import('@/pages/FavoritesPage'));
+const FollowingPage = lazy(() => import('@/pages/FollowingPage'));
 const CafeClaimPage = lazy(() => import('@/pages/CafeClaimPage'));
 const OwnerDashboardPage = lazy(() => import('@/pages/OwnerDashboardPage'));
 const OwnerCafesPage = lazy(() => import('@/pages/OwnerCafesPage'));
@@ -43,6 +44,11 @@ const OwnerChangeRequestsPage = lazy(() => import('./pages/OwnerChangeRequestsPa
 const OwnerCafeChangeRequestFormPage = lazy(() => import('./pages/OwnerCafeChangeRequestFormPage'));
 const OwnerClaimsPage = lazy(() => import('./pages/OwnerClaimsPage'));
 const OwnerClaimDetailsPage = lazy(() => import('./pages/OwnerClaimDetailsPage'));
+const OwnerInquiriesPage = lazy(() => import('./pages/OwnerInquiriesPage'));
+const OwnerInquiryDetailPage = lazy(() => import('./pages/OwnerInquiryDetailPage'));
+const CustomerInquiriesPage = lazy(() => import('./pages/CustomerInquiriesPage'));
+const CustomerInquiryDetailPage = lazy(() => import('./pages/CustomerInquiryDetailPage'));
+const AdminInquiriesPage = lazy(() => import('./pages/admin/AdminInquiriesPage'));
 const SubmitCafePage = lazy(() => import('./pages/SubmitCafePage'));
 const MySubmissionsPage = lazy(() => import('./pages/MySubmissionsPage'));
 const SubmissionDetailsPage = lazy(() => import('./pages/SubmissionDetailsPage'));
@@ -83,7 +89,11 @@ const AdminContentQualityPage = lazy(() => import('./pages/admin/AdminContentQua
 const AdminRedirectsPage = lazy(() => import('./pages/admin/AdminRedirectsPage').then(m => ({ default: m.AdminRedirectsPage })));
 const AdminTestimonialsPage = lazy(() => import('./pages/admin/AdminTestimonialsPage').then(m => ({ default: m.AdminTestimonialsPage })));
 const AdminReviewReportsPage = lazy(() => import('./pages/admin/AdminReviewReportsPage'));
+const AdminCollectionsPage = lazy(() => import('./pages/admin/AdminCollectionsPage').then(m => ({ default: m.AdminCollectionsPage })));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const CollectionsPage = lazy(() => import('./pages/CollectionsPage'));
+const CollectionDetailPage = lazy(() => import('./pages/CollectionDetailPage'));
+const PublicCollectionPage = lazy(() => import('./pages/PublicCollectionPage'));
 
 export default function App() {
   return (
@@ -138,11 +148,37 @@ export default function App() {
                     <FavoritesPage />
                   </ProtectedRoute>
                 } />
+                <Route path="/dashboard/following" element={
+                  <ProtectedRoute>
+                    <FollowingPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard/inquiries" element={
+                  <ProtectedRoute>
+                    <CustomerInquiriesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard/inquiries/:id" element={
+                  <ProtectedRoute>
+                    <CustomerInquiryDetailPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <ProfilePage />
                   </ProtectedRoute>
                 } />
+                <Route path="/dashboard/collections" element={
+                  <ProtectedRoute>
+                    <CollectionsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard/collections/:slug" element={
+                  <ProtectedRoute>
+                    <CollectionDetailPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/collections/:username/:slug" element={<PublicCollectionPage />} />
                 <Route path="/users/:id" element={<PublicProfilePage />} />
                 
                 <Route path="/dashboard" element={
@@ -169,6 +205,8 @@ export default function App() {
                 <Route path="/owner/cafes/:id/change-requests" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerChangeRequestsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/change-requests/new" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeChangeRequestFormPage /></RoleRoute>} />
                 <Route path="/owner/claims" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerClaimsPage /></RoleRoute>} />
+                <Route path="/owner/inquiries" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerInquiriesPage /></RoleRoute>} />
+                <Route path="/owner/inquiries/:id" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerInquiryDetailPage /></RoleRoute>} />
                 <Route path="/cafe-owner-claims/:id" element={<ProtectedRoute><OwnerClaimDetailsPage /></ProtectedRoute>} />
                 
                 <Route path="/admin" element={
@@ -177,11 +215,13 @@ export default function App() {
                   </RoleRoute>
                 }>
                   <Route index element={<AdminDashboardPage />} />
+                  <Route path="inquiries" element={<AdminInquiriesPage />} />
                   <Route path="submissions" element={<AdminSubmissionsPage />} />
                   <Route path="submissions/:id" element={<AdminSubmissionDetailsPage />} />
                   <Route path="reviews" element={<AdminReviewsPage />} />
                   <Route path="reviews/:id" element={<AdminReviewDetailsPage />} />
                   <Route path="review-reports" element={<AdminReviewReportsPage />} />
+                  <Route path="collections" element={<AdminCollectionsPage />} />
                   <Route path="cafes" element={<AdminCafesPage />} />
                   <Route path="users" element={<AdminUsersPage />} />
                   <Route path="activity" element={<AdminActivityLogPage />} />

@@ -298,5 +298,33 @@ export const adminService = {
     return fetchApi<ApiResponse<{ executionId: string }>>(`/admin/system/jobs/${jobName}/run`, {
       method: 'POST'
     });
+  },
+
+  // Collections
+  async getCollections(params: { search?: string; visibility?: string; page?: number; limit?: number }): Promise<PaginatedResponse<any>> {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.visibility) query.append('visibility', params.visibility);
+    if (params.page) query.append('page', params.page.toString());
+    if (params.limit) query.append('limit', params.limit.toString());
+
+    return fetchApi<PaginatedResponse<any>>(`/admin/collections?${query.toString()}`);
+  },
+
+  async getCollectionById(id: string): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>(`/admin/collections/${id}`);
+  },
+
+  async deleteCollection(id: string): Promise<ApiResponse<void>> {
+    return fetchApi<ApiResponse<void>>(`/admin/collections/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  async updateCollectionVisibility(id: string, visibility: 'PRIVATE' | 'PUBLIC'): Promise<ApiResponse<any>> {
+    return fetchApi<ApiResponse<any>>(`/admin/collections/${id}/visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ visibility })
+    });
   }
 };

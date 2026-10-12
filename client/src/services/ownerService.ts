@@ -9,6 +9,8 @@ export interface OwnerDashboard {
   totalReviews: number;
   pendingChangeRequests: number;
   averageRating: number;
+  unreadInquiries?: number;
+  totalInquiries?: number;
 }
 
 export interface OwnerCafeSummary {
