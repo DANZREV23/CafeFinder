@@ -115,34 +115,50 @@ export const CafeMap: React.FC<CafeMapProps> = ({
     cafes.filter(c => c.latitude !== null && c.longitude !== null),
   [cafes]);
 
+  if (!provider || !apiKey) {
+    return (
+      <div className={cn("flex flex-col items-center justify-center bg-brand-cream/30 border-2 border-dashed border-brand-border rounded-[40px] p-8 text-center", className)}>
+        <Coffee className="w-14 h-14 text-brand-muted mb-4" />
+        <h3 className="text-xl font-serif font-bold text-brand-charcoal mb-2">Google Maps Setup Required</h3>
+        <p className="text-brand-muted text-xs max-w-sm mx-auto mb-6">
+          Interactive location discovery requires a Google Maps API key with Billing enabled in Google Cloud Console.
+        </p>
+        <div className="bg-white p-4 rounded-xl border border-brand-border text-left space-y-2 max-w-sm w-full">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-brand-coffee">Environment Variable:</p>
+          <code className="block p-2.5 bg-brand-background rounded-lg text-xs font-mono text-brand-charcoal select-all">
+            VITE_GOOGLE_MAPS_API_KEY=your_key
+          </code>
+        </div>
+      </div>
+    );
+  }
+
   if (loadError) {
     const isTimeout = loadError.message?.includes("timed out");
     const isMissingKey = loadError.message?.includes("Missing API Key");
     const isBillingError = loadError.message?.includes("Billing") || loadError.message?.includes("Authentication");
 
     return (
-      <div className={cn("flex flex-col items-center justify-center bg-brand-background border-2 border-dashed border-brand-border rounded-3xl p-12 text-center", className)}>
-        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+      <div className={cn("flex flex-col items-center justify-center bg-brand-background border-2 border-dashed border-brand-border rounded-3xl p-8 text-center", className)}>
+        <AlertCircle className="w-12 h-12 text-amber-600 mb-3" />
         <h3 className="text-xl font-serif font-bold text-brand-charcoal mb-2">
-          {isTimeout ? "Connection Timed Out" : isMissingKey ? "Configuration Required" : isBillingError ? "Billing Required" : "Map Unavailable"}
+          {isBillingError ? "Google Maps Billing Required" : isTimeout ? "Connection Timed Out" : isMissingKey ? "Configuration Required" : "Map Unavailable"}
         </h3>
-        <p className="text-brand-muted max-w-xs mx-auto mb-4">
-          {isTimeout 
-            ? "The map is taking too long to load. Please check your internet connection or reload the page."
-            : isMissingKey
-            ? "The map provider is not correctly configured. Please check your API key settings."
-            : isBillingError
-            ? "Google Maps billing is not enabled for this project. Please enable billing in the Google Cloud Console."
-            : "There was an error loading the map provider. Our team has been notified."}
+        <p className="text-brand-muted text-xs max-w-sm mx-auto mb-4">
+          {isBillingError
+            ? "Google Maps API returned a billing notice (BillingNotEnabledMapError). Please enable billing or link a billing account to your Google Cloud project."
+            : isTimeout 
+            ? "The map took too long to load. Please check your network connection."
+            : "There was an error initializing the map provider."}
         </p>
-        {(isTimeout || !isMissingKey) && (
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => window.location.reload()}
-            className="text-brand-coffee font-bold hover:underline text-sm"
+            className="px-4 py-2 rounded-xl bg-brand-coffee text-white text-xs font-semibold hover:bg-brand-coffee-dark transition cursor-pointer"
           >
             Retry Connection
           </button>
-        )}
+        </div>
       </div>
     );
   }
@@ -152,22 +168,6 @@ export const CafeMap: React.FC<CafeMapProps> = ({
       <div className={cn("flex flex-col items-center justify-center bg-brand-background border-2 border-dashed border-brand-border rounded-3xl p-12 text-center", className)}>
         <Loader2 className="w-12 h-12 text-brand-coffee animate-spin mb-4" />
         <p className="text-brand-muted font-medium">Initializing Map...</p>
-      </div>
-    );
-  }
-
-  if (!provider || !apiKey) {
-    return (
-      <div className={cn("flex flex-col items-center justify-center bg-brand-cream/30 border-2 border-dashed border-brand-border rounded-[40px] p-12 text-center", className)}>
-        <Coffee className="w-16 h-16 text-brand-muted mb-6" />
-        <h3 className="text-2xl font-serif font-bold text-brand-charcoal mb-3">Map Discovery Disabled</h3>
-        <p className="text-brand-muted max-w-sm mx-auto mb-8">Configure VITE_GOOGLE_MAPS_API_KEY in your environment to enable interactive location discovery.</p>
-        <div className="bg-white p-6 rounded-2xl border border-brand-border text-left space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-coffee">Required Setup:</p>
-          <code className="block p-3 bg-brand-background rounded-lg text-xs font-mono text-brand-charcoal">
-            VITE_GOOGLE_MAPS_API_KEY=your_api_key
-          </code>
-        </div>
       </div>
     );
   }

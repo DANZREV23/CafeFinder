@@ -25,10 +25,7 @@ const isValidApiKey = (key: string | undefined | null): boolean => {
 export const getMapConfig = (): MapConfig => {
   const provider = (import.meta.env.VITE_MAP_PROVIDER as MapProviderType) || 'google';
   const rawKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_MAP_API_KEY || null;
-  
-  // Use public demo key for prototyping if no key is provided
-  // This helps avoid BillingNotEnabledMapError in development/preview environments
-  const apiKey = isValidApiKey(rawKey) ? rawKey!.trim() : 'AIzaSyCx-V9YyS1R7B_X_8x6-D1-S1-S1-S1'; 
+  const apiKey = isValidApiKey(rawKey) ? rawKey!.trim() : null;
 
   return {
     provider,

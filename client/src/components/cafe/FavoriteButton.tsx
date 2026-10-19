@@ -53,7 +53,8 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
     try {
       const response = await favoriteService.toggleFavorite(cafeId);
       if (response.success) {
-        setIsFavorite(response.data.isFavorite);
+        const newFavState = response.data?.isFavorite ?? response.isFavorite ?? !previousState;
+        setIsFavorite(newFavState);
       } else {
         // Rollback
         setIsFavorite(previousState);

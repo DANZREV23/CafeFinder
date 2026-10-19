@@ -25,12 +25,12 @@ export class FavoriteController {
 
   getStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { cafeId } = req.params;
+      const cafeId = req.params.cafeId || req.params.id;
       if (!req.user) {
-        return res.json({ success: true, isFavorite: false });
+        return res.json({ success: true, isFavorite: false, data: { isFavorite: false } });
       }
       const status = await this.service.getFavoriteStatus(req.user.id, cafeId);
-      res.json({ success: true, ...status });
+      res.json({ success: true, data: status, ...status });
     } catch (error) {
       next(error);
     }
@@ -38,9 +38,9 @@ export class FavoriteController {
 
   toggle = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { cafeId } = req.params;
+      const cafeId = req.params.cafeId || req.params.id;
       const result = await this.service.toggleFavorite(req.user!.id, cafeId);
-      res.json({ success: true, ...result });
+      res.json({ success: true, data: result, ...result });
     } catch (error) {
       next(error);
     }
@@ -48,9 +48,9 @@ export class FavoriteController {
 
   remove = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { cafeId } = req.params;
+      const cafeId = req.params.cafeId || req.params.id;
       const result = await this.service.removeFavorite(req.user!.id, cafeId);
-      res.json({ success: true, ...result });
+      res.json({ success: true, data: result, ...result });
     } catch (error) {
       next(error);
     }

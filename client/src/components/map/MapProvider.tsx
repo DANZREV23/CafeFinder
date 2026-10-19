@@ -38,7 +38,7 @@ export const MapProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Global handler for Google Maps authentication failures (e.g., BillingNotEnabledMapError)
   React.useEffect(() => {
     (window as any).gm_authFailure = () => {
-      console.error("Google Maps authentication failure detected.");
+      console.warn("Google Maps authentication or billing notice detected (gm_authFailure).");
       setIsAuthFailure(true);
     };
     return () => {
