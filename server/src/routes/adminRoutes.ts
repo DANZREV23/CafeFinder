@@ -170,4 +170,12 @@ router.post('/lists/:id/cafes', listController.addCafe);
 router.patch('/lists/:id/cafes/:cafeId', listController.updateCafe);
 router.delete('/lists/:id/cafes/:cafeId', listController.removeCafe);
 
+// Stage 43 Admin Loyalty Oversight
+import { LoyaltyController } from '../controllers/loyaltyController.js';
+const loyaltyController = new LoyaltyController();
+router.get('/loyalty', loyaltyController.getAdminLoyaltyOverview);
+router.patch('/loyalty/programs/:programId/status', loyaltyController.adminUpdateProgramStatus);
+router.patch('/loyalty/accounts/:accountId/status', loyaltyController.adminUpdateAccountStatus);
+router.post('/loyalty/reconcile', loyaltyController.adminReconcileLedgers);
+
 export default router;

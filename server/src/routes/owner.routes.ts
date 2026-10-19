@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
 import { OwnerController } from '../controllers/ownerController.js';
 import { OwnerAnalyticsController } from '../controllers/ownerAnalyticsController.js';
 import { InquiryController } from '../controllers/inquiryController.js';
+import { LoyaltyController } from '../controllers/loyaltyController.js';
 import { uploadOwnerPhoto } from '../middleware/uploadMiddleware.js';
 import { submissionRateLimit } from '../config/security.js';
 
@@ -10,6 +11,7 @@ const router = Router();
 const controller = new OwnerController();
 const analyticsController = new OwnerAnalyticsController();
 const inquiryController = new InquiryController();
+const loyaltyController = new LoyaltyController();
 
 router.use(requireAuth, requireRole('OWNER', 'ADMIN'));
 router.get('/dashboard', controller.getDashboard);
@@ -66,5 +68,15 @@ router.post('/cafes/:id/announcements', submissionRateLimit, controller.createAn
 router.post('/cafes/:id/announcements/:announcementId/publish', controller.publishAnnouncement);
 
 router.post('/cafes/:id/notify-menu-update', controller.notifyMenuUpdate);
+
+// Stage 43 Loyalty & Rewards Management
+router.get('/loyalty/overview', loyaltyController.getOwnerLoyaltyOverview);
+router.put('/loyalty/cafes/:cafeId/program', submissionRateLimit, loyaltyController.upsertOwnerProgram);
+router.post('/loyalty/cafes/:cafeId/rewards', submissionRateLimit, loyaltyController.createOwnerReward);
+router.patch('/loyalty/cafes/:cafeId/rewards/:rewardId', submissionRateLimit, loyaltyController.updateOwnerReward);
+router.get('/loyalty/cafes/:cafeId/customers', loyaltyController.getOwnerCustomers);
+router.post('/loyalty/cafes/:cafeId/points', submissionRateLimit, loyaltyController.issueOwnerPoints);
+router.post('/loyalty/cafes/:cafeId/check-ins/:checkInId/review', submissionRateLimit, loyaltyController.reviewVisitCheckIn);
+router.post('/loyalty/cafes/:cafeId/redemptions/:redemptionId/process', submissionRateLimit, loyaltyController.processOwnerRedemption);
 
 export default router;

@@ -6,7 +6,7 @@ const router = Router();
 const controller = new NotificationController();
 
 router.get('/', requireAuth, controller.getNotifications);
-router.post('/read-all', requireAuth, controller.markAllAsRead);
 router.patch('/:id/read', requireAuth, controller.markAsRead);
+router.patch('/read-all', requireAuth, controller.markAllAsRead);
 
 export default router;

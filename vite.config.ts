@@ -16,12 +16,12 @@ function aistudioMediaPlugin(): Plugin {
             const decodedPath = decodeURIComponent(rawPath);
             const relativePath = decodedPath.replace(/^\//, '');
             const aistudioDir = path.resolve(
-              __dirname,
+              process.cwd(),
               'client/public', // Updated to client/public
               'assets',
               'aistudio',
             );
-            const filePath = path.resolve(__dirname, 'client/public', relativePath);
+            const filePath = path.resolve(process.cwd(), 'client/public', relativePath);
             if (
               filePath.startsWith(aistudioDir + path.sep) &&
               fs.existsSync(filePath) &&
@@ -177,7 +177,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './client/src'),
+        '@': path.resolve(process.cwd(), './client/src'),
       },
     },
     build: {

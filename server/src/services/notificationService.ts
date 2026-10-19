@@ -36,12 +36,33 @@ export class NotificationService {
     return this.repository.markAllAsRead(userId);
   }
 
-  async createNotification(userId: string, data: { title: string; message: string; type: string }) {
+  async createNotification(
+    userIdOrData: string | { userId: string; title: string; message?: string; type?: string; link?: string },
+    optionalData?: { title: string; message: string; type?: string; link?: string }
+  ) {
+    if (typeof userIdOrData === 'object' && userIdOrData !== null) {
+      const { userId, title, message = '', type = 'SYSTEM' } = userIdOrData;
+      return this.repository.create({
+        user: { connect: { id: userId } },
+        title,
+        message,
+        type,
+      });
+    }
+
+    const userId = typeof userIdOrData === 'string' ? userIdOrData : '';
+    const title = optionalData?.title || '';
+    const message = optionalData?.message || '';
+    const type = optionalData?.type || 'SYSTEM';
+
     return this.repository.create({
       user: { connect: { id: userId } },
-      title: data.title,
-      message: data.message,
-      type: data.type,
+      title,
+      message,
+      type,
     });
   }
 }
+
+export const notificationService = new NotificationService();
+export default notificationService;

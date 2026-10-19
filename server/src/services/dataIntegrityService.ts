@@ -32,6 +32,10 @@ export interface IntegrityReport {
     total: number;
     brokenReferences: number;
   };
+  loyalty?: {
+    checkedAccounts: number;
+    inconsistentBalances: number;
+  };
 }
 
 export class DataIntegrityService {
@@ -191,6 +195,18 @@ export class DataIntegrityService {
     report.users.staleSessions = await prisma.session.count({
       where: { expiresAt: { lt: new Date() } }
     });
+
+    // 5. Loyalty Ledger Integrity (Stage 43)
+    try {
+      const { LoyaltyService } = await import('./loyaltyService.js');
+      const loyaltyCheck = await LoyaltyService.reconcileAllLoyaltyLedgers(false);
+      report.loyalty = {
+        checkedAccounts: loyaltyCheck.checkedAccounts,
+        inconsistentBalances: loyaltyCheck.inconsistenciesFound,
+      };
+    } catch {
+      report.loyalty = { checkedAccounts: 0, inconsistentBalances: 0 };
+    }
 
     return report;
   }

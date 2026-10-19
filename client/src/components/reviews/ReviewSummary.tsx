@@ -26,9 +26,9 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({ stats }) => {
       {/* Overall Score */}
       <div className="flex flex-col items-center justify-center text-center">
         <div className="text-5xl font-serif font-bold text-brand-charcoal mb-2">
-          {ratingAverage.toFixed(1)}
+          {(Number(ratingAverage) || 0).toFixed(1)}
         </div>
-        <StarRating rating={Math.round(ratingAverage)} readonly size="md" className="mb-2" />
+        <StarRating rating={Math.round(Number(ratingAverage) || 0)} readonly size="md" className="mb-2" />
         <div className="text-brand-muted text-sm font-medium">
           Based on {reviewCount} {reviewCount === 1 ? 'approved review' : 'approved reviews'}
         </div>
@@ -67,9 +67,9 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({ stats }) => {
                     <Coffee className="w-3.5 h-3.5 text-brand-coffee" />
                     Coffee Quality
                   </span>
-                  <span className="font-bold text-brand-charcoal">{coffeeAverage.toFixed(1)} / 5</span>
+                  <span className="font-bold text-brand-charcoal">{(Number(coffeeAverage) || 0).toFixed(1)} / 5</span>
                 </div>
-                <StarRating rating={Math.round(coffeeAverage)} readonly size="sm" />
+                <StarRating rating={Math.round(Number(coffeeAverage) || 0)} readonly size="sm" />
               </div>
             )}
             
@@ -80,9 +80,9 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({ stats }) => {
                     <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                     Ambiance
                   </span>
-                  <span className="font-bold text-brand-charcoal">{ambianceAverage.toFixed(1)} / 5</span>
+                  <span className="font-bold text-brand-charcoal">{(Number(ambianceAverage) || 0).toFixed(1)} / 5</span>
                 </div>
-                <StarRating rating={Math.round(ambianceAverage)} readonly size="sm" />
+                <StarRating rating={Math.round(Number(ambianceAverage) || 0)} readonly size="sm" />
               </div>
             )}
             
@@ -93,9 +93,9 @@ export const ReviewSummary: React.FC<ReviewSummaryProps> = ({ stats }) => {
                     <Smile className="w-3.5 h-3.5 text-emerald-600" />
                     Service
                   </span>
-                  <span className="font-bold text-brand-charcoal">{serviceAverage.toFixed(1)} / 5</span>
+                  <span className="font-bold text-brand-charcoal">{(Number(serviceAverage) || 0).toFixed(1)} / 5</span>
                 </div>
-                <StarRating rating={Math.round(serviceAverage)} readonly size="sm" />
+                <StarRating rating={Math.round(Number(serviceAverage) || 0)} readonly size="sm" />
               </div>
             )}
           </>

@@ -1,81 +1,79 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { MainLayout } from '../components/layout/MainLayout';
 import { PageContainer } from '../components/layout/PageContainer';
 import { ownerService } from '../services/ownerService';
 import { ownerCafeService } from '../services/ownerCafeService';
 
 export default function OwnerCafeEditPage() {
-  const { id } = useParams<{ id: string }>(); const navigate = useNavigate();
-  const [form, setForm] = useState<any>({
+  const { id } = useParams<{ id: string }>();
+  const [name, setName] = useState('');
+  const [form, setForm] = useState({
+    name: '',
     shortDescription: '',
     description: '',
-    address: '',
-    city: '',
-    state: '',
-    country: '',
-    postalCode: '',
     phone: '',
     email: '',
     website: '',
     instagram: '',
     facebook: '',
-    priceRange: 2
+    priceRange: 1,
   });
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
+  const [statusMessage, setStatusMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
-      ownerService.getOwnedCafe(id)
-        .then(r => {
-          setName(r.data.name);
+      ownerService
+        .getOwnedCafe(id)
+        .then((result) => {
+          const cafe = result.data;
+          setName(cafe.name || 'Cafe');
           setForm({
-            shortDescription: r.data.shortDescription || '',
-            description: r.data.description || '',
-            address: r.data.address || '',
-            city: r.data.city || '',
-            state: r.data.state || '',
-            country: r.data.country || '',
-            postalCode: r.data.postalCode || '',
-            phone: r.data.phone || '',
-            email: r.data.email || '',
-            website: r.data.website || '',
-            instagram: r.data.instagram || '',
-            facebook: r.data.facebook || '',
-            priceRange: r.data.priceRange || 2
+            name: cafe.name || '',
+            shortDescription: cafe.shortDescription || '',
+            description: cafe.description || '',
+            phone: cafe.phone || '',
+            email: cafe.email || '',
+            website: cafe.website || '',
+            instagram: cafe.instagram || '',
+            facebook: cafe.facebook || '',
+            priceRange: cafe.priceRange || 1,
           });
         })
-        .catch(e => setError(e.message));
+        .catch((error: any) => {
+          setStatusMessage({ text: error.message || 'Failed to load cafe details', isError: true });
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
   }, [id]);
 
-  const update = (key: string, value: unknown) => setForm((current: any) => ({ ...current, [key]: value }));
-
-  const save = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!id) return;
     setSaving(true);
-    setError('');
+    setStatusMessage(null);
+
     try {
-      const payload = {
-        ...form,
-        priceRange: Number(form.priceRange)
-      };
-
-      // Convert empty strings to null for optional fields to pass backend validation
-      ['phone', 'email', 'website', 'instagram', 'facebook', 'state', 'postalCode'].forEach(key => {
-        if (payload[key] === '') {
-          payload[key] = null;
-        }
+      await ownerCafeService.updateBusiness(id, {
+        name: form.name.trim(),
+        shortDescription: form.shortDescription.trim() || null,
+        description: form.description.trim() || null,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        website: form.website.trim() || null,
+        instagram: form.instagram.trim() || null,
+        facebook: form.facebook.trim() || null,
+        priceRange: Number(form.priceRange) || 1,
       });
-
-      await ownerCafeService.updateBusiness(id, payload);
-      navigate(`/owner/cafes/${id}`);
-    } catch (e: any) {
-      setError(e.message);
+      setName(form.name.trim());
+      setStatusMessage({ text: 'Cafe information updated successfully!' });
+    } catch (error: any) {
+      setStatusMessage({ text: error.message || 'Failed to update cafe information', isError: true });
     } finally {
       setSaving(false);
     }
@@ -84,139 +82,171 @@ export default function OwnerCafeEditPage() {
   return (
     <MainLayout>
       <PageContainer className="py-12">
-        <Link to={`/owner/cafes/${id}`} className="inline-flex items-center gap-2 text-sm text-brand-muted">
+        <Link
+          to={`/owner/cafes/${id}`}
+          className="inline-flex items-center gap-2 text-sm text-brand-muted hover:text-brand-coffee transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to {name || 'cafe'}
         </Link>
+
         <div className="mt-8 max-w-3xl">
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-coffee">Business information</p>
-          <h1 className="mt-2 text-4xl font-serif font-bold text-brand-charcoal">Edit {name}</h1>
-          <p className="mt-2 text-brand-muted">Update your cafe's basic information and location details.</p>
-          {error && <p className="mt-5 rounded-xl bg-red-50 p-4 text-red-700">{error}</p>}
-          
-          <form onSubmit={save} className="mt-8 space-y-6 rounded-2xl border border-brand-border bg-white p-6">
-            <div className="space-y-6">
-              <h2 className="text-lg font-bold text-brand-charcoal border-b pb-2">General Information</h2>
-              
-              <label className="block text-sm font-semibold">
-                Short description
-                <input 
-                  required 
-                  minLength={10} 
-                  maxLength={300} 
-                  value={form.shortDescription} 
-                  onChange={e => update('shortDescription', e.target.value)} 
-                  className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
-                />
-              </label>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-brand-coffee">
+            Edit Cafe Information
+          </h1>
+          <p className="mt-2 text-brand-muted">
+            Update your business details, contact points, and public overview.
+          </p>
 
-              <label className="block text-sm font-semibold">
-                Description
-                <textarea 
-                  required 
-                  minLength={20} 
-                  maxLength={5000} 
-                  rows={7} 
-                  value={form.description} 
-                  onChange={e => update('description', e.target.value)} 
-                  className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
-                />
-              </label>
+          {statusMessage && (
+            <div
+              className={`mt-6 flex items-center gap-3 rounded-xl p-4 text-sm font-medium ${
+                statusMessage.isError
+                  ? 'bg-red-50 text-red-700 border border-red-200'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              {statusMessage.isError ? (
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              ) : (
+                <CheckCircle className="w-5 h-5 flex-shrink-0" />
+              )}
+              <span>{statusMessage.text}</span>
+            </div>
+          )}
 
-              <h2 className="text-lg font-bold text-brand-charcoal border-b pb-2 pt-4">Location</h2>
-              
-              <label className="block text-sm font-semibold">
-                Address
-                <input 
-                  required 
-                  value={form.address} 
-                  onChange={e => update('address', e.target.value)} 
-                  className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
-                />
-              </label>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <label className="block text-sm font-semibold">
-                  City
-                  <input 
-                    required 
-                    value={form.city} 
-                    onChange={e => update('city', e.target.value)} 
-                    className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
+          {loading ? (
+            <div className="mt-8 p-12 text-center text-brand-muted">Loading cafe details...</div>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="mt-8 space-y-6 rounded-2xl border border-brand-border bg-white p-6 md:p-8 shadow-sm"
+            >
+              <div className="space-y-4">
+                <label className="block text-sm font-semibold text-brand-coffee">
+                  Cafe Name *
+                  <input
+                    type="text"
+                    required
+                    minLength={2}
+                    maxLength={100}
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
                   />
                 </label>
-                <label className="block text-sm font-semibold">
-                  State / Province
-                  <input 
-                    value={form.state} 
-                    onChange={e => update('state', e.target.value)} 
-                    className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
-                  />
-                </label>
-                <label className="block text-sm font-semibold">
-                  Country
-                  <input 
-                    required 
-                    value={form.country} 
-                    onChange={e => update('country', e.target.value)} 
-                    className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
-                  />
-                </label>
-                <label className="block text-sm font-semibold">
-                  Postal Code
-                  <input 
-                    value={form.postalCode} 
-                    onChange={e => update('postalCode', e.target.value)} 
-                    className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
-                  />
-                </label>
-              </div>
 
-              <h2 className="text-lg font-bold text-brand-charcoal border-b pb-2 pt-4">Contact & Social</h2>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                {[
-                  ['phone', 'Phone'],
-                  ['email', 'Email'],
-                  ['website', 'Website'],
-                  ['instagram', 'Instagram URL'],
-                  ['facebook', 'Facebook URL']
-                ].map(([key, label]) => (
-                  <label key={key} className="block text-sm font-semibold">
-                    {label}
-                    <input 
-                      type={key === 'email' ? 'email' : 'text'} 
-                      value={form[key]} 
-                      onChange={e => update(key, e.target.value)} 
-                      className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none" 
+                <label className="block text-sm font-semibold text-brand-coffee">
+                  Short Description / Tagline
+                  <input
+                    type="text"
+                    maxLength={200}
+                    placeholder="e.g. Artisanal specialty espresso & vegan pastries in Midtown"
+                    value={form.shortDescription}
+                    onChange={(e) => setForm({ ...form, shortDescription: e.target.value })}
+                    className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
+                  />
+                </label>
+
+                <label className="block text-sm font-semibold text-brand-coffee">
+                  Full Description
+                  <textarea
+                    rows={4}
+                    maxLength={2000}
+                    placeholder="Describe your atmosphere, roasting philosophy, origins, and seating..."
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
+                  />
+                </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="block text-sm font-semibold text-brand-coffee">
+                    Price Range
+                    <select
+                      value={form.priceRange}
+                      onChange={(e) => setForm({ ...form, priceRange: Number(e.target.value) })}
+                      className="mt-1.5 w-full rounded-xl border border-brand-border p-3 bg-white focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
+                    >
+                      <option value={1}>$ (Inexpensive - under $5)</option>
+                      <option value={2}>$$ (Moderate - $5 to $10)</option>
+                      <option value={3}>$$$ (Specialty / High-end - $10 to $20)</option>
+                      <option value={4}>$$$$ (Luxury / Reserve - $20+)</option>
+                    </select>
+                  </label>
+
+                  <label className="block text-sm font-semibold text-brand-coffee">
+                    Phone Number
+                    <input
+                      type="tel"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder="+1 (555) 012-3456"
+                      className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
                     />
                   </label>
-                ))}
-                
-                <label className="block text-sm font-semibold">
-                  Price range
-                  <select 
-                    value={form.priceRange} 
-                    onChange={e => update('priceRange', e.target.value)} 
-                    className="mt-2 w-full rounded-xl border border-brand-border p-3 focus:ring-2 focus:ring-brand-coffee/20 outline-none"
-                  >
-                    {[1, 2, 3, 4].map(value => (
-                      <option key={value} value={value}>{'₱'.repeat(value)}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
+                </div>
 
-            <div className="pt-4">
-              <button 
-                disabled={saving} 
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-coffee px-8 py-4 font-bold text-white shadow-lg shadow-brand-coffee/20 hover:bg-brand-coffee/90 transition-all disabled:opacity-50"
-              >
-                <Save className="h-5 w-5" />
-                {saving ? 'Saving...' : 'Save changes'}
-              </button>
-            </div>
-          </form>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="block text-sm font-semibold text-brand-coffee">
+                    Email Address
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      placeholder="hello@cafename.com"
+                      className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-semibold text-brand-coffee">
+                    Website URL
+                    <input
+                      type="url"
+                      value={form.website}
+                      onChange={(e) => setForm({ ...form, website: e.target.value })}
+                      placeholder="https://cafename.com"
+                      className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="block text-sm font-semibold text-brand-coffee">
+                    Instagram Handle / URL
+                    <input
+                      type="text"
+                      value={form.instagram}
+                      onChange={(e) => setForm({ ...form, instagram: e.target.value })}
+                      placeholder="@cafename"
+                      className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-semibold text-brand-coffee">
+                    Facebook Handle / URL
+                    <input
+                      type="text"
+                      value={form.facebook}
+                      onChange={(e) => setForm({ ...form, facebook: e.target.value })}
+                      placeholder="facebook.com/cafename"
+                      className="mt-1.5 w-full rounded-xl border border-brand-border p-3 focus:outline-none focus:ring-2 focus:ring-brand-coffee/30"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-brand-border flex items-center justify-end">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-xl bg-brand-coffee px-6 py-3 font-semibold text-white shadow-sm hover:bg-brand-coffee/90 disabled:opacity-50 transition-colors"
+                >
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </PageContainer>
     </MainLayout>

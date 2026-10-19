@@ -2,15 +2,14 @@ import { fetchApi } from './api';
 import { ApiResponse, BlogPost, BlogListResponse, PostStatus } from '../types';
 
 export const adminBlogService = {
-  getAll: async (params: { page?: number; limit?: number; search?: string; status?: PostStatus; category?: string } = {}) => {
+  getAll: async (params: { page?: number; limit?: number; search?: string; status?: PostStatus } = {}) => {
     const query = new URLSearchParams();
     if (params.page) query.append('page', params.page.toString());
     if (params.limit) query.append('limit', params.limit.toString());
     if (params.search) query.append('search', params.search);
     if (params.status) query.append('status', params.status);
-    if (params.category) query.append('category', params.category);
-    
-    return fetchApi<BlogListResponse>(`/admin/blog?${query.toString()}`);
+
+    return fetchApi<ApiResponse<{ posts: BlogPost[]; pagination: any }>>(`/admin/blog?${query.toString()}`);
   },
 
   getById: async (id: string) => {
@@ -42,5 +41,5 @@ export const adminBlogService = {
     return fetchApi<ApiResponse<void>>(`/admin/blog/${id}`, {
       method: 'DELETE',
     });
-  }
+  },
 };

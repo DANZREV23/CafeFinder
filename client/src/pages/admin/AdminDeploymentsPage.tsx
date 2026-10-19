@@ -405,3 +405,5 @@ export const AdminDeploymentsPage: React.FC = () => {
     </div>
   );
 };
+
+export default AdminDeploymentsPage;

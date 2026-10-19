@@ -1,74 +1,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Coffee, ArrowRight, Sparkles } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Compass, Sparkles } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export const DiscoveryCTA: React.FC = () => {
   return (
-    <section className="py-24 px-4 bg-brand-charcoal text-white relative overflow-hidden">
-      {/* Background patterns */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-coffee/10 -skew-x-12 translate-x-1/4 pointer-events-none" />
-      
-      <div className="container max-w-7xl mx-auto relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-coffee/30 text-brand-accent text-xs font-bold rounded-full uppercase tracking-widest mb-6">
-              <Sparkles size={14} />
-              <span>Personalized Discovery</span>
+    <section className="py-20 px-4 bg-brand-background border-t border-brand-border/40">
+      <div className="container max-w-7xl mx-auto">
+        <div className="bg-gradient-to-br from-brand-coffee to-brand-coffee-dark rounded-[2.5rem] p-10 md:p-16 text-white relative overflow-hidden shadow-xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="max-w-2xl relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/90 text-xs font-semibold uppercase tracking-wider mb-6">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              Interactive Cafe Map
             </div>
-            
-            <h2 className="text-4xl md:text-6xl font-display font-bold mb-8 leading-tight">
-              Your next favorite <br />
-              cafe is <span className="text-brand-accent italic">waiting.</span>
+
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">
+              Ready to find your next favorite corner?
             </h2>
-            
-            <p className="text-xl text-gray-300 mb-12 max-w-xl leading-relaxed">
-              Explore local coffee shops, hidden gems, and community favorites. Filter by vibe, coffee type, or amenities to find your perfect spot.
+
+            <p className="text-lg text-white/80 mb-8 leading-relaxed">
+              Filter by specialty brews, quiet study corners, fast Wi-Fi, or pet-friendly patios. Your ideal coffee experience is just a click away.
             </p>
-            
-            <Link to="/explore">
-              <Button className="bg-brand-accent text-brand-charcoal hover:bg-brand-accent/90 rounded-full px-10 py-5 h-auto text-lg font-bold shadow-xl shadow-brand-accent/20 group transition-all">
-                Explore All Cafes
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative hidden lg:block"
-          >
-            <div className="relative aspect-square max-w-md mx-auto">
-              <div className="absolute inset-0 bg-brand-coffee/20 rounded-3xl -rotate-6 scale-105" />
-              <img 
-                src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80" 
-                alt="Cafe Interior"
-                className="w-full h-full object-cover rounded-3xl shadow-2xl relative z-10 rotate-3 transition-transform hover:rotate-0 duration-500"
-              />
-              
-              {/* Floating Element */}
-              <div className="absolute -bottom-10 -left-10 bg-white p-6 rounded-2xl shadow-2xl z-20 max-w-[200px] text-brand-charcoal animate-bounce-slow">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-brand-success/10 rounded-full flex items-center justify-center text-brand-success">
-                    <Sparkles size={16} />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider">Top Rated</span>
-                </div>
-                <p className="text-sm font-bold">"Best coffee I've had in the city!"</p>
-              </div>
+
+            <div className="flex flex-wrap gap-4">
+              <Link to="/explore">
+                <Button className="bg-white text-brand-coffee hover:bg-stone-100 rounded-full px-8 py-4 h-auto font-bold shadow-lg cursor-pointer">
+                  <Compass className="w-4 h-4 mr-2" />
+                  Explore Cafes Now
+                </Button>
+              </Link>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
   );
 };
+
+export default DiscoveryCTA;

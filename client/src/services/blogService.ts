@@ -8,8 +8,20 @@ export const blogService = {
     if (params.limit) query.append('limit', params.limit.toString());
     if (params.search) query.append('search', params.search);
     if (params.category) query.append('category', params.category);
-    
-    return fetchApi<BlogListResponse>(`/blog?${query.toString()}`);
+    const res = await fetchApi<any>(`/blog?${query.toString()}`);
+    const rawPosts = Array.isArray(res.data) ? res.data : (res.data?.posts || res.posts || []);
+    const posts = Array.isArray(rawPosts) ? rawPosts : [];
+    const pagination = res.data?.pagination || res.pagination || { page: 1, limit: 12, total: posts.length, totalPages: 1 };
+
+    return {
+      success: res.success ?? true,
+      data: {
+        posts,
+        pagination,
+      },
+      posts,
+      pagination,
+    } as BlogListResponse;
   },
 
   getBySlug: async (slug: string) => {

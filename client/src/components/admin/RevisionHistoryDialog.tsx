@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'react-hot-toast';
 import { clsx } from 'clsx';
+import { fetchApi } from '@/services/api';
 
 interface Revision {
   id: string;
@@ -51,13 +52,12 @@ export const RevisionHistoryDialog: React.FC<RevisionHistoryDialogProps> = ({
   const fetchRevisions = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/editorial/revisions/${entityType}/${entityId}`);
-      const data = await response.json();
-      if (data.success) {
+      const data = await fetchApi<any>(`/admin/editorial/revisions/${entityType}/${entityId}`);
+      if (data.success && Array.isArray(data.data)) {
         setRevisions(data.data);
       }
-    } catch (error) {
-      toast.error('Failed to fetch revision history');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to fetch revision history');
     } finally {
       setLoading(false);
     }
@@ -67,17 +67,16 @@ export const RevisionHistoryDialog: React.FC<RevisionHistoryDialogProps> = ({
     if (!window.confirm('Are you sure you want to restore this version? Current changes will be archived as a new revision.')) return;
 
     try {
-      const response = await fetch(`/api/admin/editorial/revisions/${revisionId}/restore`, {
+      const data = await fetchApi<any>(`/admin/editorial/revisions/${revisionId}/restore`, {
         method: 'POST'
       });
-      const data = await response.json();
       if (data.success) {
         toast.success('Revision restored successfully');
         onRestore(selectedRevision?.snapshot);
         onClose();
       }
-    } catch (error) {
-      toast.error('Failed to restore revision');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to restore revision');
     }
   };
 

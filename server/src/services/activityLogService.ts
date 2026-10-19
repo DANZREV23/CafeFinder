@@ -36,4 +36,25 @@ export class ActivityLogService {
   }) {
     return this.activityLogRepository.create(data);
   }
+
+  async logActivity(
+    userId?: string,
+    action?: string,
+    entityType?: string,
+    entityId?: string,
+    metadata?: any,
+    ipAddress?: string
+  ) {
+    return this.logAction({
+      userId,
+      action: action || 'UNKNOWN_ACTION',
+      entityType,
+      entityId,
+      description: metadata ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata)) : undefined,
+      ipAddress,
+    });
+  }
 }
+
+export const activityLogService = new ActivityLogService();
+export default activityLogService;

@@ -26,7 +26,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   const refreshUser = useCallback(async () => {
-    const hasToken = !!getStoredToken();
+    const token = getStoredToken();
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
     try {
       const response = await fetchApi<ApiResponse<{ user: User; token?: string }>>('/auth/me');
       if (response.success && response.data?.user) {
@@ -40,12 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearStoredAuth();
       }
     } catch (error) {
-      if (hasToken) {
-        setUser(null);
-        clearStoredAuth();
-      } else {
-        setUser(null);
-      }
+      setUser(null);
+      clearStoredAuth();
     } finally {
       setLoading(false);
     }

@@ -45,7 +45,7 @@ export default function OwnerDashboardPage() {
     { label: 'Published Cafes', value: data?.publishedCafes, icon: ShieldCheck },
     { label: 'Total Reviews', value: data?.totalReviews, icon: MessageSquare },
     { label: 'Pending Changes', value: data?.pendingChangeRequests, icon: ClipboardList },
-    { label: 'Average Rating', value: data?.averageRating?.toFixed(1), icon: Star },
+    { label: 'Average Rating', value: data?.averageRating != null ? Number(data.averageRating).toFixed(1) : 'N/A', icon: Star },
   ];
 
   // Logic to determine where the Analytics link should go

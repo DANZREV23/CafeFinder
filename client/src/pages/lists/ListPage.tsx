@@ -30,8 +30,10 @@ const ListPage: React.FC = () => {
         setList(response.data);
         // Fetch other lists for the "Discover More" section
         const othersResponse = await listService.getAll({ limit: 4 });
-        if (othersResponse.success) {
-          setOtherLists(othersResponse.data.lists.filter((l: CuratedList) => l.slug !== slug));
+        if (othersResponse?.success) {
+          const rawOthers = Array.isArray(othersResponse.data) ? othersResponse.data : (othersResponse.data?.lists || othersResponse.lists || []);
+          const validOthers = Array.isArray(rawOthers) ? rawOthers : [];
+          setOtherLists(validOthers.filter((l: CuratedList) => l.slug !== slug));
         }
       } else {
         navigate('/lists');

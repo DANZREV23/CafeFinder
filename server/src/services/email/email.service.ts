@@ -95,7 +95,7 @@ export class EmailService {
     });
 
     try {
-      const { html, text, subject } = renderTemplate(job.template as EmailTemplate, job.payload);
+      const { html, text, subject } = renderTemplate(job.template as EmailTemplate, job.payload as any);
 
       const result = await this.provider.send({
         to: job.toAddress,
@@ -275,6 +275,83 @@ export class EmailService {
         cafeUrl: `${this.baseUrl}/cafes/${data.cafeSlug}`,
       },
       recipient.id
+    );
+  }
+
+  async sendLoyaltyPointsAwardedEmail(
+    customer: { id: string; name: string; email: string },
+    data: {
+      cafeName: string;
+      programName: string;
+      pointsAwarded: number;
+      newBalance: number;
+      description: string;
+    }
+  ) {
+    return this.queueEmail(
+      EmailTemplate.LOYALTY_POINTS_AWARDED,
+      customer.email,
+      {
+        customerName: customer.name,
+        cafeName: data.cafeName,
+        programName: data.programName,
+        pointsAwarded: data.pointsAwarded,
+        newBalance: data.newBalance,
+        description: data.description,
+        dashboardUrl: `${this.baseUrl}/dashboard/loyalty`,
+      },
+      customer.id
+    );
+  }
+
+  async sendLoyaltyRedemptionRequestedEmail(
+    owner: { id: string; name: string; email: string },
+    data: {
+      cafeId: string;
+      cafeName: string;
+      customerName: string;
+      rewardName: string;
+      pointsSpent: number;
+    }
+  ) {
+    return this.queueEmail(
+      EmailTemplate.LOYALTY_REDEMPTION_REQUESTED,
+      owner.email,
+      {
+        ownerName: owner.name,
+        cafeName: data.cafeName,
+        customerName: data.customerName,
+        rewardName: data.rewardName,
+        pointsSpent: data.pointsSpent,
+        redemptionsUrl: `${this.baseUrl}/owner/loyalty/redemptions?cafeId=${data.cafeId}`,
+      },
+      owner.id
+    );
+  }
+
+  async sendLoyaltyRedemptionUpdatedEmail(
+    customer: { id: string; name: string; email: string },
+    data: {
+      cafeName: string;
+      rewardName: string;
+      status: string;
+      pointsSpent: number;
+      reason?: string;
+    }
+  ) {
+    return this.queueEmail(
+      EmailTemplate.LOYALTY_REDEMPTION_UPDATED,
+      customer.email,
+      {
+        customerName: customer.name,
+        cafeName: data.cafeName,
+        rewardName: data.rewardName,
+        status: data.status,
+        pointsSpent: data.pointsSpent,
+        reason: data.reason,
+        dashboardUrl: `${this.baseUrl}/dashboard/loyalty`,
+      },
+      customer.id
     );
   }
 }

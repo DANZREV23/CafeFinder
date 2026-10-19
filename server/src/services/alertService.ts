@@ -1,64 +1,40 @@
-// server/src/services/alertService.ts
 import { prisma } from '../config/database.js';
-import { logger } from '../utils/logger.js';
 import { AlertSeverity, AlertStatus } from '@prisma/client';
 
+export interface AlertFilterOptions {
+  status?: AlertStatus;
+  severity?: AlertSeverity;
+  limit?: number;
+  offset?: number;
+}
+
 export class AlertService {
-  /**
-   * Create or update an operational alert with deduplication.
-   */
-  async recordAlert(params: {
-    key: string;
-    severity: AlertSeverity;
-    message: string;
-    source: string;
-    details?: any;
-  }) {
-    try {
-      const existing = await prisma.operationalAlert.findUnique({
-        where: { key: params.key }
-      });
+  async getAlerts(filters: AlertFilterOptions = {}) {
+    const where: any = {};
+    if (filters.status) where.status = filters.status;
+    if (filters.severity) where.severity = filters.severity;
 
-      if (existing) {
-        // If it was resolved, reopen it.
-        // If it's already open or acknowledged, just increment count and update message.
-        return await prisma.operationalAlert.update({
-          where: { key: params.key },
-          data: {
-            message: params.message,
-            severity: params.severity,
-            status: existing.status === AlertStatus.RESOLVED ? AlertStatus.OPEN : existing.status,
-            count: { increment: 1 },
-            details: params.details || existing.details,
-            resolvedAt: null,
-            updatedAt: new Date()
-          }
-        });
-      }
-
-      return await prisma.operationalAlert.create({
-        data: {
-          key: params.key,
-          severity: params.severity,
-          message: params.message,
-          source: params.source,
-          details: params.details || {},
-          status: AlertStatus.OPEN
-        }
-      });
-    } catch (err) {
-      logger.error(`[AlertService]: Failed to record alert for key ${params.key}`, err);
-    }
+    return prisma.operationalAlert.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: filters.limit || 50,
+      skip: filters.offset || 0,
+      include: {
+        acknowledgedBy: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
   }
 
-  async acknowledgeAlert(id: string, adminId: string) {
+  async acknowledgeAlert(id: string, userId: string) {
     return prisma.operationalAlert.update({
       where: { id },
       data: {
         status: AlertStatus.ACKNOWLEDGED,
         acknowledgedAt: new Date(),
-        acknowledgedById: adminId
-      }
+        acknowledgedById: userId,
+      },
     });
   }
 
@@ -67,20 +43,45 @@ export class AlertService {
       where: { id },
       data: {
         status: AlertStatus.RESOLVED,
-        resolvedAt: new Date()
-      }
+        resolvedAt: new Date(),
+      },
     });
   }
 
-  async getAlerts(filters?: { status?: AlertStatus; severity?: AlertSeverity }) {
-    return prisma.operationalAlert.findMany({
-      where: {
-        ...(filters?.status && { status: filters.status }),
-        ...(filters?.severity && { severity: filters.severity })
+  async triggerAlert(data: {
+    key: string;
+    message: string;
+    source: string;
+    severity?: AlertSeverity;
+    details?: any;
+  }) {
+    const existing = await prisma.operationalAlert.findUnique({
+      where: { key: data.key },
+    });
+
+    if (existing && existing.status !== AlertStatus.RESOLVED) {
+      return prisma.operationalAlert.update({
+        where: { id: existing.id },
+        data: {
+          count: { increment: 1 },
+          message: data.message,
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    return prisma.operationalAlert.create({
+      data: {
+        key: data.key,
+        message: data.message,
+        source: data.source,
+        severity: data.severity || AlertSeverity.INFO,
+        details: data.details || undefined,
+        status: AlertStatus.OPEN,
       },
-      orderBy: { createdAt: 'desc' }
     });
   }
 }
 
 export const alertService = new AlertService();
+export default alertService;

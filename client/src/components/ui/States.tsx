@@ -1,62 +1,75 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { AlertCircle, FileQuestion, RefreshCw } from "lucide-react";
 import { Button } from "./Button";
-import { Coffee, AlertCircle, SearchX } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
   title?: string;
   description?: string;
+  icon?: React.ReactNode;
   action?: React.ReactNode;
   className?: string;
 }
 
-export function EmptyState({ 
-  title = "No cafes found", 
-  description = "Try changing your search or filters to find what you're looking for.", 
-  action, 
-  className 
-}: EmptyStateProps) {
+export const EmptyState: React.FC<EmptyStateProps> = ({
+  title = "No results found",
+  description = "Try adjusting your filters or search criteria.",
+  icon,
+  action,
+  className,
+}) => {
   return (
-    <div className={cn("flex flex-col items-center justify-center py-20 text-center px-4", className)}>
-      <div className="bg-brand-cream p-6 rounded-full mb-6">
-        <SearchX className="h-10 w-10 text-brand-muted" />
-      </div>
-      <h3 className="text-xl font-serif font-bold text-brand-charcoal mb-2">{title}</h3>
-      <p className="text-brand-muted max-w-sm mb-8">{description}</p>
-      {action && (
-        <div className="flex justify-center">
-          {action}
-        </div>
+    <div
+      className={cn(
+        "flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-stone-200 bg-stone-50/50 p-8 text-center",
+        className
       )}
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-500 mb-4">
+        {icon || <FileQuestion className="h-6 w-6" />}
+      </div>
+      <h3 className="text-base font-semibold text-stone-900">{title}</h3>
+      {description && (
+        <p className="mt-1 text-sm text-stone-500 max-w-sm">{description}</p>
+      )}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
-}
+};
 
 interface ErrorStateProps {
   title?: string;
-  description?: string;
+  message?: string;
   onRetry?: () => void;
   className?: string;
 }
 
-export function ErrorState({ 
-  title = "Something went wrong", 
-  description = "We couldn't load the cafes at this moment. Please try again later.", 
-  onRetry, 
-  className 
-}: ErrorStateProps) {
+export const ErrorState: React.FC<ErrorStateProps> = ({
+  title = "Something went wrong",
+  message = "We encountered an issue loading this data. Please try again.",
+  onRetry,
+  className,
+}) => {
   return (
-    <div className={cn("flex flex-col items-center justify-center py-20 text-center px-4", className)}>
-      <div className="bg-brand-error/10 p-6 rounded-full mb-6 text-brand-error">
-        <AlertCircle className="h-10 w-10" />
+    <div
+      className={cn(
+        "flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-red-100 bg-red-50/50 p-8 text-center",
+        className
+      )}
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
+        <AlertCircle className="h-6 w-6" />
       </div>
-      <h3 className="text-xl font-serif font-bold text-brand-charcoal mb-2">{title}</h3>
-      <p className="text-brand-muted max-w-sm mb-8">{description}</p>
+      <h3 className="text-base font-semibold text-stone-900">{title}</h3>
+      <p className="mt-1 text-sm text-stone-600 max-w-sm">{message}</p>
       {onRetry && (
-        <Button onClick={onRetry} variant="primary">
-          Try Again
-        </Button>
+        <div className="mt-5">
+          <Button onClick={onRetry} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Try again
+          </Button>
+        </div>
       )}
     </div>
   );
-}
+};

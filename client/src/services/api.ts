@@ -79,7 +79,10 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
     }
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const normalizedEndpoint = endpoint.startsWith('/api') ? endpoint.slice(4) : endpoint;
+  const targetUrl = `${API_URL}${normalizedEndpoint.startsWith('/') ? normalizedEndpoint : `/${normalizedEndpoint}`}`;
+
+  const response = await fetch(targetUrl, {
     ...options,
     headers,
     credentials: 'include',

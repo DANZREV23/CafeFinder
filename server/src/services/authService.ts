@@ -48,7 +48,10 @@ export class AuthService {
       throw { status: 401, message: 'Invalid email or password.' };
     }
 
-    const isPasswordValid = await bcrypt.compare(data.password, user.passwordHash);
+    let isPasswordValid = await bcrypt.compare(data.password, user.passwordHash);
+    if (!isPasswordValid && data.password && data.password.trim() !== data.password) {
+      isPasswordValid = await bcrypt.compare(data.password.trim(), user.passwordHash);
+    }
     if (!isPasswordValid) {
       throw { status: 401, message: 'Invalid email or password.' };
     }

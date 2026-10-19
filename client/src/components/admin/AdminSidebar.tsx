@@ -1,222 +1,253 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Coffee, 
+import { NavLink, Link, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Coffee,
+  Star,
+  Flag,
+  Folder,
   ShieldCheck,
-  FileText, 
-  Star, 
-  Users, 
-  History, 
+  FileText,
+  Bell,
+  MapPin,
+  Award,
+  Users,
+  LayoutGrid,
+  Image,
+  Sparkles,
+  RotateCcw,
+  Activity,
+  Clock,
+  Rocket,
+  Shield,
   Settings,
   X,
-  MapPin,
-  ChevronRight,
-  LayoutGrid,
-  Activity,
-  Rocket,
-  Clock,
-  Bell,
-  Sparkles,
-  Flag,
-  FolderHeart
+  ExternalLink,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx } from 'clsx';
-import { useI18n } from '@/i18n';
 
 interface AdminSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const MENU_ITEMS = [
-  { id: 'dashboard', labelKey: 'admin.dashboard', icon: LayoutDashboard, path: '/admin' },
-  { 
-    id: 'moderation', 
-    labelKey: 'admin.moderation', 
-    type: 'group',
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ElementType;
+  end?: boolean;
+  badge?: string;
+  isExternal?: boolean;
+  disabled?: boolean;
+}
+
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+const SIDEBAR_SECTIONS: NavSection[] = [
+  {
     items: [
-      { id: 'submissions', labelKey: 'admin.submissions', icon: Coffee, path: '/admin/submissions' },
-      { id: 'reviews', labelKey: 'admin.reviews', icon: Star, path: '/admin/reviews' },
-      { id: 'review-reports', labelKey: 'admin.reviewReports', icon: Flag, path: '/admin/review-reports' },
-      { id: 'collections', labelKey: 'admin.collections', icon: FolderHeart, path: '/admin/collections' },
-      { id: 'claims', labelKey: 'admin.claims', icon: ShieldCheck, path: '/admin/claims' },
-      { id: 'change-requests', labelKey: 'admin.changeRequests', icon: FileText, path: '/admin/change-requests' },
-      { id: 'inquiries', labelKey: 'admin.inquiries', icon: Bell, path: '/admin/inquiries' },
-    ]
+      { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    ],
   },
-  { 
-    id: 'directory', 
-    labelKey: 'admin.directory', 
-    type: 'group',
+  {
+    title: 'MODERATION',
     items: [
-      { id: 'cafes', labelKey: 'admin.cafes', icon: MapPin, path: '/admin/cafes' },
-    ]
+      { to: '/admin/submissions', label: 'Cafe Submissions', icon: Coffee },
+      { to: '/admin/reviews', label: 'Reviews', icon: Star },
+      { to: '/admin/review-reports', label: 'Review Reports', icon: Flag },
+      { to: '/admin/collections', label: 'User Collections', icon: Folder },
+      { to: '/admin/claims', label: 'Owner Claims', icon: ShieldCheck },
+      { to: '/admin/change-requests', label: 'Cafe Change Requests', icon: FileText },
+      { to: '/admin/inquiries', label: 'Customer Inquiries', icon: Bell },
+    ],
   },
-  { 
-    id: 'users', 
-    labelKey: 'admin.users', 
-    type: 'group',
+  {
+    title: 'DIRECTORY',
     items: [
-      { id: 'user-list', labelKey: 'admin.userList', icon: Users, path: '/admin/users' },
-    ]
+      { to: '/admin/cafes', label: 'Cafes', icon: MapPin },
+      { to: '/admin/loyalty', label: 'Loyalty & Rewards', icon: Award },
+    ],
   },
-  { 
-    id: 'content', 
-    labelKey: 'admin.content', 
-    type: 'group',
+  {
+    title: 'USERS',
     items: [
-      { id: 'blog', labelKey: 'admin.blog', icon: FileText, path: '/admin/blog' },
-      { id: 'lists', labelKey: 'admin.lists', icon: LayoutGrid, path: '/admin/lists' },
-      { id: 'testimonials', labelKey: 'admin.testimonials', icon: Star, path: '/admin/testimonials' },
-      { id: 'media', labelKey: 'admin.mediaLibrary', icon: LayoutGrid, path: '/admin/media' },
-      { id: 'quality', labelKey: 'admin.contentQuality', icon: ShieldCheck, path: '/admin/content/quality' },
-      { id: 'redirects', labelKey: 'admin.redirects', icon: History, path: '/admin/redirects' },
-    ]
+      { to: '/admin/users', label: 'User List', icon: Users },
+    ],
   },
-  { 
-    id: 'system', 
-    labelKey: 'admin.system', 
-    type: 'group',
+  {
+    title: 'CONTENT',
     items: [
-      { id: 'overview', labelKey: 'admin.controlCenter', icon: Activity, path: '/admin/system', end: true },
-      { id: 'alerts', labelKey: 'admin.alerts', icon: Bell, path: '/admin/system/alerts' },
-      { id: 'jobs', labelKey: 'admin.jobs', icon: Clock, path: '/admin/system/jobs' },
-      { id: 'deployments', labelKey: 'admin.deployments', icon: Rocket, path: '/admin/system/deployments' },
-      { id: 'integrity', labelKey: 'admin.integrity', icon: ShieldCheck, path: '/admin/system/integrity' },
-      { id: 'security', labelKey: 'admin.security', icon: ShieldCheck, path: '/admin/system/security' },
-      { id: 'recommendations', labelKey: 'admin.recommendations', icon: Sparkles, path: '/admin/system/recommendations' },
-      { id: 'activity', labelKey: 'admin.auditLogs', icon: History, path: '/admin/activity' },
-      { id: 'settings', labelKey: 'admin.settings', icon: Settings, path: '/admin/settings', comingSoon: true },
-    ]
-  }
+      { to: '/admin/blog', label: 'Blog Articles', icon: FileText },
+      { to: '/admin/lists', label: 'Curated Lists', icon: LayoutGrid },
+      { to: '/admin/testimonials', label: 'Testimonials', icon: Star },
+      { to: '/admin/media', label: 'Media Library', icon: LayoutGrid },
+      { to: '/admin/content/quality', label: 'Content Quality', icon: ShieldCheck },
+      { to: '/admin/redirects', label: 'Redirects', icon: RotateCcw },
+    ],
+  },
+  {
+    title: 'SYSTEM',
+    items: [
+      { to: '/admin/system', label: 'Control Center', icon: Activity, end: true },
+      { to: '/admin/alerts', label: 'Operational Alerts', icon: Bell },
+      { to: '/admin/jobs', label: 'Scheduled Jobs', icon: Clock },
+      { to: '/admin/deployments', label: 'Deployment History', icon: Rocket },
+      { to: '/admin/integrity', label: 'Data Integrity', icon: ShieldCheck },
+      { to: '/admin/security', label: 'Security & Logs', icon: Shield },
+      { to: '/admin/recommendations', label: 'Recommendations', icon: Sparkles },
+      { to: '/admin/activity', label: 'Audit Logs', icon: RotateCcw },
+      { to: '#', label: 'Settings', icon: Settings, badge: 'SOON', disabled: true },
+    ],
+  },
 ];
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
-  const { t } = useI18n();
-  const sidebarContent = (
-    <div className="flex flex-col h-full bg-stone-900 text-stone-100 w-64 shadow-xl">
-      <div className="p-6 flex items-center justify-between border-b border-stone-800">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center" aria-hidden="true">
-            <Coffee className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-lg tracking-tight">{t("admin.panel")}</span>
-        </div>
-        <button 
-          onClick={onClose}
-          className="lg:hidden p-2 text-stone-400 hover:text-white transition-colors"
-          aria-label={t("common.close")}
-        >
-          <X className="w-5 h-5" aria-hidden="true" />
-        </button>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar" aria-label="Admin sidebar">
-        <ul className="space-y-6">
-          {MENU_ITEMS.map((section) => (
-            <li key={section.id}>
-              {section.type === 'group' ? (
-                <>
-                  <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2 px-3">
-                    {t(section.labelKey)}
-                  </h3>
-                  <ul className="space-y-1">
-                    {section.items?.map((item) => (
-                      <li key={item.id}>
-                        <NavLink
-                          to={item.comingSoon ? '#' : item.path}
-                          end={item.end || item.path === '/admin'}
-                          onClick={item.comingSoon ? (e) => e.preventDefault() : onClose}
-                          className={({ isActive }) => clsx(
-                            "flex items-center justify-between px-3 py-2 rounded-lg transition-all group",
-                            isActive && !item.comingSoon ? "bg-amber-600 text-white" : "text-stone-400 hover:bg-stone-800 hover:text-stone-100",
-                            item.comingSoon && "opacity-50 cursor-not-allowed"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <item.icon className={clsx(
-                              "w-5 h-5",
-                              !item.comingSoon && "group-hover:text-amber-500 transition-colors"
-                            )} aria-hidden="true" />
-                            <span className="text-sm font-medium">{t(item.labelKey)}</span>
-                          </div>
-                          {item.comingSoon && (
-                            <span className="text-[10px] bg-stone-800 text-stone-500 px-1.5 py-0.5 rounded uppercase font-bold">
-                              Soon
-                            </span>
-                          )}
-                          {!item.comingSoon && (
-                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
-                          )}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <NavLink
-                  to={section.path || '#'}
-                  end={section.path === '/admin'}
-                  onClick={onClose}
-                  className={({ isActive }) => clsx(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
-                    isActive ? "bg-amber-600 text-white" : "text-stone-400 hover:bg-stone-800 hover:text-stone-100"
-                  )}
-                >
-                  <section.icon className="w-5 h-5" aria-hidden="true" />
-                  <span className="text-sm font-medium">{t(section.labelKey)}</span>
-                </NavLink>
-              )}
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="p-4 border-t border-stone-800">
-        <div className="p-3 bg-stone-800/50 rounded-xl">
-          <p className="text-[10px] text-stone-500 uppercase font-bold tracking-widest mb-1">CafeFinder v2.0</p>
-          <p className="text-xs text-stone-400">Moderation Dashboard</p>
-        </div>
-      </div>
-    </div>
-  );
+  const location = useLocation();
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-xs lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar container */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#141210] text-[#a8a29e] flex flex-col transition-transform duration-200 ease-in-out border-r border-white/[0.05] shadow-2xl lg:shadow-none lg:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Brand Header */}
+        <div className="h-16 flex items-center justify-between px-5 border-b border-white/[0.06] shrink-0">
+          <Link to="/admin" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 rounded-lg bg-[#ea580c] flex items-center justify-center text-white shadow-sm shadow-orange-950/50 group-hover:bg-[#f97316] transition-colors">
+              <Coffee className="w-4 h-4 stroke-[2.2]" />
+            </div>
+            <span className="font-bold text-white text-[17px] tracking-tight font-sans">
+              Admin Panel
+            </span>
+          </Link>
+          <button
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 z-40">
-        {sidebarContent}
-      </aside>
-
-      {/* Mobile Sidebar */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.aside
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 left-0 z-50 lg:hidden"
+            className="lg:hidden p-1.5 text-stone-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+            aria-label="Close sidebar"
           >
-            {sidebarContent}
-          </motion.aside>
-        )}
-      </AnimatePresence>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Navigation list */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4 text-xs font-medium scrollbar-thin scrollbar-thumb-stone-800 scrollbar-track-transparent">
+          {SIDEBAR_SECTIONS.map((section, sIdx) => (
+            <div key={section.title || `section-${sIdx}`} className="space-y-0.5">
+              {section.title && (
+                <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#736b63] px-3 pt-3 pb-1.5 select-none font-mono">
+                  {section.title}
+                </div>
+              )}
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                
+                if (item.disabled) {
+                  return (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-stone-500 opacity-60 cursor-not-allowed text-[13px] font-medium"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-4 h-4 shrink-0 text-stone-600" />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#201d1a] text-stone-400 border border-white/5">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Check active state
+                const isItemActive = item.end
+                  ? location.pathname === item.to
+                  : location.pathname.startsWith(item.to);
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={onClose}
+                    className={({ isActive }) => {
+                      const active = isActive || isItemActive;
+                      return `flex items-center justify-between px-3 py-2 rounded-xl text-[13px] transition-colors ${
+                        active
+                          ? 'bg-[#ea580c] text-white font-bold shadow-xs'
+                          : 'text-[#d6d3d1] hover:text-white hover:bg-white/[0.04]'
+                      }`;
+                    }}
+                  >
+                    {({ isActive }) => {
+                      const active = isActive || isItemActive;
+                      return (
+                        <>
+                          <div className="flex items-center gap-3 truncate">
+                            <Icon
+                              className={`w-4 h-4 shrink-0 transition-colors ${
+                                active ? 'text-white stroke-[2.2]' : 'text-stone-400'
+                              }`}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          {item.badge && (
+                            <span
+                              className={`text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded ${
+                                active
+                                  ? 'bg-black/30 text-white'
+                                  : 'bg-[#201d1a] text-stone-400 border border-white/5'
+                              }`}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      );
+                    }}
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* Bottom Card as in the image */}
+        <div className="p-3 shrink-0 border-t border-white/[0.06] space-y-2">
+          <div className="p-3 rounded-xl bg-[#1b1816] border border-white/[0.06]">
+            <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider font-mono">
+              CAFEFINDER V2.0
+            </div>
+            <div className="text-[11px] text-stone-500 font-medium mt-0.5">
+              Moderation Dashboard
+            </div>
+          </div>
+
+          <Link
+            to="/"
+            className="flex items-center justify-between text-xs font-semibold text-stone-400 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
+          >
+            <span>Exit to Public Site</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </aside>
     </>
   );
 };
+
+export default AdminSidebar;

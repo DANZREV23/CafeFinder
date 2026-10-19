@@ -1,135 +1,360 @@
 import { Response } from 'express';
-import { z } from 'zod';
-import { CafeChangeRequestType } from '@prisma/client';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { OwnerService } from '../services/ownerService.js';
 
-const emptyToNull = (val: any) => (val === '' ? null : val);
-
-const businessSchema = z.object({
-  shortDescription: z.string().trim().min(10).max(300),
-  description: z.string().trim().min(20).max(5000),
-  address: z.string().trim().min(5).max(255).optional(),
-  city: z.string().trim().min(2).max(100).optional(),
-  state: z.preprocess((val) => val === null || val === undefined ? "" : val, z.string().trim().max(100).optional().default("")),
-  country: z.string().trim().min(2).max(100).optional(),
-  postalCode: z.preprocess((val) => val === null || val === undefined ? "" : val, z.string().trim().max(20).optional().default("")),
-  phone: z.preprocess(emptyToNull, z.string().trim().max(40).nullable().optional()),
-  email: z.preprocess(emptyToNull, z.string().trim().email().max(255).nullable().optional()),
-  website: z.preprocess(emptyToNull, z.string().trim().url().max(500).nullable().optional()),
-  instagram: z.preprocess(emptyToNull, z.string().trim().url().max(500).nullable().optional()),
-  facebook: z.preprocess(emptyToNull, z.string().trim().url().max(500).nullable().optional()),
-  priceRange: z.number().int().min(1).max(4)
-}).strict();
-const timeSchema = z.preprocess(emptyToNull, z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional());
-const hoursSchema = z.object({ dayOfWeek: z.number().int().min(0).max(6), isClosed: z.boolean(), openTime: timeSchema, closeTime: timeSchema });
-const amenitiesSchema = z.object({ amenityIds: z.array(z.string().cuid()).max(50) }).strict();
-const changeRequestSchema = z.object({ type: z.nativeEnum(CafeChangeRequestType), payload: z.record(z.string(), z.unknown()), reason: z.string().trim().max(2000).optional() }).strict();
-
-const menuSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  description: z.preprocess(emptyToNull, z.string().trim().max(1000).nullable().optional()),
-  isActive: z.boolean().optional(),
-  sortOrder: z.number().int().optional()
-}).strict();
-
-const categorySchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  description: z.preprocess(emptyToNull, z.string().trim().max(1000).nullable().optional()),
-  sortOrder: z.number().int().optional()
-}).strict();
-
-const menuItemSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  description: z.preprocess(emptyToNull, z.string().trim().max(1000).nullable().optional()),
-  price: z.number().min(0),
-  imageUrl: z.preprocess(emptyToNull, z.string().url().nullable().optional()),
-  isAvailable: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-  tags: z.array(z.string()).optional(),
-  optionGroups: z.array(z.object({
-    name: z.string().trim().min(1).max(100),
-    minSelection: z.number().int().min(0).optional(),
-    maxSelection: z.number().int().min(1).optional(),
-    isRequired: z.boolean().optional(),
-    options: z.array(z.object({
-      name: z.string().trim().min(1).max(100),
-      priceModifier: z.number().min(0).optional(),
-      isAvailable: z.boolean().optional()
-    }))
-  })).optional()
-}).strict();
-
-const sendError = (res: Response, error: any) => res.status(error.status || (error.name === 'ZodError' ? 422 : 400)).json({ success: false, error: { message: error.message, details: error.issues } });
-
 export class OwnerController {
-  private service = new OwnerService();
-  private isAdmin(req: AuthRequest) { return req.user!.role === 'ADMIN'; }
-  getDashboard = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getDashboard(req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  getCafes = async (req: AuthRequest, res: Response) => { try { const page = Math.max(parseInt(req.query.page as string) || 1, 1); const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50); res.json({ success: true, ...(await this.service.getOwnedCafes(req.user!.id, this.isAdmin(req), page, limit)) }); } catch (e) { sendError(res, e); } };
-  getCafe = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getOwnedCafe(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  updateBusiness = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.updateBusiness(req.params.id, req.user!.id, this.isAdmin(req), businessSchema.parse(req.body)) }); } catch (e) { sendError(res, e); } };
-  createChangeRequest = async (req: AuthRequest, res: Response) => { try { const data = changeRequestSchema.parse(req.body); res.status(201).json({ success: true, data: await this.service.createChangeRequest(req.params.id, req.user!.id, data.type, data.payload, data.reason) }); } catch (e) { sendError(res, e); } };
-  getChangeRequests = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getChangeRequests(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  cancelChangeRequest = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.cancelChangeRequest(req.params.requestId, req.user!.id) }); } catch (e) { sendError(res, e); } };
-  updateHours = async (req: AuthRequest, res: Response) => { try { const hours = z.array(hoursSchema).length(7).parse(req.body.hours); res.json({ success: true, data: await this.service.updateHours(req.params.id, req.user!.id, this.isAdmin(req), hours) }); } catch (e) { sendError(res, e); } };
-  updateAmenities = async (req: AuthRequest, res: Response) => { try { const { amenityIds } = amenitiesSchema.parse(req.body); res.json({ success: true, data: await this.service.updateAmenities(req.params.id, req.user!.id, this.isAdmin(req), amenityIds) }); } catch (e) { sendError(res, e); } };
-  getReviews = async (req: AuthRequest, res: Response) => { try { const page = Math.max(parseInt(req.query.page as string) || 1, 1); const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 50); res.json({ success: true, ...(await this.service.getReviews(req.params.id, req.user!.id, this.isAdmin(req), page, limit)) }); } catch (e) { sendError(res, e); } };
-  uploadPhoto = async (req: AuthRequest, res: Response) => { try { if (!req.file) return res.status(422).json({ success: false, error: { message: 'Photo is required' } }); res.status(201).json({ success: true, data: await this.service.uploadPhoto(req.params.id, req.user!.id, this.isAdmin(req), req.file) }); } catch (e) { sendError(res, e); } };
-  deletePhoto = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.deletePhoto(req.params.id, req.params.photoId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  setCoverPhoto = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.setCoverPhoto(req.params.id, req.params.photoId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  updatePhotoMetadata = async (req: AuthRequest, res: Response) => {
+  private ownerService = new OwnerService();
+
+  getDashboard = async (req: AuthRequest, res: Response) => {
     try {
-      const schema = z.object({
-        altText: z.string().trim().max(255).optional(),
-        caption: z.string().trim().max(1000).optional()
-      }).strict();
-      res.json({
-        success: true,
-        data: await this.service.updatePhotoMetadata(
-          req.params.id,
-          req.params.photoId,
-          req.user!.id,
-          this.isAdmin(req),
-          schema.parse(req.body)
-        )
-      });
-    } catch (e) {
-      sendError(res, e);
+      const isAdmin = req.user?.role === 'ADMIN';
+      const data = await this.ownerService.getDashboard(req.user!.id, isAdmin);
+      res.json({ success: true, data });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
     }
   };
 
-  // Menus
-  getMenus = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getMenus(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  createMenu = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createMenu(req.params.id, req.user!.id, this.isAdmin(req), menuSchema.parse(req.body)) }); } catch (e) { sendError(res, e); } };
-  updateMenu = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.updateMenu(req.params.id, req.params.menuId, req.user!.id, this.isAdmin(req), menuSchema.partial().parse(req.body)) }); } catch (e) { sendError(res, e); } };
-  deleteMenu = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.deleteMenu(req.params.id, req.params.menuId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  getCafes = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+      const result = await this.ownerService.getOwnedCafes(req.user!.id, isAdmin, page, limit);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
 
-  // Categories
-  createCategory = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createCategory(req.params.id, req.params.menuId, req.user!.id, this.isAdmin(req), categorySchema.parse(req.body)) }); } catch (e) { sendError(res, e); } };
-  updateCategory = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.updateCategory(req.params.id, req.params.categoryId, req.user!.id, this.isAdmin(req), categorySchema.partial().parse(req.body)) }); } catch (e) { sendError(res, e); } };
-  deleteCategory = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.deleteCategory(req.params.id, req.params.categoryId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  getCafe = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const cafe = await this.ownerService.getOwnedCafe(req.params.id, req.user!.id, isAdmin);
+      res.json({ success: true, data: cafe });
+    } catch (err: any) {
+      res.status(err.status || 404).json({ success: false, error: { message: err.message } });
+    }
+  };
 
-  // Items
-  createMenuItem = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createMenuItem(req.params.id, req.params.categoryId, req.user!.id, this.isAdmin(req), menuItemSchema.parse(req.body)) }); } catch (e) { sendError(res, e); } };
-  updateMenuItem = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.updateMenuItem(req.params.id, req.params.itemId, req.user!.id, this.isAdmin(req), menuItemSchema.partial().parse(req.body)) }); } catch (e) { sendError(res, e); } };
-  deleteMenuItem = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.deleteMenuItem(req.params.id, req.params.itemId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  updateBusiness = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const updated = await this.ownerService.updateBusiness(req.params.id, req.user!.id, isAdmin, req.body);
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
 
-  // Events
-  getEvents = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getEvents(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  createEvent = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createEvent(req.params.id, req.user!.id, this.isAdmin(req), req.body) }); } catch (e) { sendError(res, e); } };
-  publishEvent = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.publishEvent(req.params.id, req.params.eventId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  updateHours = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const updated = await this.ownerService.updateHours(req.params.id, req.user!.id, isAdmin, req.body.hours || req.body);
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
 
-  // Specials
-  getSpecials = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getSpecials(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  createSpecial = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createSpecial(req.params.id, req.user!.id, this.isAdmin(req), req.body) }); } catch (e) { sendError(res, e); } };
-  publishSpecial = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.publishSpecial(req.params.id, req.params.specialId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  updateAmenities = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const updated = await this.ownerService.updateAmenities(req.params.id, req.user!.id, isAdmin, req.body.amenityIds || req.body);
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
 
-  // Announcements
-  getAnnouncements = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.getAnnouncements(req.params.id, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
-  createAnnouncement = async (req: AuthRequest, res: Response) => { try { res.status(201).json({ success: true, data: await this.service.createAnnouncement(req.params.id, req.user!.id, this.isAdmin(req), req.body) }); } catch (e) { sendError(res, e); } };
-  publishAnnouncement = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.publishAnnouncement(req.params.id, req.params.announcementId, req.user!.id, this.isAdmin(req)) }); } catch (e) { sendError(res, e); } };
+  getReviews = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+      const result = await this.ownerService.getReviews(req.params.id, req.user!.id, isAdmin, page, limit);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
 
-  notifyMenuUpdate = async (req: AuthRequest, res: Response) => { try { res.json({ success: true, data: await this.service.notifyMenuUpdate(req.params.id, req.user!.id, this.isAdmin(req), req.body.menuName) }); } catch (e) { sendError(res, e); } };
+  uploadPhoto = async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: { message: 'No photo provided' } });
+      }
+      const isAdmin = req.user?.role === 'ADMIN';
+      const photo = await this.ownerService.uploadPhoto(req.params.id, req.user!.id, isAdmin, req.file);
+      res.status(201).json({ success: true, data: photo });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  deletePhoto = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      await this.ownerService.deletePhoto(req.params.id, req.params.photoId, req.user!.id, isAdmin);
+      res.json({ success: true, message: 'Photo deleted' });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  updatePhotoMetadata = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const updated = await this.ownerService.updatePhotoMetadata(
+        req.params.id,
+        req.params.photoId,
+        req.user!.id,
+        isAdmin,
+        req.body
+      );
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  setCoverPhoto = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const updated = await this.ownerService.setCoverPhoto(req.params.id, req.params.photoId, req.user!.id, isAdmin);
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  getChangeRequests = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const requests = await this.ownerService.getChangeRequests(req.params.id, req.user!.id, isAdmin);
+      res.json({ success: true, data: requests });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  createChangeRequest = async (req: AuthRequest, res: Response) => {
+    try {
+      const { type, payload, reason } = req.body;
+      const request = await this.ownerService.createChangeRequest(req.params.id, req.user!.id, type, payload, reason);
+      res.status(201).json({ success: true, data: request });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  cancelChangeRequest = async (req: AuthRequest, res: Response) => {
+    try {
+      const request = await this.ownerService.cancelChangeRequest(req.params.requestId, req.user!.id);
+      res.json({ success: true, data: request });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  getMenus = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const menus = await this.ownerService.getMenus(req.params.id, req.user!.id, isAdmin);
+      res.json({ success: true, data: menus });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  createMenu = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const menu = await this.ownerService.createMenu(req.params.id, req.user!.id, isAdmin, req.body);
+      res.status(201).json({ success: true, data: menu });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  updateMenu = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const menu = await this.ownerService.updateMenu(req.params.id, req.params.menuId, req.user!.id, isAdmin, req.body);
+      res.json({ success: true, data: menu });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  deleteMenu = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      await this.ownerService.deleteMenu(req.params.id, req.params.menuId, req.user!.id, isAdmin);
+      res.json({ success: true, message: 'Menu deleted' });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  createCategory = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const category = await this.ownerService.createCategory(req.params.id, req.params.menuId, req.user!.id, isAdmin, req.body);
+      res.status(201).json({ success: true, data: category });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  updateCategory = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const category = await this.ownerService.updateCategory(req.params.id, req.params.categoryId, req.user!.id, isAdmin, req.body);
+      res.json({ success: true, data: category });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  deleteCategory = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      await this.ownerService.deleteCategory(req.params.id, req.params.categoryId, req.user!.id, isAdmin);
+      res.json({ success: true, message: 'Category deleted' });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  createMenuItem = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const item = await this.ownerService.createMenuItem(req.params.id, req.params.categoryId, req.user!.id, isAdmin, req.body);
+      res.status(201).json({ success: true, data: item });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  updateMenuItem = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const item = await this.ownerService.updateMenuItem(req.params.id, req.params.itemId, req.user!.id, isAdmin, req.body);
+      res.json({ success: true, data: item });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  deleteMenuItem = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      await this.ownerService.deleteMenuItem(req.params.id, req.params.itemId, req.user!.id, isAdmin);
+      res.json({ success: true, message: 'Item deleted' });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  getEvents = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const events = await this.ownerService.getEvents(req.params.id, req.user!.id, isAdmin);
+      res.json({ success: true, data: events });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  createEvent = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const event = await this.ownerService.createEvent(req.params.id, req.user!.id, isAdmin, req.body);
+      res.status(201).json({ success: true, data: event });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  publishEvent = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const event = await this.ownerService.publishEvent(req.params.id, req.params.eventId, req.user!.id, isAdmin);
+      res.json({ success: true, data: event });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  getSpecials = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const specials = await this.ownerService.getSpecials(req.params.id, req.user!.id, isAdmin);
+      res.json({ success: true, data: specials });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  createSpecial = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const special = await this.ownerService.createSpecial(req.params.id, req.user!.id, isAdmin, req.body);
+      res.status(201).json({ success: true, data: special });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  publishSpecial = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const special = await this.ownerService.publishSpecial(req.params.id, req.params.specialId, req.user!.id, isAdmin);
+      res.json({ success: true, data: special });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  getAnnouncements = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const announcements = await this.ownerService.getAnnouncements(req.params.id, req.user!.id, isAdmin);
+      res.json({ success: true, data: announcements });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  createAnnouncement = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const announcement = await this.ownerService.createAnnouncement(req.params.id, req.user!.id, isAdmin, req.body);
+      res.status(201).json({ success: true, data: announcement });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  publishAnnouncement = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const announcement = await this.ownerService.publishAnnouncement(req.params.id, req.params.announcementId, req.user!.id, isAdmin);
+      res.json({ success: true, data: announcement });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  notifyMenuUpdate = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const menuName = req.body.menuName || 'Menu';
+      const result = await this.ownerService.notifyMenuUpdate(req.params.id, req.user!.id, isAdmin, menuName);
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
 }

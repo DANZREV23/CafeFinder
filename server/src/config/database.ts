@@ -1,275 +1,75 @@
-import net from 'net';
-import path from 'path';
-import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 import { startLocalPostgresServer, stopLocalPostgresServer, LOCAL_DATABASE_URL } from './localDbServer.js';
 
-// Ensure the database URL is constructed from available environment variables
-export const getDatabaseUrl = () => {
-  const envUrl = process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL;
-  
-  console.log('[DatabaseConfig]: process.env.SQL_HOST:', process.env.SQL_HOST);
-  console.log('[DatabaseConfig]: process.env.SQL_ADMIN_USER:', process.env.SQL_ADMIN_USER);
-  
-  if (envUrl && envUrl.includes('://')) {
-    if (envUrl.includes('5445') || envUrl.includes('5442')) {
-      return LOCAL_DATABASE_URL;
-    }
-    return envUrl;
+const isValidPgUrl = (url?: string) =>
+  !!url && (url.startsWith('postgresql://') || url.startsWith('postgres://'));
+
+// Ensure PRISMA_DATABASE_URL is a valid PostgreSQL URL so Prisma client validation does not fail
+if (!isValidPgUrl(process.env.PRISMA_DATABASE_URL)) {
+  if (isValidPgUrl(process.env.DATABASE_URL)) {
+    process.env.PRISMA_DATABASE_URL = process.env.DATABASE_URL;
+  } else {
+    process.env.PRISMA_DATABASE_URL = LOCAL_DATABASE_URL;
   }
+}
+process.env.DATABASE_URL = process.env.PRISMA_DATABASE_URL;
 
-  const sqlUser = process.env.SQL_ADMIN_USER || process.env.SQL_USER;
-  const sqlPass = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD;
-  const sqlHost = process.env.SQL_HOST;
-  const sqlDb = process.env.SQL_DB_NAME || process.env.DB_NAME;
+let prismaInstance: PrismaClient | null = null;
 
-  // Use DB_HOST or the raw hostname from DATABASE_URL/PRISMA_DATABASE_URL
-  const dbHost = process.env.DB_HOST || (envUrl && !envUrl.includes('://') ? envUrl : undefined);
-  const dbUser = process.env.DB_USERNAME || process.env.DB_USER;
-  const dbPass = process.env.DB_PASSWORD;
+export function getPrismaClient(): PrismaClient {
+  if (!prismaInstance) {
+    const url = isValidPgUrl(process.env.PRISMA_DATABASE_URL)
+      ? process.env.PRISMA_DATABASE_URL
+      : LOCAL_DATABASE_URL;
 
-  if (sqlUser && sqlPass && sqlHost && sqlDb) {
-    const socketExists = !sqlHost.startsWith('/') || fs.existsSync(path.join(sqlHost, '.s.PGSQL.5432'));
-    if (socketExists) {
-      // Correct format for Prisma with Cloud SQL Unix sockets (PostgreSQL)
-      // We use localhost as a placeholder and pass the socket directory via the host parameter
-      return `postgresql://${sqlUser}:${encodeURIComponent(sqlPass)}@localhost/${sqlDb}?host=${sqlHost}&connect_timeout=3`;
-    }
-    console.log('[DatabaseConfig]: Cloud SQL socket not active on disk, using local PostgreSQL URL.');
+    prismaInstance = new PrismaClient({
+      datasourceUrl: url,
+      log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+    });
   }
-
-  if (dbHost && dbUser && dbPass) {
-    const port = process.env.DB_PORT || '5432';
-    const db = process.env.DB_NAME || 'cafefinder';
-    const ssl = (dbHost === 'localhost' || dbHost === '127.0.0.1') ? '?sslmode=disable' : '';
-    return `postgresql://${dbUser}:${encodeURIComponent(dbPass)}@${dbHost}:${port}/${db}${ssl}`;
-  }
-
-  // Final fallback
-  if (dbHost) {
-    const user = dbUser || 'postgres';
-    const pass = dbPass || '';
-    const port = process.env.DB_PORT || '5432';
-    const db = process.env.DB_NAME || 'cafefinder';
-    const ssl = (dbHost === 'localhost' || dbHost === '127.0.0.1') ? '?sslmode=disable' : '';
-    return `postgresql://${user}:${encodeURIComponent(pass)}@${dbHost}:${port}/${db}${ssl}`;
-  }
-
-  return LOCAL_DATABASE_URL;
-};
-
-/**
- * Fast probe to check if Cloud SQL Auth Proxy socket has an active running database instance.
- */
-async function checkCloudSqlReady(socketDir?: string): Promise<boolean> {
-  if (!socketDir) return false;
-  const socketPath = path.join(socketDir, '.s.PGSQL.5432');
-  if (!fs.existsSync(socketPath)) return false;
-
-  return new Promise((resolve) => {
-    const socket = net.createConnection(socketPath);
-    let gotData = false;
-    socket.setTimeout(2000); // Increased from 400ms to 2s for more reliability
-
-    socket.on('connect', () => {
-      // Send standard Postgres SSLRequest
-      socket.write(Buffer.from([0, 0, 0, 8, 4, 210, 22, 47]));
-    });
-
-    socket.on('data', () => {
-      gotData = true;
-      socket.end();
-      resolve(true);
-    });
-
-    socket.on('close', () => {
-      if (!gotData) resolve(false);
-    });
-
-    socket.on('error', () => resolve(false));
-    socket.on('timeout', () => {
-      socket.destroy();
-      resolve(false);
-    });
-  });
+  return prismaInstance;
 }
 
-const initialDatabaseUrl = getDatabaseUrl();
-if (initialDatabaseUrl) {
-  process.env.PRISMA_DATABASE_URL = initialDatabaseUrl;
-  const redactedUrl = initialDatabaseUrl.replace(/:[^@:]+@/, ':****@');
-  console.log(`[DatabaseConfig]: Initialized with URL: ${redactedUrl}`);
-} else {
-  console.error('[DatabaseConfig]: Failed to construct database URL. Check environment variables.');
-}
-
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-
-export const createPrismaClient = (url?: string) => {
-  const client = new PrismaClient({
-    datasources: {
-      db: {
-        url: url || process.env.PRISMA_DATABASE_URL,
-      },
-    },
-    log: process.env.PRISMA_LOG_QUERIES === 'true' ? ['query', 'error', 'warn'] : ['error', 'warn'],
-  });
-
-  // Middleware for performance monitoring
-  client.$use(async (params, next) => {
-    const start = Date.now();
-    try {
-      const result = await next(params);
-      const duration = Date.now() - start;
-      const { metricsService } = await import('../services/metricsService.js');
-      metricsService.recordOperation('database', `${params.model}.${params.action}`, duration, {
-        model: params.model,
-        action: params.action
-      });
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  });
-
-  // Middleware for automatic query retries on connection issues
-  client.$use(async (params, next) => {
-    let retries = 0;
-    const maxRetries = 3;
-    const delay = 1000;
-
-    while (retries < maxRetries) {
-      try {
-        return await next(params);
-      } catch (error: any) {
-        const msg = String(error?.message || '');
-        const isLocalConnError =
-          msg.includes('5445') ||
-          error?.code === 'P1001' ||
-          msg.includes("Can't reach database server");
-
-        const isTransientError =
-          isLocalConnError ||
-          msg.includes('E57P01') ||
-          error?.code === 'P2024' ||
-          msg.includes('connection') ||
-          msg.includes('UnexpectedMessage') ||
-          msg.includes('Closed');
-
-        if (isTransientError && retries < maxRetries - 1) {
-          retries++;
-          if (isLocalConnError) {
-            try {
-              await startLocalPostgresServer();
-            } catch (_) {}
-          }
-          const waitTime = 250 * retries;
-          console.warn(`[Prisma]: Transient error detected. Retrying in ${waitTime}ms... (${retries}/${maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-        throw error;
-      }
-    }
-    return next(params);
-  });
-
-  return client;
-};
-
-let currentPrismaClient: PrismaClient = globalForPrisma.prisma || createPrismaClient(initialDatabaseUrl);
-
-// Dynamic proxy to allow seamless switching between cloud and local instances
-export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
-  get(_target, prop, receiver) {
-    const value = Reflect.get(currentPrismaClient, prop, receiver);
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrismaClient();
+    const value = (client as any)[prop];
     if (typeof value === 'function') {
-      return value.bind(currentPrismaClient);
+      return value.bind(client);
     }
     return value;
   },
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = currentPrismaClient;
-}
+export async function connectWithRetry(retries = 5, delay = 1500): Promise<void> {
+  const isLocal =
+    !process.env.PRISMA_DATABASE_URL ||
+    process.env.PRISMA_DATABASE_URL.includes('127.0.0.1:5445') ||
+    process.env.PRISMA_DATABASE_URL.includes('localhost:5445');
 
-/**
- * Helper to ensure database connection with fast failover to local PostgreSQL.
- */
-export const connectWithRetry = async (retries = 3, delay = 1500) => {
-  // Proactively check Cloud SQL reachability or start local PGlite to eliminate startup race
-  const isCloudReady = process.env.SQL_HOST ? await checkCloudSqlReady(process.env.SQL_HOST) : false;
-  if (!isCloudReady && (!process.env.PRISMA_DATABASE_URL || process.env.PRISMA_DATABASE_URL === LOCAL_DATABASE_URL || Boolean(process.env.SQL_HOST))) {
-    console.log('[Database]: Launching embedded PostgreSQL service...');
-    const localUrl = await startLocalPostgresServer();
-    process.env.PRISMA_DATABASE_URL = localUrl;
-
+  if (isLocal) {
     try {
-      await currentPrismaClient.$disconnect();
-    } catch (_) {}
-
-    currentPrismaClient = createPrismaClient(localUrl);
-    if (process.env.NODE_ENV !== 'production') {
-      globalForPrisma.prisma = currentPrismaClient;
+      const localUrl = await startLocalPostgresServer();
+      process.env.PRISMA_DATABASE_URL = localUrl;
+      process.env.DATABASE_URL = localUrl;
+    } catch (err) {
+      console.error('[Database]: Failed to start local embedded PostgreSQL:', err);
     }
-
-    await currentPrismaClient.$connect();
-    console.log('[Database]: Successfully connected to embedded PostgreSQL service.');
-    return true;
   }
 
   for (let i = 0; i < retries; i++) {
     try {
-      await currentPrismaClient.$connect();
-      console.log('[Database]: Successfully connected to database.');
-      return true;
-    } catch (error: any) {
-      console.warn(`[Database]: Connection attempt ${i + 1}/${retries} failed: ${error.message || error}`);
-      
-      if (i === 0) {
-        // Fallback to embedded local PostgreSQL on first failure
-        try {
-          console.log('[Database]: Falling back to embedded local PostgreSQL service...');
-          const localUrl = await startLocalPostgresServer();
-          process.env.PRISMA_DATABASE_URL = localUrl;
-          
-          try {
-            await currentPrismaClient.$disconnect();
-          } catch (_) {}
-          
-          currentPrismaClient = createPrismaClient(localUrl);
-          if (process.env.NODE_ENV !== 'production') {
-            globalForPrisma.prisma = currentPrismaClient;
-          }
-          
-          await currentPrismaClient.$connect();
-          console.log('[Database]: Successfully connected to local PostgreSQL database.');
-          return true;
-        } catch (fallbackError: any) {
-          console.error('[Database]: Local database fallback failed:', fallbackError.message || fallbackError);
-        }
+      await prisma.$connect();
+      console.log('[Database]: Connected to database successfully.');
+      return;
+    } catch (err: any) {
+      console.warn(`[Database]: Connection attempt ${i + 1}/${retries} failed: ${err.message}`);
+      if (i === retries - 1) {
+        throw err;
       }
-
-      if (i < retries - 1) {
-        console.log(`[Database]: Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+      await new Promise((res) => setTimeout(res, delay));
     }
   }
-
-  // Final fallback
-  try {
-    const localUrl = await startLocalPostgresServer();
-    process.env.PRISMA_DATABASE_URL = localUrl;
-    currentPrismaClient = createPrismaClient(localUrl);
-    await currentPrismaClient.$connect();
-    console.log('[Database]: Connected to local PostgreSQL after retries.');
-    return true;
-  } catch (err: any) {
-    console.error('[Database]: Failed to connect to any database:', err.message || err);
-    throw err;
-  }
-};
+}
 
 export { stopLocalPostgresServer };

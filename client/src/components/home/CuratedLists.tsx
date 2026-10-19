@@ -17,8 +17,11 @@ export const CuratedLists: React.FC = () => {
     const fetchLists = async () => {
       try {
         const response = await listService.getAll({ featured: true, limit: 3 });
-        if (response.success) {
-          setLists(response.data.lists);
+        if (response?.success) {
+          const fetchedLists = Array.isArray(response.data)
+            ? response.data
+            : (response.data?.lists || response.lists || []);
+          setLists(Array.isArray(fetchedLists) ? fetchedLists : []);
         }
       } catch (err) {
         setError('Unable to load curated lists.');
@@ -44,7 +47,7 @@ export const CuratedLists: React.FC = () => {
     );
   }
 
-  if (error || lists.length === 0) return null;
+  if (error || !lists || !Array.isArray(lists) || lists.length === 0) return null;
 
   return (
     <section className="py-20 px-4 bg-white">
@@ -79,7 +82,7 @@ export const CuratedLists: React.FC = () => {
                   <div className="relative z-10 text-white">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="px-3 py-1 bg-brand-coffee/80 backdrop-blur-sm rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        {list._count.cafes} Cafes
+                        {(list.cafes?.length ?? list._count?.cafes ?? 0)} Cafes
                       </div>
                       {list.featured && (
                         <div className="px-3 py-1 bg-brand-accent/80 backdrop-blur-sm rounded-full text-[10px] font-bold uppercase tracking-wider">

@@ -159,6 +159,51 @@ enum InquirySenderRole {
   ADMIN
 }
 
+enum LoyaltyProgramStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  SUSPENDED
+  ENDED
+}
+
+enum LoyaltyAccountStatus {
+  ACTIVE
+  LEFT
+  SUSPENDED
+}
+
+enum LoyaltyTransactionType {
+  EARN
+  REDEEM
+  ADJUSTMENT
+  EXPIRE
+  REVERSAL
+}
+
+enum LoyaltyRewardStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+  ARCHIVED
+}
+
+enum LoyaltyRedemptionStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  REDEEMED
+  CANCELLED
+  EXPIRED
+}
+
+enum CheckInStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model MediaAsset {
   id              String   @id @default(cuid())
   filename        String
@@ -294,6 +339,10 @@ model User {
   moderatedAnnouncements CafeAnnouncement[]   @relation("AnnouncementModerator")
   inquiries              CafeInquiry[]        @relation("UserInquiries")
   inquiryResponses       CafeInquiryResponse[] @relation("UserInquiryResponses")
+  loyaltyAccounts        CafeLoyaltyAccount[] @relation("UserLoyaltyAccounts")
+  issuedLoyaltyTxs       CafeLoyaltyTransaction[] @relation("IssuedLoyaltyTransactions")
+  processedRedemptions   CafeRewardRedemption[] @relation("ProcessedRewardRedemptions")
+  processedCheckIns      CafeVisitCheckIn[]   @relation("ProcessedVisitCheckIns")
 
   @@map("users")
 }
@@ -365,6 +414,7 @@ model Cafe {
   followers       CafeFollow[]       @relation("CafeFollowers")
   followerCount   Int                @default(0)
   inquiries       CafeInquiry[]
+  loyaltyProgram  CafeLoyaltyProgram?
 
   @@index([status])
   @@index([city])
@@ -924,6 +974,8 @@ enum CafeAnalyticsEventType {
   INSTAGRAM_CLICK
   FACEBOOK_CLICK
   INQUIRY_SUBMITTED
+  LOYALTY_ENROLLED
+  REWARD_REDEEMED
 }
 
 model CafeAnalyticsEvent {
@@ -1349,4 +1401,161 @@ model CafeInquiryResponse {
   @@index([responderUserId])
   @@index([createdAt])
   @@map("cafe_inquiry_responses")
+}
+
+model CafeLoyaltyProgram {
+  id                      String               @id @default(cuid())
+  cafeId                  String               @unique
+  name                    String               @db.VarChar(120)
+  description             String?              @db.Text
+  status                  LoyaltyProgramStatus @default(DRAFT)
+  pointsEnabled           Boolean              @default(true)
+  pointsPerVisit          Int                  @default(10)
+  minimumRedemptionPoints Int                  @default(50)
+  maxPointsPerDay         Int                  @default(50)
+  checkInCooldownHours    Int                  @default(12)
+  termsAndConditions      String?              @db.Text
+  startsAt                DateTime?
+  endsAt                  DateTime?
+  moderationNotes         String?              @db.Text
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+
+  cafe                    Cafe                 @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  accounts                CafeLoyaltyAccount[]
+  rewards                 CafeReward[]
+  checkIns                CafeVisitCheckIn[]
+
+  @@index([cafeId])
+  @@index([status])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@map("cafe_loyalty_programs")
+}
+
+model CafeLoyaltyAccount {
+  id                     String                 @id @default(cuid())
+  programId              String
+  userId                 String
+  status                 LoyaltyAccountStatus   @default(ACTIVE)
+  pointsBalance          Int                    @default(0)
+  lifetimePointsEarned   Int                    @default(0)
+  lifetimePointsRedeemed Int                    @default(0)
+  joinedAt               DateTime               @default(now())
+  leftAt                 DateTime?
+  updatedAt              DateTime               @updatedAt
+
+  program                CafeLoyaltyProgram     @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user                   User                   @relation("UserLoyaltyAccounts", fields: [userId], references: [id], onDelete: Cascade)
+  transactions           CafeLoyaltyTransaction[]
+  redemptions            CafeRewardRedemption[]
+  checkIns               CafeVisitCheckIn[]
+
+  @@unique([programId, userId])
+  @@index([programId])
+  @@index([userId])
+  @@index([status])
+  @@map("cafe_loyalty_accounts")
+}
+
+model CafeLoyaltyTransaction {
+  id              String                 @id @default(cuid())
+  accountId       String
+  type            LoyaltyTransactionType
+  points          Int
+  balanceAfter    Int
+  description     String                 @db.Text
+  reason          String?                @db.Text
+  referenceType   String?                @db.VarChar(64)
+  referenceId     String?                @db.VarChar(64)
+  idempotencyKey  String?                @unique @db.VarChar(128)
+  createdByUserId String?
+  createdAt       DateTime               @default(now())
+
+  account         CafeLoyaltyAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdBy       User?                  @relation("IssuedLoyaltyTransactions", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([accountId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
+  @@map("cafe_loyalty_transactions")
+}
+
+model CafeReward {
+  id                 String              @id @default(cuid())
+  programId          String
+  name               String              @db.VarChar(120)
+  description        String              @db.Text
+  pointsCost         Int
+  status             LoyaltyRewardStatus @default(ACTIVE)
+  stockLimit         Int?
+  redeemedCount      Int                 @default(0)
+  maxPerCustomer     Int?
+  startsAt           DateTime?
+  endsAt             DateTime?
+  termsAndConditions String?             @db.Text
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  program            CafeLoyaltyProgram     @relation(fields: [programId], references: [id], onDelete: Cascade)
+  redemptions        CafeRewardRedemption[]
+
+  @@index([programId])
+  @@index([status])
+  @@index([pointsCost])
+  @@index([endsAt])
+  @@map("cafe_rewards")
+}
+
+model CafeRewardRedemption {
+  id                 String                  @id @default(cuid())
+  rewardId           String
+  accountId          String
+  pointsSpent        Int
+  status             LoyaltyRedemptionStatus @default(REQUESTED)
+  redemptionCodeHash String?                 @db.VarChar(128)
+  codeHint           String?                 @db.VarChar(16)
+  notes              String?                 @db.Text
+  rejectionReason    String?                 @db.Text
+  requestedAt        DateTime                @default(now())
+  approvedAt         DateTime?
+  redeemedAt         DateTime?
+  cancelledAt        DateTime?
+  expiresAt          DateTime?
+  processedByUserId  String?
+
+  reward             CafeReward              @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  account            CafeLoyaltyAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  processedBy        User?                   @relation("ProcessedRewardRedemptions", fields: [processedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([rewardId])
+  @@index([accountId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([expiresAt])
+  @@map("cafe_reward_redemptions")
+}
+
+model CafeVisitCheckIn {
+  id                String             @id @default(cuid())
+  programId         String
+  accountId         String
+  status            CheckInStatus      @default(PENDING)
+  visitNotes        String?            @db.Text
+  ownerNotes        String?            @db.Text
+  pointsAwarded     Int                @default(0)
+  processedByUserId String?
+  processedAt       DateTime?
+  createdAt         DateTime           @default(now())
+
+  program           CafeLoyaltyProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  account           CafeLoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  processedBy       User?              @relation("ProcessedVisitCheckIns", fields: [processedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([programId])
+  @@index([accountId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("cafe_visit_check_ins")
 }

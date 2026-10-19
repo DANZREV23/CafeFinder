@@ -1,211 +1,67 @@
-import { Cafe, CafePhoto, CafeHours, Amenity, CafeReview, User } from '@prisma/client';
-
 export interface PublicCafeSummaryDto {
   id: string;
   name: string;
   slug: string;
-  shortDescription: string | null;
-  address: string;
-  city: string;
-  state: string;
-  latitude: number | null;
-  longitude: number | null;
-  priceRange: number | null;
-  verified: boolean;
-  featured: boolean;
-  trending: boolean;
-  ratingAverage: number;
-  reviewCount: number;
-  photos: { url: string; isCover: boolean }[];
-  isFavorite: boolean;
+  description?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  priceRange?: number | null;
+  rating?: number | null;
+  reviewCount?: number;
+  isFeatured?: boolean;
+  isTrending?: boolean;
+  isVerified?: boolean;
+  coverImage?: string | null;
+  photos?: any[];
+  amenities?: any[];
+  [key: string]: any;
 }
 
 export function mapToPublicCafeSummary(cafe: any): PublicCafeSummaryDto {
+  if (!cafe) return {} as any;
+  const coverPhoto = cafe.photos?.find((p: any) => p.isCover) || cafe.photos?.[0];
   return {
     id: cafe.id,
     name: cafe.name,
     slug: cafe.slug,
-    shortDescription: cafe.shortDescription,
-    address: cafe.address,
-    city: cafe.city,
-    state: cafe.state,
-    latitude: cafe.latitude ? parseFloat(cafe.latitude.toString()) : null,
-    longitude: cafe.longitude ? parseFloat(cafe.longitude.toString()) : null,
-    priceRange: cafe.priceRange,
-    verified: cafe.verified,
-    featured: cafe.featured,
-    trending: cafe.trending,
-    ratingAverage: parseFloat(cafe.ratingAverage.toString()),
-    reviewCount: cafe.reviewCount,
-    photos: cafe.photos ? cafe.photos.map((p: any) => ({
-      url: p.url,
-      isCover: p.isCover,
-    })) : [],
-    isFavorite: cafe.favorites ? cafe.favorites.length > 0 : false,
-  };
-}
-
-export interface PublicCafeProfileDto {
-  id: string;
-  name: string;
-  slug: string;
-  shortDescription: string | null;
-  description: string | null;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode: string;
-  latitude: number | null;
-  longitude: number | null;
-  phone: string | null;
-  email: string | null;
-  website: string | null;
-  instagram: string | null;
-  facebook: string | null;
-  priceRange: number | null;
-  verified: boolean;
-  featured: boolean;
-  trending: boolean;
-  ratingAverage: number;
-  reviewCount: number;
-  photos: Partial<CafePhoto>[];
-  hours: Partial<CafeHours>[];
-  amenities: { amenity: Partial<Amenity> }[];
-  reviews: {
-    id: string;
-    overallRating: number;
-    coffeeRating: number | null;
-    ambianceRating: number | null;
-    serviceRating: number | null;
-    comment: string | null;
-    createdAt: Date;
-    user: {
-      name: string;
-      avatarUrl: string | null;
-    };
-    photos: { url: string }[];
-  }[];
-  relatedCafes: any[];
-  events?: any[];
-  specials?: any[];
-  announcements?: any[];
-  isFavorite: boolean;
-  claimStatus: 'AVAILABLE' | 'PENDING' | 'MANAGED' | 'OWNED';
-}
-
-export function mapToPublicCafeProfile(cafe: any): PublicCafeProfileDto {
-  return {
-    id: cafe.id,
-    name: cafe.name,
-    slug: cafe.slug,
-    shortDescription: cafe.shortDescription,
     description: cafe.description,
     address: cafe.address,
     city: cafe.city,
     state: cafe.state,
-    country: cafe.country,
-    postalCode: cafe.postalCode,
-    latitude: cafe.latitude ? parseFloat(cafe.latitude.toString()) : null,
-    longitude: cafe.longitude ? parseFloat(cafe.longitude.toString()) : null,
+    zipCode: cafe.zipCode,
+    latitude: cafe.latitude,
+    longitude: cafe.longitude,
+    priceRange: cafe.priceRange,
+    rating: cafe.rating,
+    reviewCount: cafe.reviewCount ?? 0,
+    isFeatured: cafe.isFeatured ?? false,
+    isTrending: cafe.isTrending ?? false,
+    isVerified: cafe.isVerified ?? false,
+    coverImage: coverPhoto?.url || cafe.coverImage || null,
+    photos: cafe.photos || [],
+    amenities: cafe.amenities || [],
+    status: cafe.status,
     phone: cafe.phone,
-    email: cafe.email,
     website: cafe.website,
     instagram: cafe.instagram,
     facebook: cafe.facebook,
-    priceRange: cafe.priceRange,
-    verified: cafe.verified,
-    featured: cafe.featured,
-    trending: cafe.trending,
-    ratingAverage: parseFloat(cafe.ratingAverage.toString()),
-    reviewCount: cafe.reviewCount,
-    photos: cafe.photos.map((p: any) => ({
-      id: p.id,
-      url: p.url,
-      isCover: p.isCover,
-      caption: p.caption,
-      altText: p.altText,
-    })),
-    hours: cafe.hours.map((h: any) => ({
-      dayOfWeek: h.dayOfWeek,
-      openTime: h.openTime,
-      closeTime: h.closeTime,
-      isClosed: h.isClosed,
-    })),
-    amenities: cafe.amenities.map((a: any) => ({
-      amenity: {
-        id: a.amenity.id,
-        name: a.amenity.name,
-        slug: a.amenity.slug,
-        icon: a.amenity.icon,
-      }
-    })),
-    reviews: cafe.reviews.map((r: any) => ({
-      id: r.id,
-      overallRating: r.overallRating,
-      coffeeRating: r.coffeeRating,
-      ambianceRating: r.ambianceRating,
-      serviceRating: r.serviceRating,
-      comment: r.comment,
-      createdAt: r.createdAt,
-      user: {
-        name: r.user.name,
-        avatarUrl: r.user.avatarUrl,
-      },
-      photos: r.photos.map((ph: any) => ({ url: ph.url })),
-    })),
-    relatedCafes: (cafe.relatedCafes || []).map((rc: any) => ({
-      id: rc.id,
-      name: rc.name,
-      slug: rc.slug,
-      city: rc.city,
-      ratingAverage: parseFloat(rc.ratingAverage.toString()),
-      reviewCount: rc.reviewCount,
-      priceRange: rc.priceRange,
-      photos: rc.photos,
-      similarityScore: rc.similarityScore,
-      similarityReasons: rc.similarityReasons,
-      recommendationReason: rc.recommendationReason || (rc.similarityReasons ? rc.similarityReasons[0] : undefined),
-    })),
-    isFavorite: cafe.favorites ? cafe.favorites.length > 0 : false,
-    claimStatus: cafe.claimStatus || 'AVAILABLE',
-    events: (cafe.events || []).map((ev: any) => ({
-      id: ev.id,
-      title: ev.title,
-      slug: ev.slug,
-      shortDescription: ev.shortDescription,
-      description: ev.description,
-      eventType: ev.eventType,
-      startAt: ev.startAt,
-      endAt: ev.endAt,
-      location: ev.location,
-      price: ev.price ? parseFloat(ev.price.toString()) : null,
-      currency: ev.currency,
-      coverPhotoUrl: ev.coverPhotoUrl,
-    })),
-    specials: (cafe.specials || []).map((sp: any) => ({
-      id: sp.id,
-      title: sp.title,
-      slug: sp.slug,
-      shortDescription: sp.shortDescription,
-      description: sp.description,
-      specialType: sp.specialType,
-      startAt: sp.startAt,
-      endAt: sp.endAt,
-      terms: sp.terms,
-      price: sp.price ? parseFloat(sp.price.toString()) : null,
-      discountPercent: sp.discountPercent,
-      currency: sp.currency,
-      coverPhotoUrl: sp.coverPhotoUrl,
-    })),
-    announcements: (cafe.announcements || []).map((an: any) => ({
-      id: an.id,
-      title: an.title,
-      slug: an.slug,
-      content: an.content,
-      priority: an.priority,
-      startAt: an.startAt,
-      endAt: an.endAt,
-    })),
+    createdAt: cafe.createdAt,
+    updatedAt: cafe.updatedAt,
+  };
+}
+
+export function mapToPublicCafeProfile(cafe: any) {
+  if (!cafe) return null;
+  return {
+    ...mapToPublicCafeSummary(cafe),
+    hours: cafe.hours || [],
+    reviews: cafe.reviews || [],
+    menu: cafe.menu || [],
+    claim: cafe.claim || null,
+    isClaimed: !!cafe.ownerId,
   };
 }

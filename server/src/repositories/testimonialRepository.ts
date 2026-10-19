@@ -1,47 +1,43 @@
 import { prisma } from '../config/database.js';
-import { TestimonialStatus } from '@prisma/client';
+import { Prisma, TestimonialStatus } from '@prisma/client';
 
 export class TestimonialRepository {
-  async findActive(limit: number = 10) {
-    const safeLimit = Math.max(limit, 1);
+  async findActive(limit?: number) {
     return prisma.testimonial.findMany({
       where: { status: TestimonialStatus.PUBLISHED },
-      take: safeLimit,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: limit,
     });
   }
 
   async findAll() {
     return prisma.testimonial.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findById(id: string) {
     return prisma.testimonial.findUnique({
-      where: { id }
+      where: { id },
     });
   }
 
-  async create(data: any) {
+  async create(data: Prisma.TestimonialCreateInput) {
     return prisma.testimonial.create({
-      data: {
-        ...data,
-        status: data.status || TestimonialStatus.DRAFT
-      }
+      data,
     });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: Prisma.TestimonialUpdateInput) {
     return prisma.testimonial.update({
       where: { id },
-      data
+      data,
     });
   }
 
   async delete(id: string) {
     return prisma.testimonial.delete({
-      where: { id }
+      where: { id },
     });
   }
 }

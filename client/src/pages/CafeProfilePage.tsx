@@ -58,6 +58,7 @@ import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { VisitorPhotoGallery } from "@/components/reviews/VisitorPhotoGallery";
 import { ReportModal } from "@/components/reviews/ReportModal";
 import { OwnerResponseModal } from "@/components/reviews/OwnerResponseModal";
+import { CafeLoyaltySection } from "@/components/cafe/CafeLoyaltySection";
 
 export default function CafeProfilePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -541,6 +542,9 @@ export default function CafeProfilePage() {
                   </div>
                 </div>
               </section>
+
+              {/* Cafe Loyalty & Rewards Section */}
+              <CafeLoyaltySection cafeId={cafe.id} cafeName={cafe.name} />
 
               {/* Amenities */}
               <section className="space-y-8 pt-8 border-t border-brand-border" aria-labelledby="amenities-heading">

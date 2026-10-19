@@ -90,10 +90,14 @@ const AdminRedirectsPage = lazy(() => import('./pages/admin/AdminRedirectsPage')
 const AdminTestimonialsPage = lazy(() => import('./pages/admin/AdminTestimonialsPage').then(m => ({ default: m.AdminTestimonialsPage })));
 const AdminReviewReportsPage = lazy(() => import('./pages/admin/AdminReviewReportsPage'));
 const AdminCollectionsPage = lazy(() => import('./pages/admin/AdminCollectionsPage').then(m => ({ default: m.AdminCollectionsPage })));
-const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
 const CollectionsPage = lazy(() => import('./pages/CollectionsPage'));
 const CollectionDetailPage = lazy(() => import('./pages/CollectionDetailPage'));
 const PublicCollectionPage = lazy(() => import('./pages/PublicCollectionPage'));
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const RewardsPage = lazy(() => import('./pages/RewardsPage'));
+const CustomerLoyaltyPage = lazy(() => import('./pages/CustomerLoyaltyPage'));
+const OwnerLoyaltyPage = lazy(() => import('./pages/OwnerLoyaltyPage'));
+const AdminLoyaltyPage = lazy(() => import('./pages/admin/AdminLoyaltyPage').then(m => ({ default: m.AdminLoyaltyPage })));
 
 export default function App() {
   return (
@@ -119,6 +123,9 @@ export default function App() {
                 {/* Curated Lists Routes */}
                 <Route path="/lists" element={<ListsPage />} />
                 <Route path="/lists/:slug" element={<ListPage />} />
+
+                {/* Loyalty & Rewards Public Catalog */}
+                <Route path="/rewards" element={<RewardsPage />} />
 
                 <Route path="/offline" element={<OfflinePage />} />
 
@@ -187,6 +194,11 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Customer Loyalty Routes */}
+                <Route path="/dashboard/loyalty" element={<ProtectedRoute><CustomerLoyaltyPage /></ProtectedRoute>} />
+                <Route path="/dashboard/loyalty/:programId" element={<ProtectedRoute><CustomerLoyaltyPage /></ProtectedRoute>} />
+                <Route path="/dashboard/reward-redemptions" element={<ProtectedRoute><CustomerLoyaltyPage /></ProtectedRoute>} />
+                
                 <Route path="/owner" element={
                   <RoleRoute allowedRoles={['OWNER', 'ADMIN']}>
                     <OwnerDashboardPage />
@@ -208,6 +220,13 @@ export default function App() {
                 <Route path="/owner/inquiries" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerInquiriesPage /></RoleRoute>} />
                 <Route path="/owner/inquiries/:id" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerInquiryDetailPage /></RoleRoute>} />
                 <Route path="/cafe-owner-claims/:id" element={<ProtectedRoute><OwnerClaimDetailsPage /></ProtectedRoute>} />
+                
+                {/* Owner Loyalty Routes */}
+                <Route path="/owner/loyalty" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
+                <Route path="/owner/loyalty/program" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
+                <Route path="/owner/loyalty/rewards" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
+                <Route path="/owner/loyalty/redemptions" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
+                <Route path="/owner/loyalty/customers" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
                 
                 <Route path="/admin" element={
                   <RoleRoute allowedRoles={['ADMIN']}>
@@ -233,9 +252,18 @@ export default function App() {
                   <Route path="system/security" element={<AdminSecurityOverviewPage />} />
                   <Route path="system/recommendations" element={<AdminRecommendationsPage />} />
                   <Route path="claims" element={<AdminOwnerClaimsPage />} />
+                  <Route path="owner-claims" element={<AdminOwnerClaimsPage />} />
                   <Route path="claims/:id" element={<AdminOwnerClaimDetailsPage />} />
+                  <Route path="owner-claims/:id" element={<AdminOwnerClaimDetailsPage />} />
                   <Route path="change-requests" element={<AdminChangeRequestsPage />} />
                   <Route path="change-requests/:id" element={<AdminChangeRequestDetailsPage />} />
+                  <Route path="recommendations" element={<AdminRecommendationsPage />} />
+                  <Route path="alerts" element={<AdminOperationalAlertsPage />} />
+                  <Route path="jobs" element={<AdminMaintenanceJobsPage />} />
+                  <Route path="deployments" element={<AdminDeploymentsPage />} />
+                  <Route path="integrity" element={<AdminDataIntegrityPage />} />
+                  <Route path="security" element={<AdminSecurityOverviewPage />} />
+                  <Route path="quality" element={<AdminContentQualityPage />} />
                   
                   {/* Blog Management */}
                   <Route path="blog" element={<AdminBlogPage />} />
@@ -252,6 +280,7 @@ export default function App() {
                   <Route path="content/quality" element={<AdminContentQualityPage />} />
                   <Route path="redirects" element={<AdminRedirectsPage />} />
                   <Route path="testimonials" element={<AdminTestimonialsPage />} />
+                  <Route path="loyalty" element={<AdminLoyaltyPage />} />
                 </Route>
                 
                 {/* Fallback */}

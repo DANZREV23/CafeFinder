@@ -1,9 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Calendar, User, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Calendar, Clock, ArrowRight } from 'lucide-react';
 import { BlogPost } from '../../types';
-import { format } from 'date-fns';
 
 interface BlogCardProps {
   post: BlogPost;
@@ -11,79 +10,66 @@ interface BlogCardProps {
 }
 
 export const BlogCard: React.FC<BlogCardProps> = ({ post, index = 0 }) => {
+  const photoUrl = post.coverImage || post.coverImageAsset?.url || '/placeholder-cafe.jpg';
+
   return (
-    <motion.div
+    <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
-      className="group bg-white rounded-xl overflow-hidden border border-neutral-100 hover:border-neutral-200 hover:shadow-lg transition-all"
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className="group flex flex-col bg-white rounded-2xl border border-brand-border overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300"
     >
-      <Link to={`/blog/${post.slug}`} className="block relative aspect-[16/9] overflow-hidden">
+      <Link to={`/blog/${post.slug}`} className="relative h-52 w-full overflow-hidden bg-stone-100 block">
         <img
-          src={post.coverImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'}
+          src={photoUrl}
           alt={post.coverImageAlt || post.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          referrerPolicy="no-referrer"
         />
         {post.category && (
-          <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-neutral-900 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+          <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-brand-coffee text-white text-xs font-bold uppercase tracking-wider shadow-sm">
             {post.category}
           </span>
         )}
       </Link>
 
-      <div className="p-6">
-        <div className="flex items-center gap-4 text-xs text-neutral-500 mb-3">
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" />
-            {post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : 'Recently'}
-          </span>
-          {post.readingTime && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {post.readingTime}
-            </span>
+      <div className="p-6 flex flex-col flex-1 justify-between">
+        <div>
+          <div className="flex items-center gap-3 text-xs text-stone-400 mb-2.5">
+            {post.publishedAt && (
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {new Date(post.publishedAt).toLocaleDateString()}
+              </span>
+            )}
+            {post.author?.name && (
+              <span className="flex items-center gap-1">
+                <User className="w-3.5 h-3.5" />
+                {post.author.name}
+              </span>
+            )}
+          </div>
+
+          <h3 className="font-serif font-bold text-xl text-stone-900 group-hover:text-brand-coffee transition-colors line-clamp-2 mb-2 leading-snug">
+            <Link to={`/blog/${post.slug}`}>{post.title}</Link>
+          </h3>
+
+          {post.excerpt && (
+            <p className="text-sm text-stone-600 line-clamp-2 leading-relaxed mb-4">
+              {post.excerpt}
+            </p>
           )}
         </div>
 
-        <Link to={`/blog/${post.slug}`}>
-          <h3 className="text-xl font-bold text-neutral-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-2">
-            {post.title}
-          </h3>
+        <Link
+          to={`/blog/${post.slug}`}
+          className="inline-flex items-center gap-1 text-sm font-semibold text-brand-coffee hover:text-brand-coffee-dark mt-auto group-hover:translate-x-1 transition-transform"
+        >
+          Read Story
+          <ArrowRight className="w-4 h-4" />
         </Link>
-
-        {post.excerpt && (
-          <p className="text-neutral-600 text-sm mb-6 line-clamp-3 leading-relaxed">
-            {post.excerpt}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-2">
-            {post.author.avatarUrl ? (
-              <img
-                src={post.author.avatarUrl}
-                alt={post.author.name}
-                className="w-6 h-6 rounded-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-[10px] font-bold text-neutral-500">
-                {post.author.name.charAt(0)}
-              </div>
-            )}
-            <span className="text-xs font-medium text-neutral-700">{post.author.name}</span>
-          </div>
-
-          <Link
-            to={`/blog/${post.slug}`}
-            className="text-primary-600 text-xs font-bold flex items-center gap-1 hover:gap-2 transition-all"
-          >
-            Read More
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 };
+
+export default BlogCard;

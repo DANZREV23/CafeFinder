@@ -2,53 +2,66 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
+  Share2, 
   Globe, 
-  Calendar,
-  Loader2,
-  ExternalLink,
+  Lock, 
+  Calendar, 
+  MapPin, 
+  Star, 
   Coffee,
-  MapPin,
-  Clock
+  MessageSquare,
+  ExternalLink,
+  User as UserIcon
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { Card } from '@/components/ui/Card';
 import { collectionService, UserCollection, CollectionItem } from '@/services/collectionService';
-import { format } from 'date-fns';
 import { SEO } from '@/components/common/SEO';
+import { toast } from 'react-hot-toast';
 
 export default function PublicCollectionPage() {
   const { username, slug } = useParams<{ username: string; slug: string }>();
   const [collection, setCollection] = useState<UserCollection | null>(null);
+  const [items, setItems] = useState<CollectionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPublicCollection = async () => {
-      if (!username || !slug) return;
-      try {
-        setLoading(true);
-        const res = await collectionService.getPublicCollection(username, slug);
-        if (res.success) {
-          setCollection(res.data);
-        } else {
-          setError('Collection not found or private');
-        }
-      } catch (err) {
-        setError('Failed to load collection');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPublicCollection();
+    if (username && slug) {
+      loadPublicCollection();
+    }
   }, [username, slug]);
+
+  const loadPublicCollection = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await collectionService.getPublicCollection(username!, slug!);
+      if (res.success && res.data) {
+        setCollection(res.data);
+        setItems(res.data.items || []);
+      } else {
+        setError('Collection not found or is set to private.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Collection not found or is set to private.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('Link copied to clipboard!');
+  };
 
   if (loading) {
     return (
       <MainLayout>
-        <PageContainer className="py-20 flex justify-center">
-          <Loader2 className="animate-spin w-10 h-10 text-brand-coffee" />
+        <PageContainer className="py-16">
+          <div className="flex items-center justify-center min-h-[300px]">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-coffee"></div>
+          </div>
         </PageContainer>
       </MainLayout>
     );
@@ -57,14 +70,18 @@ export default function PublicCollectionPage() {
   if (error || !collection) {
     return (
       <MainLayout>
-        <PageContainer className="py-20 text-center">
-          <h1 className="text-3xl font-serif font-bold text-brand-charcoal mb-4">Collection Not Found</h1>
-          <p className="text-brand-muted mb-8">{error || 'This collection might be private or deleted.'}</p>
-          <Link to="/explore">
-            <button className="px-6 py-2 bg-brand-coffee text-white rounded-xl font-semibold hover:bg-brand-coffee-dark transition-colors">
-              Explore Other Cafes
-            </button>
-          </Link>
+        <PageContainer className="py-16">
+          <div className="max-w-md mx-auto text-center space-y-4">
+            <Lock className="w-12 h-12 text-stone-400 mx-auto" />
+            <h1 className="text-2xl font-serif font-bold text-stone-900">Collection Unavailable</h1>
+            <p className="text-stone-500 text-sm">{error || 'This collection is private or does not exist.'}</p>
+            <Link
+              to="/explore"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-coffee text-white font-medium rounded-xl text-sm hover:bg-brand-coffee/90 transition-colors"
+            >
+              Explore Cafes
+            </Link>
+          </div>
         </PageContainer>
       </MainLayout>
     );
@@ -72,124 +89,148 @@ export default function PublicCollectionPage() {
 
   return (
     <MainLayout>
-      <SEO 
-        title={`${collection.name} by ${username} - CafeFinder`} 
-        description={collection.description || `Check out this curated collection of cafes on CafeFinder.`}
+      <SEO
+        title={`${collection.name} | Cafe Collection by ${collection.user?.name || username}`}
+        description={collection.description || `Curated cafe list by ${collection.user?.name || username} on CafeFinder.`}
       />
-      <PageContainer className="py-12">
-        <div className="max-w-4xl mx-auto space-y-10">
-          {/* Header */}
-          <div className="space-y-6">
+      <PageContainer className="py-10 md:py-14 space-y-8">
+        {/* Navigation & Actions */}
+        <div className="flex items-center justify-between">
+          <Link
+            to="/explore"
+            className="inline-flex items-center gap-2 text-sm text-stone-500 hover:text-stone-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Explore More Cafes
+          </Link>
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-xl text-sm font-semibold text-stone-700 hover:bg-stone-50 shadow-sm transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
+            Share Collection
+          </button>
+        </div>
+
+        {/* Collection Hero */}
+        <div className="bg-white border border-stone-200 rounded-3xl p-6 md:p-10 shadow-sm space-y-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-amber-700 uppercase tracking-wider">
+            <Globe className="w-4 h-4" /> Public Collection
+          </div>
+          <h1 className="text-3xl md:text-5xl font-serif font-bold text-stone-900 tracking-tight">
+            {collection.name}
+          </h1>
+          {collection.description && (
+            <p className="text-stone-600 text-base md:text-lg max-w-2xl leading-relaxed">
+              {collection.description}
+            </p>
+          )}
+
+          {/* Curator Info */}
+          <div className="pt-4 border-t border-stone-100 flex items-center justify-between flex-wrap gap-4 text-sm text-stone-500">
             <div className="flex items-center gap-3">
-              <Globe size={16} className="text-brand-coffee" />
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-muted">Public Collection</span>
+              {collection.user?.avatarUrl ? (
+                <img
+                  src={collection.user.avatarUrl}
+                  alt={collection.user.name}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center font-bold text-xs">
+                  {collection.user?.name?.[0] || 'U'}
+                </div>
+              )}
+              <span>
+                Curated by <strong className="text-stone-900">{collection.user?.name || username}</strong>
+              </span>
             </div>
-            
-            <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-charcoal leading-tight">
-                {collection.name}
-              </h1>
-              <p className="text-sm text-brand-muted font-medium">
-                Curated by <Link to={`/users/${collection.userId}`} className="text-brand-coffee hover:underline">@{username}</Link>
-              </p>
-            </div>
-
-            {collection.description && (
-              <p className="text-lg text-brand-muted leading-relaxed">
-                {collection.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-brand-muted pt-2 border-t border-brand-border/60">
-              <div className="flex items-center gap-2">
-                <Calendar size={14} />
-                <span>Updated {format(new Date(collection.updatedAt), 'MMM d, yyyy')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Coffee size={14} />
-                <span>{collection.items?.length || 0} Cafes</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <Coffee className="w-4 h-4 text-stone-400" />
+              <span>{items.length} {items.length === 1 ? 'cafe' : 'cafes'} saved</span>
             </div>
           </div>
+        </div>
 
-          {/* Items List */}
-          <div className="space-y-6">
-            {collection.items?.map((item, index) => (
-              <Card key={item.id} className="p-0 overflow-hidden border-brand-border flex flex-col sm:flex-row group bg-white shadow-sm hover:shadow-md transition-shadow">
-                <div className="relative w-full sm:w-48 md:w-64 aspect-video sm:aspect-square shrink-0 bg-brand-cream overflow-hidden">
-                  <Link to={`/cafes/${item.cafe.slug}`}>
-                    {item.cafe.photos?.[0]?.url ? (
-                      <img 
-                        src={item.cafe.photos[0].url} 
-                        alt={item.cafe.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-brand-coffee/20">
-                        <Coffee size={40} />
+        {/* Cafes in Collection */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-serif font-bold text-stone-900">Cafes in this list</h2>
+
+          {items.length === 0 ? (
+            <div className="p-12 text-center bg-white border border-stone-200 rounded-2xl text-stone-500">
+              No cafes have been added to this collection yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {items.map((item, index) => {
+                const cafe = item.cafe || {};
+                const cover = cafe.photos?.[0]?.url || cafe.coverImage;
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm hover:border-amber-400 transition-all flex flex-col justify-between gap-4"
+                  >
+                    <div className="flex gap-4">
+                      {cover ? (
+                        <img
+                          src={cover}
+                          alt={cafe.name}
+                          className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 rounded-xl bg-stone-100 flex items-center justify-center text-stone-400 flex-shrink-0">
+                          <Coffee className="w-8 h-8" />
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-stone-400">#{index + 1}</span>
+                          <Link
+                            to={`/cafes/${cafe.slug || cafe.id}`}
+                            className="font-bold text-stone-900 hover:text-brand-coffee transition-colors truncate block text-base"
+                          >
+                            {cafe.name}
+                          </Link>
+                        </div>
+
+                        {cafe.city && (
+                          <div className="flex items-center gap-1.5 text-xs text-stone-500">
+                            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">{cafe.address ? `${cafe.address}, ` : ''}{cafe.city}</span>
+                          </div>
+                        )}
+
+                        {cafe.ratingAverage > 0 && (
+                          <div className="flex items-center gap-1 text-xs font-semibold text-stone-700">
+                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            <span>{Number(cafe.ratingAverage).toFixed(1)}</span>
+                            <span className="text-stone-400">({cafe.reviewCount || 0})</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Curator's Custom Note */}
+                    {item.note && (
+                      <div className="p-3 bg-amber-50/60 border border-amber-200/50 rounded-xl text-xs text-stone-700 flex items-start gap-2">
+                        <MessageSquare className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <span className="italic">"{item.note}"</span>
                       </div>
                     )}
-                  </Link>
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[10px] font-bold text-brand-charcoal">
-                    #{index + 1}
-                  </div>
-                </div>
 
-                <div className="flex-1 p-6 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-start">
-                      <Link to={`/cafes/${item.cafe.slug}`} className="block group/title">
-                        <h3 className="text-xl font-serif font-bold text-brand-charcoal group-hover/title:text-brand-coffee transition-colors flex items-center gap-2">
-                          {item.cafe.name}
-                          <ExternalLink size={14} className="opacity-0 group-hover/title:opacity-100 transition-opacity" />
-                        </h3>
+                    <div className="pt-2 border-t border-stone-100 flex justify-end">
+                      <Link
+                        to={`/cafes/${cafe.slug || cafe.id}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-coffee hover:text-brand-coffee/80"
+                      >
+                        View cafe profile <ExternalLink className="w-3.5 h-3.5" />
                       </Link>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-brand-muted">
-                      <MapPin size={12} className="text-brand-coffee" />
-                      <span>{item.cafe.city}, {item.cafe.address}</span>
-                    </div>
                   </div>
-
-                  {item.note && (
-                    <div className="mt-4 bg-brand-cream/40 p-4 rounded-2xl border border-brand-border/40 relative">
-                      <div className="text-[9px] font-bold uppercase tracking-widest text-brand-coffee mb-1 flex items-center gap-1.5">
-                        <Clock size={10} />
-                        <span>Curator's Note</span>
-                      </div>
-                      <p className="text-sm text-brand-charcoal italic leading-relaxed">
-                        &ldquo;{item.note}&rdquo;
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex justify-end">
-                    <Link to={`/cafes/${item.cafe.slug}`}>
-                      <button className="text-xs font-bold uppercase tracking-wider text-brand-coffee hover:text-brand-coffee-dark flex items-center gap-1.5 transition-colors">
-                        View Cafe Details
-                        <ArrowLeft size={12} className="rotate-180" />
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Footer CTA */}
-          <div className="pt-12 border-t border-brand-border text-center space-y-6">
-            <div className="bg-brand-cream/30 p-8 rounded-3xl border border-brand-border space-y-4">
-              <h2 className="text-2xl font-serif font-bold text-brand-charcoal">Want to create your own collections?</h2>
-              <p className="text-brand-muted max-w-md mx-auto">Join CafeFinder to save your favorite coffee spots, write notes, and share your discovery boards with the world.</p>
-              <div className="flex justify-center gap-4 pt-2">
-                <Link to="/register">
-                  <button className="px-8 py-3 bg-brand-coffee text-white rounded-xl font-bold shadow-lg shadow-brand-coffee/20 hover:bg-brand-coffee-dark transition-all">
-                    Join Community
-                  </button>
-                </Link>
-              </div>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
       </PageContainer>
     </MainLayout>

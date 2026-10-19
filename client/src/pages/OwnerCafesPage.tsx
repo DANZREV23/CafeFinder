@@ -116,7 +116,7 @@ export default function OwnerCafesPage() {
                   <div className="flex items-center gap-6">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-brand-charcoal">
                       <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      {cafe.ratingAverage.toFixed(1)}
+                      {cafe.ratingAverage ? Number(cafe.ratingAverage).toFixed(1) : 'New'}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-brand-muted">
                       <MessageSquare className="w-4 h-4 text-brand-coffee" />

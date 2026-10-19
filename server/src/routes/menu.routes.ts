@@ -4,6 +4,7 @@ import { MenuController } from '../controllers/menuController.js';
 const router = Router();
 const controller = new MenuController();
 
+router.get('/cafe/:slug', controller.getCafeMenu);
 router.get('/:slug', controller.getCafeMenu);
 
 export default router;

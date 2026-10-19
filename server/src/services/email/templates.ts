@@ -1,345 +1,149 @@
-import { EmailTemplate } from './types.js';
+import { EmailTemplate, EmailPayloads } from './types.js';
 
-interface TemplateResult {
+interface RenderedEmail {
   subject: string;
   html: string;
   text: string;
 }
 
-const COLORS = {
-  primary: '#5A3825', // Coffee brown
-  secondary: '#FCFAF6', // Cream background
-  accent: '#2D5A27', // Green accent
-  text: '#2D2926', // Neutral text
-  muted: '#716B67',
-  white: '#FFFFFF',
-};
+export function renderTemplate<T extends EmailTemplate>(
+  template: T,
+  payload: EmailPayloads[T]
+): RenderedEmail {
+  const p = (payload || {}) as any;
 
-const getBaseLayout = (title: string, contentHtml: string, actionUrl?: string, actionText?: string) => {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: ${COLORS.text};
-      margin: 0;
-      padding: 0;
-      background-color: ${COLORS.secondary};
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-    .header h1 {
-      color: ${COLORS.primary};
-      margin: 0;
-      font-size: 28px;
-    }
-    .content {
-      background-color: ${COLORS.white};
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    .footer {
-      text-align: center;
-      margin-top: 40px;
-      color: ${COLORS.muted};
-      font-size: 14px;
-    }
-    .button {
-      display: inline-block;
-      padding: 12px 24px;
-      background-color: ${COLORS.primary};
-      color: ${COLORS.white} !important;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: bold;
-      margin-top: 24px;
-    }
-    .link-fallback {
-      margin-top: 24px;
-      font-size: 12px;
-      color: ${COLORS.muted};
-      word-break: break-all;
-    }
-    h2 {
-      color: ${COLORS.primary};
-      margin-top: 0;
-    }
-    p {
-      margin-bottom: 16px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>CafeFinder</h1>
-    </div>
-    <div class="content">
-      ${contentHtml}
-      ${actionUrl && actionText ? `
-        <div style="text-align: center;">
-          <a href="${actionUrl}" class="button">${actionText}</a>
-        </div>
-        <div class="link-fallback">
-          If the button doesn't work, copy and paste this URL into your browser: <br>
-          <a href="${actionUrl}">${actionUrl}</a>
-        </div>
-      ` : ''}
-    </div>
-    <div class="footer">
-      <p><strong>CafeFinder</strong></p>
-      <p>Discover cafes worth visiting.</p>
-      <p style="margin-top: 16px; font-size: 12px;">This is an automated account notification. Please do not reply directly to this email.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-};
-
-export const renderTemplate = (template: EmailTemplate, data: any): TemplateResult => {
   switch (template) {
     case EmailTemplate.WELCOME:
       return {
-        subject: 'Welcome to CafeFinder',
-        html: getBaseLayout(
-          'Welcome to CafeFinder',
-          `
-          <h2>Welcome, ${data.name}!</h2>
-          <p>Thanks for creating your CafeFinder account. We're excited to have you in our community of coffee lovers.</p>
-          <p>With your new account, you can:</p>
-          <ul>
-            <li>Discover the best specialty coffee shops near you</li>
-            <li>Save your favorite spots for quick access</li>
-            <li>Write reviews to help others find great rituals</li>
-            <li>Submit new cafes you've discovered</li>
-          </ul>
-          <p>Start exploring today!</p>
-          `,
-          data.exploreUrl,
-          'Explore CafeFinder'
-        ),
-        text: `Welcome to CafeFinder, ${data.name}!\n\nThanks for creating your CafeFinder account. We're excited to have you in our community of coffee lovers.\n\nWith your new account, you can discover cafes, save favorites, write reviews, and submit new cafes.\n\nStart exploring today: ${data.exploreUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Welcome to CafeFinder, ${p.name || 'Friend'}!`,
+        html: `<h2>Welcome to CafeFinder!</h2><p>Hi ${p.name || 'there'},</p><p>We are thrilled to have you join our community of coffee lovers. Start discovering amazing local cafes now.</p><p><a href="${p.exploreUrl || '#'}">Explore Cafes</a></p>`,
+        text: `Welcome to CafeFinder, ${p.name || 'there'}! Explore cafes: ${p.exploreUrl || ''}`,
       };
 
     case EmailTemplate.CAFE_SUBMISSION_APPROVED:
       return {
-        subject: 'Your cafe submission was approved',
-        html: getBaseLayout(
-          'Cafe Submission Approved',
-          `
-          <h2>Great news, ${data.name}!</h2>
-          <p>Your submission for <strong>${data.cafeName}</strong> has been approved by our team.</p>
-          <p>It is now live on CafeFinder and available for everyone to discover.</p>
-          `,
-          data.cafeUrl,
-          'View Cafe Profile'
-        ),
-        text: `Great news, ${data.name}!\n\nYour submission for ${data.cafeName} has been approved. It is now live on CafeFinder.\n\nView it here: ${data.cafeUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Your cafe submission for "${p.cafeName}" has been approved!`,
+        html: `<h2>Good news!</h2><p>Hi ${p.name || 'there'},</p><p>Your cafe submission for <strong>${p.cafeName}</strong> has been approved and published to CafeFinder!</p><p><a href="${p.cafeUrl || '#'}">View Cafe Profile</a></p>`,
+        text: `Your cafe submission for "${p.cafeName}" has been approved! View it here: ${p.cafeUrl || ''}`,
       };
 
     case EmailTemplate.CAFE_SUBMISSION_REJECTED:
       return {
-        subject: 'Update on your cafe submission',
-        html: getBaseLayout(
-          'Cafe Submission Update',
-          `
-          <h2>Hello ${data.name},</h2>
-          <p>Thank you for submitting <strong>${data.cafeName}</strong> to CafeFinder.</p>
-          <p>After reviewing your submission, we are unable to approve it at this time for the following reason:</p>
-          <p style="padding: 16px; background-color: #f8f8f8; border-left: 4px solid #ddd;">${data.reason}</p>
-          ${data.submissionUrl ? '<p>You can review your submission details and make corrections if needed.</p>' : ''}
-          `,
-          data.submissionUrl,
-          data.submissionUrl ? 'View Submission' : undefined
-        ),
-        text: `Hello ${data.name},\n\nThank you for submitting ${data.cafeName} to CafeFinder. After review, we are unable to approve it for the following reason: ${data.reason}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Update on your cafe submission for "${p.cafeName}"`,
+        html: `<h2>Submission Update</h2><p>Hi ${p.name || 'there'},</p><p>Unfortunately, your submission for <strong>${p.cafeName}</strong> could not be approved at this time.</p><p><strong>Reason:</strong> ${p.reason || 'Did not meet listing criteria.'}</p>`,
+        text: `Update on your submission for "${p.cafeName}": Unfortunately it was not approved. Reason: ${p.reason || 'Did not meet listing criteria.'}`,
       };
 
     case EmailTemplate.OWNER_CLAIM_APPROVED:
       return {
-        subject: 'Your cafe ownership claim was approved',
-        html: getBaseLayout(
-          'Ownership Claim Approved',
-          `
-          <h2>Congratulations, ${data.name}!</h2>
-          <p>Your claim for ownership of <strong>${data.cafeName}</strong> has been approved.</p>
-          <p>You now have access to your Owner Dashboard where you can manage your cafe profile, respond to reviews, and view analytics.</p>
-          `,
-          data.dashboardUrl,
-          'Go to Owner Dashboard'
-        ),
-        text: `Congratulations, ${data.name}!\n\nYour claim for ownership of ${data.cafeName} has been approved. You now have access to your Owner Dashboard.\n\nManage your cafe here: ${data.dashboardUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Your ownership claim for "${p.cafeName}" has been approved!`,
+        html: `<h2>Congratulations!</h2><p>Hi ${p.name || 'there'},</p><p>Your claim for <strong>${p.cafeName}</strong> has been verified and approved.</p><p><a href="${p.dashboardUrl || '#'}">Access Owner Dashboard</a></p>`,
+        text: `Your ownership claim for "${p.cafeName}" has been approved! Dashboard: ${p.dashboardUrl || ''}`,
       };
 
     case EmailTemplate.OWNER_CLAIM_REJECTED:
       return {
-        subject: 'Update on your ownership claim',
-        html: getBaseLayout(
-          'Ownership Claim Update',
-          `
-          <h2>Hello ${data.name},</h2>
-          <p>We have reviewed your request to claim ownership of <strong>${data.cafeName}</strong>.</p>
-          <p>Unfortunately, we are unable to approve your claim at this time for the following reason:</p>
-          <p style="padding: 16px; background-color: #f8f8f8; border-left: 4px solid #ddd;">${data.reason}</p>
-          `,
-          data.claimUrl,
-          data.claimUrl ? 'View Claim Status' : undefined
-        ),
-        text: `Hello ${data.name},\n\nWe have reviewed your request to claim ownership of ${data.cafeName}. Unfortunately, we are unable to approve it for the following reason: ${data.reason}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Ownership claim update for "${p.cafeName}"`,
+        html: `<h2>Claim Update</h2><p>Hi ${p.name || 'there'},</p><p>We could not verify your ownership claim for <strong>${p.cafeName}</strong>.</p><p><strong>Reason:</strong> ${p.reason || 'Verification requirements not met.'}</p>`,
+        text: `Claim update for "${p.cafeName}": Verification not met. Reason: ${p.reason || ''}`,
       };
 
     case EmailTemplate.REVIEW_APPROVED:
       return {
-        subject: 'Your review is now published',
-        html: getBaseLayout(
-          'Review Published',
-          `
-          <h2>Hello ${data.name},</h2>
-          <p>Your review for <strong>${data.cafeName}</strong> has been approved and is now visible to the community.</p>
-          <p>Thank you for sharing your experience and helping others find great coffee!</p>
-          `,
-          data.cafeUrl,
-          'View Cafe Reviews'
-        ),
-        text: `Hello ${data.name},\n\nYour review for ${data.cafeName} has been approved and is now live. Thank you for sharing your experience!\n\nView it here: ${data.cafeUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Your review for "${p.cafeName}" is now live!`,
+        html: `<h2>Review Published</h2><p>Hi ${p.name || 'there'},</p><p>Your review for <strong>${p.cafeName}</strong> has been published.</p><p><a href="${p.cafeUrl || '#'}">View Review</a></p>`,
+        text: `Your review for "${p.cafeName}" has been published: ${p.cafeUrl || ''}`,
       };
 
     case EmailTemplate.REVIEW_REJECTED:
       return {
-        subject: 'Update on your review',
-        html: getBaseLayout(
-          'Review Update',
-          `
-          <h2>Hello ${data.name},</h2>
-          <p>We have reviewed your recent review for <strong>${data.cafeName}</strong>.</p>
-          <p>Unfortunately, your review does not meet our community guidelines and cannot be published in its current form.</p>
-          ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
-          `
-        ),
-        text: `Hello ${data.name},\n\nWe have reviewed your recent review for ${data.cafeName}. Unfortunately, it does not meet our community guidelines and cannot be published.\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Update on your review for "${p.cafeName}"`,
+        html: `<h2>Review Notice</h2><p>Hi ${p.name || 'there'},</p><p>Your review for <strong>${p.cafeName}</strong> could not be published because it violated community guidelines.</p><p>${p.reason ? `Reason: ${p.reason}` : ''}</p>`,
+        text: `Your review for "${p.cafeName}" could not be published. ${p.reason ? `Reason: ${p.reason}` : ''}`,
+      };
+
+    case EmailTemplate.REVIEW_HIDDEN:
+      return {
+        subject: `Your review for "${p.cafeName}" has been hidden`,
+        html: `<h2>Review Hidden</h2><p>Hi ${p.name || 'there'},</p><p>Your review for <strong>${p.cafeName}</strong> has been hidden pending moderation.</p>`,
+        text: `Your review for "${p.cafeName}" has been hidden pending moderation.`,
+      };
+
+    case EmailTemplate.REVIEW_RESTORED:
+      return {
+        subject: `Your review for "${p.cafeName}" has been restored`,
+        html: `<h2>Review Restored</h2><p>Hi ${p.name || 'there'},</p><p>Following review, your post for <strong>${p.cafeName}</strong> has been restored.</p><p><a href="${p.cafeUrl || '#'}">View Review</a></p>`,
+        text: `Your review for "${p.cafeName}" has been restored: ${p.cafeUrl || ''}`,
       };
 
     case EmailTemplate.CHANGE_REQUEST_APPROVED:
       return {
-        subject: 'Your cafe update request was approved',
-        html: getBaseLayout(
-          'Update Request Approved',
-          `
-          <h2>Hello ${data.name},</h2>
-          <p>Your requested changes to <strong>${data.cafeName}</strong> (${data.changeType}) have been approved and applied.</p>
-          `,
-          data.dashboardUrl,
-          'View Dashboard'
-        ),
-        text: `Hello ${data.name},\n\nYour requested changes to ${data.cafeName} (${data.changeType}) have been approved and applied.\n\nView your dashboard: ${data.dashboardUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Change request for "${p.cafeName}" has been approved`,
+        html: `<h2>Changes Approved</h2><p>Hi ${p.name || 'there'},</p><p>Your proposed update (${p.changeType}) for <strong>${p.cafeName}</strong> has been applied.</p>`,
+        text: `Your change request for "${p.cafeName}" (${p.changeType}) has been approved.`,
       };
 
     case EmailTemplate.CHANGE_REQUEST_REJECTED:
       return {
-        subject: 'Update on your cafe change request',
-        html: getBaseLayout(
-          'Update Request Rejection',
-          `
-          <h2>Hello ${data.name},</h2>
-          <p>We have reviewed your request to update <strong>${data.cafeName}</strong> (${data.changeType}).</p>
-          <p>Unfortunately, we are unable to apply these changes at this time.</p>
-          ${data.reason ? `<p style="padding: 16px; background-color: #f8f8f8; border-left: 4px solid #ddd;">${data.reason}</p>` : ''}
-          `,
-          data.dashboardUrl,
-          'View Dashboard'
-        ),
-        text: `Hello ${data.name},\n\nWe have reviewed your request to update ${data.cafeName} (${data.changeType}). Unfortunately, we are unable to apply these changes at this time.\n\nReason: ${data.reason || 'Not specified'}\n\nView your dashboard: ${data.dashboardUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Change request for "${p.cafeName}" was not approved`,
+        html: `<h2>Changes Not Approved</h2><p>Hi ${p.name || 'there'},</p><p>Your proposed change (${p.changeType}) for <strong>${p.cafeName}</strong> was rejected.</p><p>${p.reason ? `Reason: ${p.reason}` : ''}</p>`,
+        text: `Your change request for "${p.cafeName}" was rejected. ${p.reason || ''}`,
       };
 
     case EmailTemplate.CAFE_PUBLISHED:
       return {
-        subject: 'Your cafe is now live!',
-        html: getBaseLayout(
-          'Cafe Published',
-          `
-          <h2>Congratulations, ${data.name}!</h2>
-          <p>Your cafe, <strong>${data.cafeName}</strong>, is now published and visible to all users on CafeFinder.</p>
-          <p>You can now share your profile with your customers and start collecting reviews.</p>
-          `,
-          data.cafeUrl,
-          'View Public Profile'
-        ),
-        text: `Congratulations, ${data.name}!\n\nYour cafe, ${data.cafeName}, is now live on CafeFinder. Share your profile and start collecting reviews!\n\nView profile: ${data.cafeUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `"${p.cafeName}" is now published on CafeFinder`,
+        html: `<h2>Cafe Published!</h2><p>Hi ${p.name || 'there'},</p><p><strong>${p.cafeName}</strong> is now live on CafeFinder.</p><p><a href="${p.cafeUrl || '#'}">View Cafe</a></p>`,
+        text: `"${p.cafeName}" is now published on CafeFinder: ${p.cafeUrl || ''}`,
       };
 
     case EmailTemplate.CAFE_SUSPENDED:
       return {
-        subject: 'Your cafe profile has been suspended',
-        html: getBaseLayout(
-          'Cafe Status Update',
-          `
-          <h2>Hello ${data.name},</h2>
-          <p>We are writing to inform you that your cafe profile for <strong>${data.cafeName}</strong> has been suspended.</p>
-          <p>While suspended, your profile will not be visible to public users.</p>
-          ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ''}
-          <p>If you believe this is an error, please contact our support team.</p>
-          `
-        ),
-        text: `Hello ${data.name},\n\nYour cafe profile for ${data.cafeName} has been suspended. Reason: ${data.reason || 'Not specified'}. If you believe this is an error, please contact support.\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Important notice regarding "${p.cafeName}" listing`,
+        html: `<h2>Listing Notice</h2><p>Hi ${p.name || 'there'},</p><p>Your listing for <strong>${p.cafeName}</strong> has been temporarily suspended.</p><p>${p.reason ? `Reason: ${p.reason}` : ''}</p>`,
+        text: `Your listing for "${p.cafeName}" has been suspended. ${p.reason || ''}`,
       };
 
     case EmailTemplate.INQUIRY_RECEIVED:
       return {
-        subject: `New customer inquiry for ${data.cafeName}: ${data.subject}`,
-        html: getBaseLayout(
-          'New Customer Inquiry',
-          `
-          <h2>Hello ${data.ownerName},</h2>
-          <p>You have received a new customer inquiry for <strong>${data.cafeName}</strong>.</p>
-          <p><strong>Category:</strong> ${data.category}<br>
-          <strong>From:</strong> ${data.senderName}<br>
-          <strong>Subject:</strong> ${data.subject}</p>
-          <p style="padding: 16px; background-color: #f8f8f8; border-left: 4px solid #5A3825; white-space: pre-wrap;">${data.messagePreview}</p>
-          <p>Please log in to your Owner Dashboard on CafeFinder to view the full inquiry and respond securely.</p>
-          `,
-          data.inquiryUrl,
-          'View & Respond in Owner Portal'
-        ),
-        text: `Hello ${data.ownerName},\n\nYou have received a new customer inquiry for ${data.cafeName}.\n\nCategory: ${data.category}\nFrom: ${data.senderName}\nSubject: ${data.subject}\n\nMessage:\n${data.messagePreview}\n\nRespond here: ${data.inquiryUrl}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `New customer inquiry for ${p.cafeName}: ${p.subject}`,
+        html: `<h2>New Inquiry Received</h2><p>Hi ${p.ownerName || 'there'},</p><p>You have a new inquiry from <strong>${p.senderName}</strong> regarding <strong>${p.cafeName}</strong>.</p><p><strong>Topic:</strong> ${p.category}</p><p><em>"${p.messagePreview}"</em></p><p><a href="${p.inquiryUrl || '#'}">Respond in Dashboard</a></p>`,
+        text: `New customer inquiry for ${p.cafeName} from ${p.senderName}: "${p.subject}". View: ${p.inquiryUrl || ''}`,
       };
 
     case EmailTemplate.INQUIRY_RESPONDED:
       return {
-        subject: `Response from ${data.cafeName}: ${data.subject}`,
-        html: getBaseLayout(
-          'Response to Your Inquiry',
-          `
-          <h2>Hello ${data.customerName},</h2>
-          <p><strong>${data.cafeName}</strong> has responded to your inquiry regarding "<strong>${data.subject}</strong>":</p>
-          <p style="padding: 16px; background-color: #f8f8f8; border-left: 4px solid #5A3825; white-space: pre-wrap;">${data.responseMessage}</p>
-          ${data.inquiryUrl ? '<p>You can view the full conversation thread and reply in your CafeFinder dashboard.</p>' : `<p>Visit <a href="${data.cafeUrl}">${data.cafeName} on CafeFinder</a> for more information.</p>`}
-          `,
-          data.inquiryUrl || data.cafeUrl,
-          data.inquiryUrl ? 'View Inquiry Thread' : 'View Cafe Profile'
-        ),
-        text: `Hello ${data.customerName},\n\n${data.cafeName} has responded to your inquiry ("${data.subject}"):\n\n${data.responseMessage}\n\n${data.inquiryUrl ? `View conversation: ${data.inquiryUrl}` : `View cafe: ${data.cafeUrl}`}\n\nCafeFinder - Discover cafes worth visiting.`,
+        subject: `Response from ${p.cafeName}: ${p.subject}`,
+        html: `<h2>Response Received</h2><p>Hi ${p.customerName || 'there'},</p><p><strong>${p.cafeName}</strong> has responded to your inquiry:</p><blockquote style="border-left: 3px solid #78350f; padding-left: 10px; margin: 10px 0;">${p.responseMessage}</blockquote><p><a href="${p.cafeUrl || '#'}">Visit Cafe Page</a></p>`,
+        text: `Response from ${p.cafeName} regarding "${p.subject}":\n\n${p.responseMessage}`,
+      };
+
+    case EmailTemplate.LOYALTY_POINTS_AWARDED:
+      return {
+        subject: `You earned ${p.pointsAwarded} points at ${p.cafeName}!`,
+        html: `<h2>Points Earned!</h2><p>Hi ${p.customerName || 'there'},</p><p>You've earned <strong>${p.pointsAwarded} points</strong> with the <strong>${p.programName}</strong> at <strong>${p.cafeName}</strong>!</p><p>Your current balance is: <strong>${p.newBalance} points</strong>.</p><p><a href="${p.dashboardUrl || '#'}">View Your Rewards</a></p>`,
+        text: `You earned ${p.pointsAwarded} points at ${p.cafeName}! New balance: ${p.newBalance} points.`,
+      };
+
+    case EmailTemplate.LOYALTY_REDEMPTION_REQUESTED:
+      return {
+        subject: `New reward redemption request: ${p.rewardName}`,
+        html: `<h2>Redemption Requested</h2><p>Hi ${p.ownerName || 'there'},</p><p>Customer <strong>${p.customerName}</strong> has requested to redeem <strong>${p.rewardName}</strong> (${p.pointsSpent} points) at <strong>${p.cafeName}</strong>.</p><p><a href="${p.redemptionsUrl || '#'}">Process in Dashboard</a></p>`,
+        text: `New redemption request at ${p.cafeName}: ${p.customerName} requested ${p.rewardName}.`,
+      };
+
+    case EmailTemplate.LOYALTY_REDEMPTION_UPDATED:
+      return {
+        subject: `Your reward redemption for "${p.rewardName}" is ${p.status}`,
+        html: `<h2>Redemption Status Update</h2><p>Hi ${p.customerName || 'there'},</p><p>Your redemption for <strong>${p.rewardName}</strong> at <strong>${p.cafeName}</strong> is now: <strong>${p.status}</strong>.</p>${p.reason ? `<p>Note: ${p.reason}</p>` : ''}<p><a href="${p.dashboardUrl || '#'}">View Loyalty Dashboard</a></p>`,
+        text: `Your redemption for "${p.rewardName}" at ${p.cafeName} is ${p.status}.`,
       };
 
     default:
       return {
         subject: 'Notification from CafeFinder',
-        html: getBaseLayout('Notification', `<p>You have a new notification from CafeFinder.</p>`),
+        html: `<p>You have a new notification from CafeFinder.</p>`,
         text: 'You have a new notification from CafeFinder.',
       };
   }
-};
+}

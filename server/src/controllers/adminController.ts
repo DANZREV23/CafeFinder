@@ -729,6 +729,32 @@ export class AdminController {
             return { processedCount: 1, successCount: 1, failureCount: 0, message: hasSSL ? 'SSL Active' : 'SSL Not Configured' };
           });
           break;
+        case 'loyalty-maintenance':
+        case 'expire-loyalty-redemptions':
+          executionId = await jobRunnerService.runJob(jobName, async () => {
+            const { LoyaltyService } = await import('../services/loyaltyService.js');
+            const res = await LoyaltyService.runLoyaltyMaintenanceJob();
+            const total = res.expiredRedemptionsCount + res.expiredRewardsCount + res.endedProgramsCount;
+            return {
+              processedCount: total,
+              successCount: total,
+              failureCount: 0,
+              message: `Expired ${res.expiredRedemptionsCount} redemptions, ${res.expiredRewardsCount} rewards, ${res.endedProgramsCount} programs`,
+            };
+          });
+          break;
+        case 'reconcile-loyalty-balances':
+          executionId = await jobRunnerService.runJob('reconcile-loyalty-balances', async () => {
+            const { LoyaltyService } = await import('../services/loyaltyService.js');
+            const res = await LoyaltyService.reconcileAllLoyaltyLedgers(true);
+            return {
+              processedCount: res.reconciledAccountsCount,
+              successCount: res.reconciledAccountsCount,
+              failureCount: 0,
+              message: `Audited ${res.reconciledAccountsCount} accounts. Fixed ${res.fixedDiscrepanciesCount} discrepancies.`,
+            };
+          });
+          break;
         default:
           return res.status(400).json({ success: false, error: { message: `Invalid job name: ${jobName}` } });
       }

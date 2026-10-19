@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Coffee, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Coffee, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { SEO } from '../components/common/SEO';
@@ -8,12 +8,10 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { PrivateOfflineState } from '../components/pwa/PrivateOfflineState';
-
 import { MainLayout } from '../components/layout/MainLayout';
+import { useI18n } from '@/i18n';
 
-import { useI18n } from "@/i18n";
-
-const LoginPage: React.FC = () => {
+export default function LoginPage() {
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,30 +19,21 @@ const LoginPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { user, login, isAuthenticated, loading: authLoading } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isOnline = useOnlineStatus();
 
   const from = (location.state as any)?.from?.pathname || '/';
 
-  React.useEffect(() => {
-    if (isAuthenticated && !authLoading && user) {
-      const target = (from && from !== '/' && from !== '/login') 
-        ? from 
-        : (user.role === 'ADMIN' ? '/admin' : user.role === 'OWNER' ? '/owner' : '/');
-      navigate(target, { replace: true });
-    }
-  }, [isAuthenticated, authLoading, user, from, navigate]);
-
   if (!isOnline) {
     return (
       <MainLayout>
-        <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 py-12">
+        <div className="flex flex-col items-center justify-center min-h-[85vh] px-4 py-12">
           <div className="w-full max-w-md">
-            <PrivateOfflineState 
-              title="Connection Required" 
-              description="Signing in requires an active internet connection to securely verify your credentials."
+            <PrivateOfflineState
+              title="Connection Required"
+              description="Signing into your account requires an active internet connection."
             />
           </div>
         </div>
@@ -54,20 +43,17 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError('Please fill in both email and password');
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-
     try {
-      const loggedUser = await login({ email, password });
-      const target = (from && from !== '/' && from !== '/login') 
-        ? from 
-        : (loggedUser?.role === 'ADMIN' ? '/admin' : loggedUser?.role === 'OWNER' ? '/owner' : '/');
-      navigate(target, { replace: true });
+      setIsSubmitting(true);
+      await login({ email, password });
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -77,67 +63,68 @@ const LoginPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <SEO title={t("nav.login")} noindex={true} />
-      <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 py-12">
+      <SEO
+        title="Sign In - CafeFinder"
+        description="Log into your CafeFinder account to explore cafes, manage favorites, and claim rewards."
+      />
+      <div className="flex flex-col items-center justify-center min-h-[85vh] px-4 py-12 bg-cream-50">
         <div className="w-full max-w-md">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 bg-brand-coffee rounded-xl flex items-center justify-center mb-4 text-white shadow-lg shadow-brand-coffee/20" aria-hidden="true">
-              <Coffee size={24} />
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand-coffee text-white mb-4 shadow-sm">
+              <Coffee className="w-7 h-7" />
             </div>
-            <h1 className="text-3xl font-display font-bold text-brand-black mb-2 text-center">{t("auth.signIn")}</h1>
-            <p className="text-brand-muted text-center max-w-xs">
-              Sign in to continue discovering great coffee.
+            <h1 className="text-3xl font-serif font-bold text-stone-900">Welcome Back</h1>
+            <p className="mt-2 text-stone-600 text-sm">
+              Sign in to manage your favorites, cafes, and loyalty rewards
             </p>
           </div>
 
-          <Card className="p-8 border-brand-border/50 shadow-xl shadow-brand-black/5">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="p-3 text-sm bg-red-50 border border-red-100 text-red-600 rounded-lg" role="alert">
-                  {error}
-                </div>
-              )}
+          <Card className="p-8 shadow-md border-brand-border bg-white rounded-2xl">
+            {error && (
+              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+                {error}
+              </div>
+            )}
 
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-brand-black">
-                  {t("auth.email")}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700 mb-1.5">
+                  Email Address
                 </label>
                 <Input
-                  id="email"
                   type="email"
-                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
                   required
-                  aria-required="true"
-                  className="rounded-xl border-brand-border focus:border-brand-coffee focus:ring-brand-coffee/20"
+                  autoComplete="email"
+                  className="w-full"
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-brand-black">
-                    {t("auth.password")}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700">
+                    Password
                   </label>
                 </div>
                 <div className="relative">
                   <Input
-                    id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
                     required
-                    aria-required="true"
-                    className="pr-10 rounded-xl border-brand-border focus:border-brand-coffee focus:ring-brand-coffee/20"
+                    autoComplete="current-password"
+                    className="w-full pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-black transition-colors"
-                    aria-label={showPassword ? t("common.close") : t("common.more")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -145,24 +132,60 @@ const LoginPage: React.FC = () => {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-brand-coffee text-white hover:bg-brand-coffee/90 rounded-xl h-12 shadow-lg shadow-brand-coffee/10 group transition-all"
+                className="w-full mt-2 bg-brand-coffee hover:bg-brand-coffee-dark text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer"
               >
-                {isSubmitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                ) : (
-                  <>
-                    {t("auth.signIn")}
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-                  </>
-                )}
+                <LogIn className="w-4 h-4" />
+                {isSubmitting ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-brand-border/50 text-center">
-              <p className="text-sm text-brand-muted">
-                {t("auth.noAccount")}{' '}
-                <Link to="/register" className="text-brand-coffee font-semibold hover:underline">
-                  {t("auth.signUp")}
+            {/* Quick Sign-In Helpers */}
+            <div className="mt-6 pt-5 border-t border-stone-100">
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2.5 text-center">
+                Demo Accounts (Password: <code className="bg-stone-100 px-1.5 py-0.5 rounded text-stone-700 font-mono">password123</code>)
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('revero.b@agentsofvalue.com');
+                    setPassword('password123');
+                    setError(null);
+                  }}
+                  className="px-2.5 py-2 text-xs rounded-xl border border-stone-200 bg-stone-50 hover:bg-brand-cream/50 hover:border-brand-coffee/40 font-medium text-stone-700 transition text-center cursor-pointer"
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('owner@cafefinder.local');
+                    setPassword('password123');
+                    setError(null);
+                  }}
+                  className="px-2.5 py-2 text-xs rounded-xl border border-stone-200 bg-stone-50 hover:bg-brand-cream/50 hover:border-brand-coffee/40 font-medium text-stone-700 transition text-center cursor-pointer"
+                >
+                  Cafe Owner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('maria@example.com');
+                    setPassword('password123');
+                    setError(null);
+                  }}
+                  className="px-2.5 py-2 text-xs rounded-xl border border-stone-200 bg-stone-50 hover:bg-brand-cream/50 hover:border-brand-coffee/40 font-medium text-stone-700 transition text-center cursor-pointer"
+                >
+                  Customer
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-stone-100 text-center">
+              <p className="text-sm text-stone-600">
+                Don't have an account yet?{' '}
+                <Link to="/register" className="font-semibold text-brand-coffee hover:underline">
+                  Create an account
                 </Link>
               </p>
             </div>
@@ -171,6 +194,4 @@ const LoginPage: React.FC = () => {
       </div>
     </MainLayout>
   );
-};
-
-export default LoginPage;
+}

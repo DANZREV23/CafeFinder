@@ -1,250 +1,136 @@
-import { NextFunction, Response } from 'express';
-import { InquiryCategory, InquiryPriority, InquirySource, InquiryStatus } from '@prisma/client';
-import { z } from 'zod';
+import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { InquiryService } from '../services/inquiryService.js';
-
-const createInquirySchema = z.object({
-  subject: z.string().trim().min(3, 'Subject must be at least 3 characters').max(150, 'Subject cannot exceed 150 characters'),
-  message: z.string().trim().min(10, 'Message must be at least 10 characters').max(5000, 'Message cannot exceed 5000 characters'),
-  category: z.nativeEnum(InquiryCategory),
-  source: z.nativeEnum(InquirySource).optional(),
-  guestName: z.string().trim().max(100).optional(),
-  guestEmail: z.string().trim().max(150).optional(),
-  eventId: z.string().optional(),
-  specialId: z.string().optional(),
-});
-
-const updateInquirySchema = z.object({
-  status: z.nativeEnum(InquiryStatus).optional(),
-  priority: z.nativeEnum(InquiryPriority).optional(),
-});
-
-const messageSchema = z.object({
-  message: z.string().trim().min(2, 'Message must be at least 2 characters').max(5000, 'Message cannot exceed 5000 characters'),
-});
 
 export class InquiryController {
   private inquiryService = new InquiryService();
 
-  /**
-   * POST /api/cafes/:cafeId/inquiries
-   */
-  createInquiry = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  // Customer endpoints
+  getMyInquiries = async (req: AuthRequest, res: Response) => {
     try {
-      const { cafeId } = req.params;
-      const parsed = createInquirySchema.parse(req.body);
-
-      const inquiry = await this.inquiryService.createInquiry({
-        cafeId,
-        userId: req.user?.id,
-        guestName: parsed.guestName,
-        guestEmail: parsed.guestEmail,
-        subject: parsed.subject,
-        message: parsed.message,
-        category: parsed.category,
-        source: parsed.source,
-        eventId: parsed.eventId,
-        specialId: parsed.specialId,
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent'),
-      });
-
-      res.status(201).json({
-        success: true,
-        data: inquiry,
-      });
-    } catch (error) {
-      next(error);
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+      const result = await this.inquiryService.getCustomerInquiries(req.user!.id, page, limit);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
     }
   };
 
-  /**
-   * GET /api/owner/inquiries
-   */
-  getOwnerInquiries = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getMyInquiryById = async (req: AuthRequest, res: Response) => {
     try {
-      const isAdmin = req.user?.role === 'ADMIN';
-      const result = await this.inquiryService.getOwnerInquiries(req.user!.id, isAdmin, {
-        cafeId: req.query.cafeId as string,
-        status: req.query.status as string,
-        category: req.query.category as string,
-        priority: req.query.priority as string,
-        search: req.query.search as string,
-        page: parseInt(req.query.page as string, 10) || 1,
-        limit: parseInt(req.query.limit as string, 10) || 20,
-      });
-
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (error) {
-      next(error);
+      const inquiry = await this.inquiryService.getCustomerInquiryById(req.params.id, req.user!.id);
+      res.json({ success: true, data: inquiry });
+    } catch (err: any) {
+      res.status(err.status || 404).json({ success: false, error: { message: err.message } });
     }
   };
 
-  /**
-   * GET /api/owner/inquiries/:id
-   */
-  getOwnerInquiryById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  replyToMyInquiry = async (req: AuthRequest, res: Response) => {
+    try {
+      const message = req.body.message;
+      const result = await this.inquiryService.customerReply(req.params.id, req.user!.id, message);
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  reopenMyInquiry = async (req: AuthRequest, res: Response) => {
+    try {
+      const result = await this.inquiryService.customerReopenInquiry(req.params.id, req.user!.id);
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  // Owner endpoints
+  getOwnerInquiries = async (req: AuthRequest, res: Response) => {
     try {
       const isAdmin = req.user?.role === 'ADMIN';
-      const inquiry = await this.inquiryService.getOwnerInquiryById(
-        req.params.id,
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+      const cafeId = req.query.cafeId as string | undefined;
+      const status = req.query.status as any;
+      const category = req.query.category as any;
+      const search = req.query.search as string | undefined;
+
+      const result = await this.inquiryService.getOwnerInquiries(
         req.user!.id,
-        isAdmin
+        isAdmin,
+        {
+          cafeId,
+          status,
+          category,
+          page,
+          limit,
+          search,
+        }
       );
-
-      res.json({
-        success: true,
-        data: inquiry,
-      });
-    } catch (error) {
-      next(error);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
     }
   };
 
-  /**
-   * PATCH /api/owner/inquiries/:id
-   */
-  updateOwnerInquiry = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getOwnerInquiryById = async (req: AuthRequest, res: Response) => {
     try {
       const isAdmin = req.user?.role === 'ADMIN';
-      const parsed = updateInquirySchema.parse(req.body);
+      const inquiry = await this.inquiryService.getOwnerInquiryById(req.params.id, req.user!.id, isAdmin);
+      res.json({ success: true, data: inquiry });
+    } catch (err: any) {
+      res.status(err.status || 404).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  updateOwnerInquiry = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
       const updated = await this.inquiryService.updateInquiryStatusOrPriority(
         req.params.id,
         req.user!.id,
         isAdmin,
-        parsed
+        req.body
       );
-
-      res.json({
-        success: true,
-        data: updated,
-      });
-    } catch (error) {
-      next(error);
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
     }
   };
 
-  /**
-   * POST /api/owner/inquiries/:id/respond
-   */
-  respondToInquiry = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  respondToInquiry = async (req: AuthRequest, res: Response) => {
     try {
       const isAdmin = req.user?.role === 'ADMIN';
-      const parsed = messageSchema.parse(req.body);
-      const updated = await this.inquiryService.respondToInquiry(
+      const message = req.body.message || req.body.content;
+      const response = await this.inquiryService.respondToInquiry(
         req.params.id,
         req.user!.id,
         isAdmin,
-        parsed.message
+        message
       );
-
-      res.json({
-        success: true,
-        data: updated,
-      });
-    } catch (error) {
-      next(error);
+      res.status(201).json({ success: true, data: response });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
     }
   };
 
-  /**
-   * GET /api/users/me/inquiries
-   */
-  getMyInquiries = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  // Admin endpoints
+  getAdminInquiries = async (req: AuthRequest, res: Response) => {
     try {
-      const result = await this.inquiryService.getCustomerInquiries(
-        req.user!.id,
-        parseInt(req.query.page as string, 10) || 1,
-        parseInt(req.query.limit as string, 10) || 20
-      );
-
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  /**
-   * GET /api/users/me/inquiries/:id
-   */
-  getMyInquiryById = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const inquiry = await this.inquiryService.getCustomerInquiryById(req.params.id, req.user!.id);
-
-      res.json({
-        success: true,
-        data: inquiry,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  /**
-   * POST /api/users/me/inquiries/:id/reply
-   */
-  replyToMyInquiry = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const parsed = messageSchema.parse(req.body);
-      const updated = await this.inquiryService.customerReply(
-        req.params.id,
-        req.user!.id,
-        parsed.message
-      );
-
-      res.json({
-        success: true,
-        data: updated,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  /**
-   * POST /api/users/me/inquiries/:id/reopen
-   */
-  reopenMyInquiry = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const updated = await this.inquiryService.customerReopenInquiry(req.params.id, req.user!.id);
-
-      res.json({
-        success: true,
-        data: updated,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  /**
-   * GET /api/admin/inquiries
-   */
-  getAdminInquiries = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
       const result = await this.inquiryService.getAdminInquiries({
+        page,
+        limit,
+        status: req.query.status as any,
+        category: req.query.category as any,
         cafeId: req.query.cafeId as string,
-        status: req.query.status as string,
-        category: req.query.category as string,
-        priority: req.query.priority as string,
         search: req.query.search as string,
-        page: parseInt(req.query.page as string, 10) || 1,
-        limit: parseInt(req.query.limit as string, 10) || 20,
       });
-
-      res.json({
-        success: true,
-        ...result,
-      });
-    } catch (error) {
-      next(error);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
     }
   };
 }

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Coffee, Search, User, LogOut, LayoutDashboard, Settings, Heart, ShieldCheck, ClipboardList, PlusCircle, BarChart3, BookOpen, Info } from "lucide-react";
+import { Menu, X, Coffee, Search, User, LogOut, LayoutDashboard, Settings, Heart, ShieldCheck, ClipboardList, PlusCircle, BarChart3, BookOpen, Info, Award } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,7 @@ import { useI18n } from "@/i18n";
 const navLinks = [
   { labelPath: "nav.home", href: "/" },
   { labelPath: "nav.explore", href: "/explore" },
+  { labelPath: "Rewards", href: "/rewards" },
   { labelPath: "nav.blog", href: "/blog" },
   { labelPath: "nav.about", href: "/about" },
 ];
@@ -148,6 +149,20 @@ export function Navbar() {
                           My Collections
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard/loyalty" className="flex w-full items-center gap-2">
+                          <Award size={16} className="text-brand-muted" aria-hidden="true" />
+                          Loyalty & Rewards
+                        </Link>
+                      </DropdownMenuItem>
+                      {(user?.role === "OWNER" || user?.role === "ADMIN") && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/owner/loyalty" className="flex w-full items-center gap-2">
+                            <Award size={16} className="text-brand-muted" aria-hidden="true" />
+                            Cafe Loyalty Program
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       {(user?.role === "OWNER" || user?.role === "ADMIN") && (
                         <DropdownMenuItem asChild>
                           <Link to="/owner" className="flex w-full items-center gap-2">

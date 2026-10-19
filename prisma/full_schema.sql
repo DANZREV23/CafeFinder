@@ -53,6 +53,24 @@ CREATE TYPE "InquirySource" AS ENUM ('CAFE_PROFILE', 'EVENT', 'SPECIAL', 'EXPLOR
 CREATE TYPE "InquirySenderRole" AS ENUM ('OWNER', 'CUSTOMER', 'ADMIN');
 
 -- CreateEnum
+CREATE TYPE "LoyaltyProgramStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'SUSPENDED', 'ENDED');
+
+-- CreateEnum
+CREATE TYPE "LoyaltyAccountStatus" AS ENUM ('ACTIVE', 'LEFT', 'SUSPENDED');
+
+-- CreateEnum
+CREATE TYPE "LoyaltyTransactionType" AS ENUM ('EARN', 'REDEEM', 'ADJUSTMENT', 'EXPIRE', 'REVERSAL');
+
+-- CreateEnum
+CREATE TYPE "LoyaltyRewardStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'EXPIRED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "LoyaltyRedemptionStatus" AS ENUM ('REQUESTED', 'APPROVED', 'REJECTED', 'REDEEMED', 'CANCELLED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "CheckInStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+
+-- CreateEnum
 CREATE TYPE "ClaimStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
 
 -- CreateEnum
@@ -65,7 +83,7 @@ CREATE TYPE "CafeChangeRequestType" AS ENUM ('BUSINESS_INFO', 'LOCATION', 'HOURS
 CREATE TYPE "CafeSubmissionStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "CafeAnalyticsEventType" AS ENUM ('PROFILE_VIEW', 'FAVORITE_ADDED', 'FAVORITE_REMOVED', 'DIRECTIONS_CLICK', 'WEBSITE_CLICK', 'PHONE_CLICK', 'INSTAGRAM_CLICK', 'FACEBOOK_CLICK', 'INQUIRY_SUBMITTED');
+CREATE TYPE "CafeAnalyticsEventType" AS ENUM ('PROFILE_VIEW', 'FAVORITE_ADDED', 'FAVORITE_REMOVED', 'DIRECTIONS_CLICK', 'WEBSITE_CLICK', 'PHONE_CLICK', 'INSTAGRAM_CLICK', 'FACEBOOK_CLICK', 'INQUIRY_SUBMITTED', 'LOYALTY_ENROLLED', 'REWARD_REDEEMED');
 
 -- CreateEnum
 CREATE TYPE "EmailJobStatus" AS ENUM ('PENDING', 'PROCESSING', 'SENT', 'FAILED', 'CANCELLED');
@@ -904,6 +922,119 @@ CREATE TABLE "cafe_inquiry_responses" (
     CONSTRAINT "cafe_inquiry_responses_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "cafe_loyalty_programs" (
+    "id" TEXT NOT NULL,
+    "cafeId" TEXT NOT NULL,
+    "name" VARCHAR(120) NOT NULL,
+    "description" TEXT,
+    "status" "LoyaltyProgramStatus" NOT NULL DEFAULT 'DRAFT',
+    "pointsEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "pointsPerVisit" INTEGER NOT NULL DEFAULT 10,
+    "minimumRedemptionPoints" INTEGER NOT NULL DEFAULT 50,
+    "maxPointsPerDay" INTEGER NOT NULL DEFAULT 50,
+    "checkInCooldownHours" INTEGER NOT NULL DEFAULT 12,
+    "termsAndConditions" TEXT,
+    "startsAt" TIMESTAMP(3),
+    "endsAt" TIMESTAMP(3),
+    "moderationNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cafe_loyalty_programs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cafe_loyalty_accounts" (
+    "id" TEXT NOT NULL,
+    "programId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "status" "LoyaltyAccountStatus" NOT NULL DEFAULT 'ACTIVE',
+    "pointsBalance" INTEGER NOT NULL DEFAULT 0,
+    "lifetimePointsEarned" INTEGER NOT NULL DEFAULT 0,
+    "lifetimePointsRedeemed" INTEGER NOT NULL DEFAULT 0,
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "leftAt" TIMESTAMP(3),
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cafe_loyalty_accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cafe_loyalty_transactions" (
+    "id" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "type" "LoyaltyTransactionType" NOT NULL,
+    "points" INTEGER NOT NULL,
+    "balanceAfter" INTEGER NOT NULL,
+    "description" TEXT NOT NULL,
+    "reason" TEXT,
+    "referenceType" VARCHAR(64),
+    "referenceId" VARCHAR(64),
+    "idempotencyKey" VARCHAR(128),
+    "createdByUserId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "cafe_loyalty_transactions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cafe_rewards" (
+    "id" TEXT NOT NULL,
+    "programId" TEXT NOT NULL,
+    "name" VARCHAR(120) NOT NULL,
+    "description" TEXT NOT NULL,
+    "pointsCost" INTEGER NOT NULL,
+    "status" "LoyaltyRewardStatus" NOT NULL DEFAULT 'ACTIVE',
+    "stockLimit" INTEGER,
+    "redeemedCount" INTEGER NOT NULL DEFAULT 0,
+    "maxPerCustomer" INTEGER,
+    "startsAt" TIMESTAMP(3),
+    "endsAt" TIMESTAMP(3),
+    "termsAndConditions" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cafe_rewards_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cafe_reward_redemptions" (
+    "id" TEXT NOT NULL,
+    "rewardId" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "pointsSpent" INTEGER NOT NULL,
+    "status" "LoyaltyRedemptionStatus" NOT NULL DEFAULT 'REQUESTED',
+    "redemptionCodeHash" VARCHAR(128),
+    "codeHint" VARCHAR(16),
+    "notes" TEXT,
+    "rejectionReason" TEXT,
+    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "approvedAt" TIMESTAMP(3),
+    "redeemedAt" TIMESTAMP(3),
+    "cancelledAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMP(3),
+    "processedByUserId" TEXT,
+
+    CONSTRAINT "cafe_reward_redemptions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cafe_visit_check_ins" (
+    "id" TEXT NOT NULL,
+    "programId" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "status" "CheckInStatus" NOT NULL DEFAULT 'PENDING',
+    "visitNotes" TEXT,
+    "ownerNotes" TEXT,
+    "pointsAwarded" INTEGER NOT NULL DEFAULT 0,
+    "processedByUserId" TEXT,
+    "processedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "cafe_visit_check_ins_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE INDEX "media_assets_uploadedById_idx" ON "media_assets"("uploadedById");
 
@@ -1369,6 +1500,87 @@ CREATE INDEX "cafe_inquiry_responses_responderUserId_idx" ON "cafe_inquiry_respo
 -- CreateIndex
 CREATE INDEX "cafe_inquiry_responses_createdAt_idx" ON "cafe_inquiry_responses"("createdAt");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "cafe_loyalty_programs_cafeId_key" ON "cafe_loyalty_programs"("cafeId");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_programs_cafeId_idx" ON "cafe_loyalty_programs"("cafeId");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_programs_status_idx" ON "cafe_loyalty_programs"("status");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_programs_startsAt_idx" ON "cafe_loyalty_programs"("startsAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_programs_endsAt_idx" ON "cafe_loyalty_programs"("endsAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_accounts_programId_idx" ON "cafe_loyalty_accounts"("programId");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_accounts_userId_idx" ON "cafe_loyalty_accounts"("userId");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_accounts_status_idx" ON "cafe_loyalty_accounts"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "cafe_loyalty_accounts_programId_userId_key" ON "cafe_loyalty_accounts"("programId", "userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "cafe_loyalty_transactions_idempotencyKey_key" ON "cafe_loyalty_transactions"("idempotencyKey");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_transactions_accountId_idx" ON "cafe_loyalty_transactions"("accountId");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_transactions_type_idx" ON "cafe_loyalty_transactions"("type");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_transactions_createdAt_idx" ON "cafe_loyalty_transactions"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_loyalty_transactions_referenceType_referenceId_idx" ON "cafe_loyalty_transactions"("referenceType", "referenceId");
+
+-- CreateIndex
+CREATE INDEX "cafe_rewards_programId_idx" ON "cafe_rewards"("programId");
+
+-- CreateIndex
+CREATE INDEX "cafe_rewards_status_idx" ON "cafe_rewards"("status");
+
+-- CreateIndex
+CREATE INDEX "cafe_rewards_pointsCost_idx" ON "cafe_rewards"("pointsCost");
+
+-- CreateIndex
+CREATE INDEX "cafe_rewards_endsAt_idx" ON "cafe_rewards"("endsAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_reward_redemptions_rewardId_idx" ON "cafe_reward_redemptions"("rewardId");
+
+-- CreateIndex
+CREATE INDEX "cafe_reward_redemptions_accountId_idx" ON "cafe_reward_redemptions"("accountId");
+
+-- CreateIndex
+CREATE INDEX "cafe_reward_redemptions_status_idx" ON "cafe_reward_redemptions"("status");
+
+-- CreateIndex
+CREATE INDEX "cafe_reward_redemptions_requestedAt_idx" ON "cafe_reward_redemptions"("requestedAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_reward_redemptions_expiresAt_idx" ON "cafe_reward_redemptions"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "cafe_visit_check_ins_programId_idx" ON "cafe_visit_check_ins"("programId");
+
+-- CreateIndex
+CREATE INDEX "cafe_visit_check_ins_accountId_idx" ON "cafe_visit_check_ins"("accountId");
+
+-- CreateIndex
+CREATE INDEX "cafe_visit_check_ins_status_idx" ON "cafe_visit_check_ins"("status");
+
+-- CreateIndex
+CREATE INDEX "cafe_visit_check_ins_createdAt_idx" ON "cafe_visit_check_ins"("createdAt");
+
 -- AddForeignKey
 ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -1590,4 +1802,40 @@ ALTER TABLE "cafe_inquiry_responses" ADD CONSTRAINT "cafe_inquiry_responses_inqu
 
 -- AddForeignKey
 ALTER TABLE "cafe_inquiry_responses" ADD CONSTRAINT "cafe_inquiry_responses_responderUserId_fkey" FOREIGN KEY ("responderUserId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_loyalty_programs" ADD CONSTRAINT "cafe_loyalty_programs_cafeId_fkey" FOREIGN KEY ("cafeId") REFERENCES "cafes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_loyalty_accounts" ADD CONSTRAINT "cafe_loyalty_accounts_programId_fkey" FOREIGN KEY ("programId") REFERENCES "cafe_loyalty_programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_loyalty_accounts" ADD CONSTRAINT "cafe_loyalty_accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_loyalty_transactions" ADD CONSTRAINT "cafe_loyalty_transactions_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "cafe_loyalty_accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_loyalty_transactions" ADD CONSTRAINT "cafe_loyalty_transactions_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_rewards" ADD CONSTRAINT "cafe_rewards_programId_fkey" FOREIGN KEY ("programId") REFERENCES "cafe_loyalty_programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_reward_redemptions" ADD CONSTRAINT "cafe_reward_redemptions_rewardId_fkey" FOREIGN KEY ("rewardId") REFERENCES "cafe_rewards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_reward_redemptions" ADD CONSTRAINT "cafe_reward_redemptions_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "cafe_loyalty_accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_reward_redemptions" ADD CONSTRAINT "cafe_reward_redemptions_processedByUserId_fkey" FOREIGN KEY ("processedByUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_visit_check_ins" ADD CONSTRAINT "cafe_visit_check_ins_programId_fkey" FOREIGN KEY ("programId") REFERENCES "cafe_loyalty_programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_visit_check_ins" ADD CONSTRAINT "cafe_visit_check_ins_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "cafe_loyalty_accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cafe_visit_check_ins" ADD CONSTRAINT "cafe_visit_check_ins_processedByUserId_fkey" FOREIGN KEY ("processedByUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

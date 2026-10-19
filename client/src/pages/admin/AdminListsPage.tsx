@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit2, Trash2, ExternalLink, Coffee, Star, GripVertical } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, ExternalLink, MoreVertical, Eye, Sparkles } from 'lucide-react';
 import { adminListService } from '../../services/adminListService';
 import { CuratedList, PostStatus } from '../../types';
 import { format } from 'date-fns';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 
-const AdminListsPage: React.FC = () => {
+export default function AdminListsPage() {
   const [lists, setLists] = useState<CuratedList[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<PostStatus | ''>('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     loadLists();
-  }, [page]);
+  }, [page, status]);
 
   const loadLists = async () => {
     setLoading(true);
@@ -24,11 +25,16 @@ const AdminListsPage: React.FC = () => {
       const response = await adminListService.getAll({
         page,
         limit: 10,
-        search: search || undefined
+        search: search || undefined,
+        status: status || undefined,
       });
-      if (response.success) {
-        setLists(response.data.lists);
-        setTotalPages(response.data.pagination.totalPages);
+      if (response && response.lists) {
+        setLists(response.lists);
+        setTotalPages(response.pagination?.totalPages || 1);
+      } else if (response && response.data) {
+        const items = Array.isArray(response.data) ? response.data : (response.data as any).lists || [];
+        setLists(items);
+        setTotalPages(response.pagination?.totalPages || 1);
       }
     } catch (error) {
       console.error('Failed to load curated lists:', error);
@@ -41,160 +47,201 @@ const AdminListsPage: React.FC = () => {
     try {
       const response = await adminListService.updateStatus(id, newStatus);
       if (response.success) {
-        setLists(lists.map(l => l.id === id ? { ...l, status: newStatus } : l));
+        setLists(lists.map((l) => (l.id === id ? { ...l, status: newStatus } : l)));
       }
     } catch (error) {
-      console.error('Failed to update status:', error);
+      console.error('Failed to update list status:', error);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this collection?')) return;
+    if (!window.confirm('Are you sure you want to delete this curated list?')) return;
     try {
       const response = await adminListService.delete(id);
       if (response.success) {
-        setLists(lists.filter(l => l.id !== id));
+        setLists(lists.filter((l) => l.id !== id));
       }
     } catch (error) {
-      console.error('Failed to delete collection:', error);
+      console.error('Failed to delete list:', error);
     }
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    loadLists();
+  };
+
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Curated Collections</h1>
-          <p className="text-neutral-500">Manage hand-picked cafe lists and themed discovery guides.</p>
+          <h1 className="text-3xl font-serif font-bold text-stone-900">Curated Lists</h1>
+          <p className="text-stone-500 mt-1">
+            Create, edit, and organize featured themed cafe guides.
+          </p>
         </div>
         <Link to="/admin/lists/new">
-          <Button leftIcon={<Plus className="w-5 h-5" />}>New Collection</Button>
+          <Button className="gap-2">
+            <Plus className="w-4 h-4" />
+            Create Curated List
+          </Button>
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-100 overflow-hidden">
-        {/* Filters */}
-        <div className="p-4 border-b border-neutral-100 flex flex-wrap gap-4 items-center justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              type="text"
-              placeholder="Search collections..."
-              className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && loadLists()}
-            />
-          </div>
-          
-          <div className="text-sm text-neutral-500 font-medium">
-            Total Collections: {lists.length}
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+        <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search lists by title or description..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+          />
+        </form>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-stone-400" />
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value as PostStatus | '');
+                setPage(1);
+              }}
+              className="border border-stone-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            >
+              <option value="">All Statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Published</option>
+              <option value="ARCHIVED">Archived</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        {/* Grid of Collections */}
-        <div className="p-6">
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-64 bg-neutral-50 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          ) : lists.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {lists.map((list) => (
-                <div key={list.id} className="group bg-white rounded-xl border border-neutral-100 overflow-hidden hover:border-primary-200 hover:shadow-md transition-all">
-                  <div className="relative aspect-video overflow-hidden bg-neutral-100">
-                    <img
-                      src={list.coverImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&q=80'}
-                      alt={list.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      {list.featured && (
-                        <span className="bg-primary-500 text-white text-[10px] font-black px-2 py-1 rounded shadow-sm uppercase tracking-tighter">
-                          Featured
-                        </span>
-                      )}
-                      <Badge variant={list.status === 'PUBLISHED' ? 'success' : list.status === 'DRAFT' ? 'warning' : 'outline'}>
-                        {list.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4">
-                    <h3 className="font-bold text-neutral-900 mb-1 group-hover:text-primary-600 transition-colors line-clamp-1">{list.title}</h3>
-                    <div className="flex items-center gap-4 text-xs text-neutral-500 mb-4">
-                      <span className="flex items-center gap-1">
-                        <Coffee className="w-3 h-3" />
-                        {list._count?.cafes || 0} Cafes
+      {/* Lists Table */}
+      <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm">
+        {loading ? (
+          <div className="p-12 text-center text-stone-500">Loading curated lists...</div>
+        ) : lists.length === 0 ? (
+          <div className="p-12 text-center text-stone-500">
+            No curated lists found. Create your first list using the button above.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-stone-50 text-stone-500 font-medium border-b border-stone-200 text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Title</th>
+                  <th className="px-6 py-4">Cafes</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Featured</th>
+                  <th className="px-6 py-4">Updated</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {lists.map((list) => (
+                  <tr key={list.id} className="hover:bg-stone-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-stone-900 line-clamp-1">{list.title}</div>
+                      <div className="text-xs text-stone-400 font-mono">/lists/{list.slug}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-medium text-stone-700">
+                        {list.cafes?.length ?? list._count?.cafes ?? 0} cafes
                       </span>
-                      <span>Order: {list.sortOrder}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between pt-4 border-t border-neutral-50">
-                      <div className="flex gap-1">
-                        <select
-                          className="text-[10px] font-black uppercase bg-neutral-50 border-none rounded px-2 py-1 cursor-pointer focus:ring-0"
-                          value={list.status}
-                          onChange={(e) => handleStatusChange(list.id, e.target.value as PostStatus)}
-                        >
-                          <option value="DRAFT">Draft</option>
-                          <option value="PUBLISHED">Publish</option>
-                          <option value="ARCHIVED">Archive</option>
-                        </select>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Link to={`/lists/${list.slug}`} target="_blank">
-                          <button className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all">
+                    </td>
+                    <td className="px-6 py-4">
+                      <select
+                        value={list.status}
+                        onChange={(e) => handleStatusChange(list.id, e.target.value as PostStatus)}
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border border-transparent cursor-pointer ${
+                          list.status === 'PUBLISHED'
+                            ? 'bg-emerald-50 text-emerald-700 hover:border-emerald-200'
+                            : list.status === 'DRAFT'
+                            ? 'bg-amber-50 text-amber-700 hover:border-amber-200'
+                            : 'bg-stone-100 text-stone-700 hover:border-stone-200'
+                        }`}
+                      >
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="PUBLISHED">PUBLISHED</option>
+                        <option value="ARCHIVED">ARCHIVED</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4">
+                      {list.featured ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                          <Sparkles className="w-3 h-3" /> Featured
+                        </span>
+                      ) : (
+                        <span className="text-stone-400 text-xs">Standard</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-stone-500 text-xs">
+                      {list.updatedAt ? format(new Date(list.updatedAt), 'MMM d, yyyy') : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {list.status === 'PUBLISHED' && (
+                          <Link
+                            to={`/lists/${list.slug}`}
+                            target="_blank"
+                            className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition-colors"
+                            title="View public page"
+                          >
                             <ExternalLink className="w-4 h-4" />
-                          </button>
+                          </Link>
+                        )}
+                        <Link
+                          to={`/admin/lists/${list.id}`}
+                          className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition-colors"
+                          title="Edit list"
+                        >
+                          <Edit2 className="w-4 h-4" />
                         </Link>
-                        <Link to={`/admin/lists/${list.id}/edit`}>
-                          <button className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                        </Link>
-                        <button 
+                        <button
                           onClick={() => handleDelete(list.id)}
-                          className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                          title="Delete list"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-20 text-center bg-neutral-50 rounded-2xl border-2 border-dashed border-neutral-100">
-              <p className="text-neutral-500">No collections found. Create your first themed cafe list!</p>
-            </div>
-          )}
-        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 bg-neutral-50 border-t border-neutral-100 flex justify-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded text-sm font-bold transition-all ${
-                  page === p ? 'bg-primary-600 text-white' : 'bg-white text-neutral-600 border border-neutral-200'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-stone-200 bg-stone-50">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 text-sm bg-white border border-stone-200 rounded-lg font-medium text-stone-700 disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-stone-500">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 text-sm bg-white border border-stone-200 rounded-lg font-medium text-stone-700 disabled:opacity-40"
+            >
+              Next
+            </button>
           </div>
         )}
       </div>
     </div>
   );
-};
-
-export default AdminListsPage;
+}

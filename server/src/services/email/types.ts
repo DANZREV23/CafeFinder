@@ -14,6 +14,9 @@ export enum EmailTemplate {
   CAFE_SUSPENDED = 'CAFE_SUSPENDED',
   INQUIRY_RECEIVED = 'INQUIRY_RECEIVED',
   INQUIRY_RESPONDED = 'INQUIRY_RESPONDED',
+  LOYALTY_POINTS_AWARDED = 'LOYALTY_POINTS_AWARDED',
+  LOYALTY_REDEMPTION_REQUESTED = 'LOYALTY_REDEMPTION_REQUESTED',
+  LOYALTY_REDEMPTION_UPDATED = 'LOYALTY_REDEMPTION_UPDATED',
 }
 
 export interface EmailOptions {
@@ -119,5 +122,31 @@ export interface EmailPayloads {
     responseMessage: string;
     inquiryUrl?: string;
     cafeUrl: string;
+  };
+  [EmailTemplate.LOYALTY_POINTS_AWARDED]: {
+    customerName: string;
+    cafeName: string;
+    programName: string;
+    pointsAwarded: number;
+    newBalance: number;
+    description: string;
+    dashboardUrl: string;
+  };
+  [EmailTemplate.LOYALTY_REDEMPTION_REQUESTED]: {
+    ownerName: string;
+    cafeName: string;
+    customerName: string;
+    rewardName: string;
+    pointsSpent: number;
+    redemptionsUrl: string;
+  };
+  [EmailTemplate.LOYALTY_REDEMPTION_UPDATED]: {
+    customerName: string;
+    cafeName: string;
+    rewardName: string;
+    status: string;
+    pointsSpent: number;
+    reason?: string;
+    dashboardUrl: string;
   };
 }

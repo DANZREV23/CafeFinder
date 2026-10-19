@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { Coffee, ArrowRight } from 'lucide-react';
+import { motion } from 'motion/react';
 import { CuratedList } from '../../types';
 
 interface ListCardProps {
@@ -10,55 +10,53 @@ interface ListCardProps {
 }
 
 export const ListCard: React.FC<ListCardProps> = ({ list, index = 0 }) => {
+  const photoUrl = list.coverImage || list.coverImageAsset?.url || '/placeholder-cafe.jpg';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
-      className="group relative h-[320px] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all"
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className="group flex flex-col bg-white rounded-2xl border border-brand-border overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300"
     >
-      <div className="absolute inset-0">
+      <Link to={`/lists/${list.slug}`} className="relative h-52 w-full overflow-hidden bg-stone-100 block">
         <img
-          src={list.coverImage || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'}
+          src={photoUrl}
           alt={list.coverImageAlt || list.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-          referrerPolicy="no-referrer"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
-      <div className="absolute inset-0 p-6 flex flex-col justify-end">
-        <div className="flex items-center gap-2 text-white/80 text-xs font-semibold mb-2 uppercase tracking-widest">
-          <Coffee className="w-3 h-3" />
-          {list._count?.cafes || 0} Cafes
-        </div>
-
-        <Link to={`/lists/${list.slug}`}>
-          <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-primary-400 transition-colors">
-            {list.title}
-          </h3>
-        </Link>
-
-        {list.description && (
-          <p className="text-white/70 text-sm line-clamp-2 mb-4 leading-relaxed max-w-[90%]">
-            {list.description}
-          </p>
+        {list._count?.cafes !== undefined && (
+          <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-xs text-xs font-bold text-stone-800">
+            <Coffee className="w-3.5 h-3.5 text-brand-coffee" />
+            {list._count.cafes} {list._count.cafes === 1 ? 'cafe' : 'cafes'}
+          </div>
         )}
+      </Link>
+
+      <div className="p-6 flex flex-col flex-1 justify-between">
+        <div>
+          <h3 className="font-serif font-bold text-xl text-stone-900 group-hover:text-brand-coffee transition-colors line-clamp-1 mb-2">
+            <Link to={`/lists/${list.slug}`}>{list.title}</Link>
+          </h3>
+          {list.description && (
+            <p className="text-sm text-stone-600 line-clamp-2 leading-relaxed mb-4">
+              {list.description}
+            </p>
+          )}
+        </div>
 
         <Link
           to={`/lists/${list.slug}`}
-          className="inline-flex items-center gap-2 text-white text-xs font-bold bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-full transition-all w-fit"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-brand-coffee hover:text-brand-coffee-dark mt-auto group-hover:translate-x-1 transition-transform"
         >
-          Explore Collection
+          View Collection
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
-
-      {list.featured && (
-        <div className="absolute top-4 right-4 bg-primary-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-tighter shadow-lg">
-          Featured
-        </div>
-      )}
     </motion.div>
   );
 };
+
+export default ListCard;

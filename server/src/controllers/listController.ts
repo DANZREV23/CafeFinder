@@ -1,65 +1,55 @@
 import { Request, Response, NextFunction } from 'express';
-import { CuratedListService } from '../services/listService.js';
-import { z } from 'zod';
-import { AuthRequest } from '../middleware/authMiddleware.js';
+import { prisma } from '../config/database.js';
+import { generateSlug } from '../utils/slug.js';
 import { PostStatus } from '@prisma/client';
 
-const emptyToUndefined = (val: any) => (val === '' || val === null ? undefined : val);
-
-const getListsQuerySchema = z.object({
-  featured: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => v === undefined ? undefined : v === 'true')),
-  limit: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : 12))),
-  page: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? parseInt(v) : 1))),
-  search: z.preprocess(emptyToUndefined, z.string().optional()),
-  status: z.preprocess(emptyToUndefined, z.nativeEnum(PostStatus).optional()),
-});
-
-const curatedListSchema = z.object({
-  title: z.string().min(2).max(200),
-  description: z.preprocess(emptyToUndefined, z.string().max(1000).optional()),
-  coverImage: z.preprocess(emptyToUndefined, z.string().optional()),
-  coverImageAlt: z.preprocess(emptyToUndefined, z.string().optional()),
-  featured: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-  status: z.preprocess(emptyToUndefined, z.nativeEnum(PostStatus).optional()),
-});
-
-const listCafeSchema = z.object({
-  cafeId: z.string(),
-  sortOrder: z.number().int().optional(),
-  editorialNote: z.preprocess(emptyToUndefined, z.string().max(1000).optional()),
-});
-
 export class CuratedListController {
-  private listService: CuratedListService;
-
-  constructor() {
-    this.listService = new CuratedListService();
-  }
-
   getAll = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validatedQuery = getListsQuerySchema.parse(req.query);
-      const limit = validatedQuery.limit || 12;
-      const offset = ((validatedQuery.page || 1) - 1) * limit;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 12;
+      const skip = (page - 1) * limit;
 
-      const { lists, total } = await this.listService.getPublishedLists({
-        ...validatedQuery,
+      const where: any = { status: PostStatus.PUBLISHED };
+
+      const [total, lists] = await Promise.all([
+        prisma.curatedList.count({ where }),
+        prisma.curatedList.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: [{ featured: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
+          include: {
+            _count: { select: { cafes: true } },
+            cafes: {
+              include: {
+                cafe: {
+                  include: {
+                    photos: { where: { isCover: true }, take: 1 },
+                  },
+                },
+              },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+        }),
+      ]);
+
+      const pagination = {
+        page,
         limit,
-        offset
-      });
-      
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
+
       res.json({
         success: true,
         data: {
           lists,
-          pagination: {
-            total,
-            page: validatedQuery.page || 1,
-            limit,
-            totalPages: Math.ceil(total / limit)
-          }
-        }
+          pagination,
+        },
+        lists,
+        pagination,
       });
     } catch (error) {
       next(error);
@@ -69,186 +59,243 @@ export class CuratedListController {
   getBySlug = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { slug } = req.params;
-      const list = await this.listService.getListBySlug(slug);
-      
+      const list = await prisma.curatedList.findUnique({
+        where: { slug },
+        include: {
+          cafes: {
+            include: {
+              cafe: {
+                include: {
+                  photos: true,
+                  amenities: { include: { amenity: true } },
+                },
+              },
+            },
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
+      });
+
       if (!list) {
-        return res.status(404).json({
-          success: false,
-          error: { message: 'List not found or not published' }
-        });
+        return res.status(404).json({ success: false, error: { message: 'List not found' } });
       }
 
-      res.json({
-        success: true,
-        data: list
-      });
+      res.json({ success: true, data: list });
     } catch (error) {
       next(error);
     }
   };
 
-  // Admin Methods
-  getAdminLists = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getAdminLists = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validatedQuery = getListsQuerySchema.parse(req.query);
-      const limit = validatedQuery.limit || 20;
-      const offset = ((validatedQuery.page || 1) - 1) * limit;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      const search = req.query.search as string | undefined;
+      const status = req.query.status as PostStatus | undefined;
 
-      const { lists, total } = await this.listService.getAdminLists({
-        ...validatedQuery,
+      const where: any = {};
+      if (status) where.status = status;
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      const [total, lists] = await Promise.all([
+        prisma.curatedList.count({ where }),
+        prisma.curatedList.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            _count: { select: { cafes: true } },
+          },
+        }),
+      ]);
+
+      const pagination = {
+        page,
         limit,
-        offset
-      });
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
 
       res.json({
         success: true,
         data: {
           lists,
-          pagination: {
-            total,
-            page: validatedQuery.page || 1,
-            limit,
-            totalPages: Math.ceil(total / limit)
-          }
-        }
+          pagination,
+        },
+        lists,
+        pagination,
       });
     } catch (error) {
       next(error);
     }
   };
 
-  getById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const list = await this.listService.getListById(id);
-      
+      const list = await prisma.curatedList.findUnique({
+        where: { id },
+        include: {
+          cafes: {
+            include: {
+              cafe: {
+                include: {
+                  photos: { take: 1 },
+                },
+              },
+            },
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
+      });
+
       if (!list) {
-        return res.status(404).json({
-          success: false,
-          error: { message: 'List not found' }
-        });
+        return res.status(404).json({ success: false, error: { message: 'List not found' } });
       }
 
-      res.json({
-        success: true,
-        data: list
-      });
+      res.json({ success: true, data: list });
     } catch (error) {
       next(error);
     }
   };
 
-  create = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  create = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const validatedData = curatedListSchema.parse(req.body);
-      const list = await this.listService.createList(validatedData);
-      
-      res.status(201).json({
-        success: true,
-        data: list
+      const { title, description, coverImage, coverImageAlt, featured, status } = req.body;
+      const slug = req.body.slug ? generateSlug(req.body.slug) : generateSlug(title);
+
+      const list = await prisma.curatedList.create({
+        data: {
+          title,
+          slug,
+          description,
+          coverImage,
+          coverImageAlt,
+          featured: featured || false,
+          status: status || PostStatus.DRAFT,
+        },
       });
+
+      res.status(201).json({ success: true, data: list });
     } catch (error) {
       next(error);
     }
   };
 
-  update = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-      const validatedData = curatedListSchema.partial().parse(req.body);
-      const list = await this.listService.updateList(id, validatedData, req.user!.id);
-      
-      res.json({
-        success: true,
-        data: list
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  updateStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const { status } = z.object({ status: z.nativeEnum(PostStatus) }).parse(req.body);
-      
-      const list = await this.listService.updateStatus(id, status);
-      
-      res.json({
-        success: true,
-        data: list
+      const { title, description, coverImage, coverImageAlt, featured, status, slug } = req.body;
+
+      const data: any = {};
+      if (title !== undefined) data.title = title;
+      if (description !== undefined) data.description = description;
+      if (coverImage !== undefined) data.coverImage = coverImage;
+      if (coverImageAlt !== undefined) data.coverImageAlt = coverImageAlt;
+      if (featured !== undefined) data.featured = featured;
+      if (status !== undefined) data.status = status;
+      if (slug !== undefined) data.slug = generateSlug(slug);
+
+      const updated = await prisma.curatedList.update({
+        where: { id },
+        data,
       });
+
+      res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }
   };
 
-  delete = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  delete = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      await this.listService.deleteList(id);
-      
-      res.json({
-        success: true,
-        message: 'List deleted successfully'
-      });
+      await prisma.curatedList.delete({ where: { id } });
+      res.json({ success: true, message: 'List deleted successfully' });
     } catch (error) {
       next(error);
     }
   };
 
-  // List Cafe Associations
-  addCafe = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  updateStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const updated = await prisma.curatedList.update({
+        where: { id },
+        data: { status },
+      });
+
+      res.json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  addCafe = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id: listId } = req.params;
-      const validatedData = listCafeSchema.parse(req.body);
-      
-      const association = await this.listService.addCafeToList(
-        listId,
-        validatedData.cafeId,
-        validatedData.sortOrder,
-        validatedData.editorialNote
-      );
-      
-      res.status(201).json({
-        success: true,
-        data: association
+      const { cafeId, sortOrder = 0, editorialNote } = req.body;
+
+      const item = await prisma.curatedListCafe.create({
+        data: {
+          listId,
+          cafeId,
+          sortOrder,
+          editorialNote,
+        },
+        include: {
+          cafe: {
+            include: { photos: { take: 1 } },
+          },
+        },
       });
+
+      res.status(201).json({ success: true, data: item });
     } catch (error) {
       next(error);
     }
   };
 
-  removeCafe = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  updateCafe = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id: listId, cafeId } = req.params;
-      await this.listService.removeCafeFromList(listId, cafeId);
-      
-      res.json({
-        success: true,
-        message: 'Cafe removed from list'
+      const { sortOrder, editorialNote } = req.body;
+
+      const item = await prisma.curatedListCafe.update({
+        where: {
+          listId_cafeId: { listId, cafeId },
+        },
+        data: {
+          sortOrder,
+          editorialNote,
+        },
       });
+
+      res.json({ success: true, data: item });
     } catch (error) {
       next(error);
     }
   };
 
-  updateCafe = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  removeCafe = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id: listId, cafeId } = req.params;
-      const { sortOrder, editorialNote } = listCafeSchema.partial().parse(req.body);
-      
-      const association = await this.listService.updateCafeAssociation(
-        listId,
-        cafeId,
-        sortOrder || 0,
-        editorialNote
-      );
-      
-      res.json({
-        success: true,
-        data: association
+      await prisma.curatedListCafe.delete({
+        where: {
+          listId_cafeId: { listId, cafeId },
+        },
       });
+
+      res.json({ success: true, message: 'Cafe removed from list' });
     } catch (error) {
       next(error);
     }

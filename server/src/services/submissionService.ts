@@ -1,7 +1,7 @@
-import { SubmissionRepository } from '../repositories/submissionRepository.js';
-import { CreateSubmissionDto, UpdateSubmissionDto, SubmissionResponseDto } from '../dtos/submissionDto.js';
 import { CafeSubmissionStatus, Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
+import { SubmissionRepository } from '../repositories/submissionRepository.js';
+import { CreateSubmissionDto, UpdateSubmissionDto, SubmissionResponseDto } from '../dtos/submissionDto.js';
 import { sanitizePlain } from '../utils/sanitization.js';
 
 export class SubmissionService {
@@ -9,237 +9,6 @@ export class SubmissionService {
 
   constructor() {
     this.repository = new SubmissionRepository();
-  }
-
-  async createSubmission(userId: string, data: CreateSubmissionDto): Promise<SubmissionResponseDto> {
-    // Check for duplicate pending submission by same user
-    const existing = await this.repository.findUserPendingSubmission(userId, data.name, data.city, data.address);
-    if (existing) {
-      throw new Error('You already have a pending submission for this cafe');
-    }
-
-    // Validate amenities
-    if (data.amenityIds && data.amenityIds.length > 0) {
-      const amenities = await prisma.amenity.findMany({
-        where: { id: { in: data.amenityIds }, active: true }
-      });
-      if (amenities.length !== data.amenityIds.length) {
-        throw new Error('Some selected amenities are invalid or inactive');
-      }
-    }
-
-    const submissionData: Prisma.CafeSubmissionCreateInput = {
-      name: sanitizePlain(data.name),
-      shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : null,
-      description: data.description ? sanitizePlain(data.description) : null,
-      address: sanitizePlain(data.address),
-      city: sanitizePlain(data.city),
-      state: data.state ? sanitizePlain(data.state) : null,
-      country: data.country ? sanitizePlain(data.country) : null,
-      postalCode: data.postalCode ? sanitizePlain(data.postalCode) : null,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      phone: data.phone ? sanitizePlain(data.phone) : null,
-      email: data.email ? sanitizePlain(data.email) : null,
-      website: data.website ? sanitizePlain(data.website) : null,
-      instagram: data.instagram ? sanitizePlain(data.instagram) : null,
-      facebook: data.facebook ? sanitizePlain(data.facebook) : null,
-      priceRange: data.priceRange,
-      status: CafeSubmissionStatus.PENDING,
-      submittedBy: { connect: { id: userId } }
-    };
-
-    if (data.amenityIds) {
-      submissionData.amenities = {
-        create: data.amenityIds.map(id => ({
-          amenity: { connect: { id } }
-        }))
-      };
-    }
-
-    const submission = await this.repository.create(submissionData);
-
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        userId,
-        action: 'CAFE_SUBMISSION_CREATED',
-        entityType: 'CafeSubmission',
-        entityId: submission.id,
-        description: `Submitted cafe: ${data.name}`
-      }
-    });
-
-    return this.mapToDto(submission);
-  }
-
-  async getMySubmissions(userId: string): Promise<SubmissionResponseDto[]> {
-    const submissions = await this.repository.findByUserId(userId);
-    return submissions.map(s => this.mapToDto(s));
-  }
-
-  async getSubmissionById(id: string, userId: string): Promise<SubmissionResponseDto> {
-    const submission = await this.repository.findById(id);
-    if (!submission) {
-      throw new Error('Submission not found');
-    }
-
-    // Check ownership
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (submission.submittedById !== userId && user?.role !== 'ADMIN') {
-      throw new Error('Unauthorized access to submission');
-    }
-
-    return this.mapToDto(submission);
-  }
-
-  async updateSubmission(id: string, userId: string, data: UpdateSubmissionDto): Promise<SubmissionResponseDto> {
-    const submission = await this.repository.findById(id);
-    if (!submission) {
-      throw new Error('Submission not found');
-    }
-
-    if (submission.submittedById !== userId) {
-      throw new Error('Unauthorized access to submission');
-    }
-
-    if (submission.status !== CafeSubmissionStatus.PENDING) {
-      throw new Error('Only pending submissions can be edited');
-    }
-
-    const updateData: Prisma.CafeSubmissionUpdateInput = {
-      name: data.name ? sanitizePlain(data.name) : undefined,
-      shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : null,
-      description: data.description ? sanitizePlain(data.description) : null,
-      address: data.address ? sanitizePlain(data.address) : undefined,
-      city: data.city ? sanitizePlain(data.city) : undefined,
-      state: data.state ? sanitizePlain(data.state) : null,
-      country: data.country ? sanitizePlain(data.country) : null,
-      postalCode: data.postalCode ? sanitizePlain(data.postalCode) : null,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      phone: data.phone ? sanitizePlain(data.phone) : null,
-      email: data.email ? sanitizePlain(data.email) : null,
-      website: data.website ? sanitizePlain(data.website) : null,
-      instagram: data.instagram ? sanitizePlain(data.instagram) : null,
-      facebook: data.facebook ? sanitizePlain(data.facebook) : null,
-      priceRange: data.priceRange
-    };
-
-    if (data.amenityIds) {
-      // Validate amenities
-      const amenities = await prisma.amenity.findMany({
-        where: { id: { in: data.amenityIds }, active: true }
-      });
-      if (amenities.length !== data.amenityIds.length) {
-        throw new Error('Some selected amenities are invalid or inactive');
-      }
-
-      updateData.amenities = {
-        deleteMany: {},
-        create: data.amenityIds.map(amenityId => ({
-          amenity: { connect: { id: amenityId } }
-        }))
-      };
-    }
-
-    const updated = await this.repository.update(id, updateData);
-
-    await prisma.activityLog.create({
-      data: {
-        userId,
-        action: 'CAFE_SUBMISSION_UPDATED',
-        entityType: 'CafeSubmission',
-        entityId: updated.id,
-        description: `Updated cafe submission: ${updated.name}`
-      }
-    });
-
-    return this.mapToDto(updated);
-  }
-
-  async cancelSubmission(id: string, userId: string): Promise<SubmissionResponseDto> {
-    const submission = await this.repository.findById(id);
-    if (!submission) {
-      throw new Error('Submission not found');
-    }
-
-    if (submission.submittedById !== userId) {
-      throw new Error('Unauthorized access to submission');
-    }
-
-    if (submission.status !== CafeSubmissionStatus.PENDING) {
-      throw new Error('Only pending submissions can be cancelled');
-    }
-
-    const updated = await this.repository.update(id, {
-      status: CafeSubmissionStatus.CANCELLED
-    });
-
-    await prisma.activityLog.create({
-      data: {
-        userId,
-        action: 'CAFE_SUBMISSION_CANCELLED',
-        entityType: 'CafeSubmission',
-        entityId: updated.id,
-        description: `Cancelled cafe submission: ${updated.name}`
-      }
-    });
-
-    return this.mapToDto(updated);
-  }
-
-  async checkDuplicates(data: { name: string; city: string; address: string }) {
-    return this.repository.findDuplicate(data.name, data.city, data.address);
-  }
-
-  async addSubmissionPhoto(userId: string, submissionId: string, url: string) {
-    const submission = await this.repository.findById(submissionId);
-    if (!submission) {
-      throw new Error('Submission not found');
-    }
-
-    if (submission.submittedById !== userId) {
-      throw new Error('Unauthorized access to submission');
-    }
-
-    if (submission.status !== CafeSubmissionStatus.PENDING) {
-      throw new Error('Can only add photos to pending submissions');
-    }
-
-    if (submission.photos.length >= 5) {
-      throw new Error('Maximum 5 photos allowed per submission');
-    }
-
-    return prisma.cafeSubmissionPhoto.create({
-      data: {
-        submissionId,
-        url
-      }
-    });
-  }
-
-  async deleteSubmissionPhoto(userId: string, photoId: string, isAdmin: boolean) {
-    const photo = await prisma.cafeSubmissionPhoto.findUnique({
-      where: { id: photoId },
-      include: { submission: true }
-    });
-
-    if (!photo) {
-      throw new Error('Photo not found');
-    }
-
-    if (photo.submission.submittedById !== userId && !isAdmin) {
-      throw new Error('Unauthorized');
-    }
-
-    if (photo.submission.status !== CafeSubmissionStatus.PENDING && !isAdmin) {
-      throw new Error('Can only delete photos from pending submissions');
-    }
-
-    return prisma.cafeSubmissionPhoto.delete({
-      where: { id: photoId }
-    });
   }
 
   private mapToDto(submission: any): SubmissionResponseDto {
@@ -255,8 +24,8 @@ export class SubmissionService {
       state: submission.state,
       country: submission.country,
       postalCode: submission.postalCode,
-      latitude: submission.latitude ? Number(submission.latitude) : null,
-      longitude: submission.longitude ? Number(submission.longitude) : null,
+      latitude: submission.latitude,
+      longitude: submission.longitude,
       phone: submission.phone,
       email: submission.email,
       website: submission.website,
@@ -267,15 +36,178 @@ export class SubmissionService {
       rejectionReason: submission.rejectionReason,
       createdAt: submission.createdAt,
       updatedAt: submission.updatedAt,
-      photos: submission.photos.map((p: any) => ({
+      photos: (submission.photos || []).map((p: any) => ({
         id: p.id,
         url: p.url,
-        caption: p.caption
+        caption: p.caption,
       })),
-      amenities: submission.amenities.map((a: any) => ({
-        id: a.amenity.id,
-        name: a.amenity.name
-      }))
+      amenities: (submission.amenities || []).map((a: any) => ({
+        id: a.amenity?.id || a.amenityId || a.id,
+        name: a.amenity?.name || a.name || '',
+      })),
     };
   }
+
+  async createSubmission(userId: string, data: CreateSubmissionDto): Promise<SubmissionResponseDto> {
+    const name = sanitizePlain(data.name.trim());
+    const address = sanitizePlain(data.address.trim());
+    const city = sanitizePlain(data.city.trim());
+
+    // Check for existing pending submission
+    const existing = await this.repository.findUserPendingSubmission(userId, name, city, address);
+    if (existing) {
+      throw new Error('You already have a pending submission for this cafe');
+    }
+
+    const submissionData: Prisma.CafeSubmissionCreateInput = {
+      submittedBy: { connect: { id: userId } },
+      name,
+      shortDescription: data.shortDescription ? sanitizePlain(data.shortDescription) : null,
+      description: data.description ? sanitizePlain(data.description) : null,
+      address,
+      city,
+      state: data.state ? sanitizePlain(data.state) : null,
+      country: data.country ? sanitizePlain(data.country) : null,
+      postalCode: data.postalCode ? sanitizePlain(data.postalCode) : null,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      phone: data.phone,
+      email: data.email,
+      website: data.website,
+      instagram: data.instagram,
+      facebook: data.facebook,
+      priceRange: data.priceRange as any,
+      status: CafeSubmissionStatus.PENDING,
+    };
+
+    if (data.amenityIds && data.amenityIds.length > 0) {
+      submissionData.amenities = {
+        create: data.amenityIds.map((amenityId) => ({
+          amenity: { connect: { id: amenityId } },
+        })),
+      };
+    }
+
+    const created = await this.repository.create(submissionData);
+    return this.mapToDto(created);
+  }
+
+  async getMySubmissions(userId: string): Promise<SubmissionResponseDto[]> {
+    const list = await this.repository.findByUserId(userId);
+    return list.map((item) => this.mapToDto(item));
+  }
+
+  async getSubmissionById(id: string, userId: string): Promise<SubmissionResponseDto> {
+    const submission = await this.repository.findById(id);
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+    if (submission.submittedById !== userId) {
+      throw new Error('Access denied');
+    }
+    return this.mapToDto(submission);
+  }
+
+  async updateSubmission(id: string, userId: string, data: UpdateSubmissionDto): Promise<SubmissionResponseDto> {
+    const submission = await this.repository.findById(id);
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+    if (submission.submittedById !== userId) {
+      throw new Error('Access denied');
+    }
+    if (submission.status !== CafeSubmissionStatus.PENDING) {
+      throw new Error('Only pending submissions can be modified');
+    }
+
+    const updateData: Prisma.CafeSubmissionUpdateInput = {};
+    if (data.name) updateData.name = sanitizePlain(data.name.trim());
+    if (data.shortDescription !== undefined) updateData.shortDescription = data.shortDescription ? sanitizePlain(data.shortDescription) : null;
+    if (data.description !== undefined) updateData.description = data.description ? sanitizePlain(data.description) : null;
+    if (data.address) updateData.address = sanitizePlain(data.address.trim());
+    if (data.city) updateData.city = sanitizePlain(data.city.trim());
+    if (data.state !== undefined) updateData.state = data.state;
+    if (data.country !== undefined) updateData.country = data.country;
+    if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
+    if (data.latitude !== undefined) updateData.latitude = data.latitude;
+    if (data.longitude !== undefined) updateData.longitude = data.longitude;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.website !== undefined) updateData.website = data.website;
+    if (data.instagram !== undefined) updateData.instagram = data.instagram;
+    if (data.facebook !== undefined) updateData.facebook = data.facebook;
+    if (data.priceRange !== undefined) updateData.priceRange = data.priceRange as any;
+
+    const updated = await this.repository.update(id, updateData);
+    return this.mapToDto(updated);
+  }
+
+  async cancelSubmission(id: string, userId: string): Promise<SubmissionResponseDto> {
+    const submission = await this.repository.findById(id);
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+    if (submission.submittedById !== userId) {
+      throw new Error('Access denied');
+    }
+    if (submission.status !== CafeSubmissionStatus.PENDING) {
+      throw new Error('Only pending submissions can be cancelled');
+    }
+
+    const cancelled = await this.repository.update(id, {
+      status: CafeSubmissionStatus.REJECTED,
+      rejectionReason: 'Cancelled by submitter',
+    });
+    return this.mapToDto(cancelled);
+  }
+
+  async checkDuplicates(data: { name: string; city: string; address: string }) {
+    if (!data.name || !data.city || !data.address) {
+      return { duplicate: false };
+    }
+    const duplicate = await this.repository.findDuplicate(data.name, data.city, data.address);
+    return {
+      duplicate: !!duplicate,
+      details: duplicate,
+    };
+  }
+
+  async addSubmissionPhoto(userId: string, submissionId: string, photoUrl: string) {
+    const submission = await this.repository.findById(submissionId);
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+    if (submission.submittedById !== userId) {
+      throw new Error('Access denied');
+    }
+
+    return prisma.cafeSubmissionPhoto.create({
+      data: {
+        submissionId,
+        url: photoUrl,
+      },
+    });
+  }
+
+  async deleteSubmissionPhoto(userId: string, photoId: string, isAdmin = false) {
+    const photo = await prisma.cafeSubmissionPhoto.findUnique({
+      where: { id: photoId },
+      include: { submission: true },
+    });
+
+    if (!photo) {
+      throw new Error('Photo not found');
+    }
+
+    if (!isAdmin && photo.submission.submittedById !== userId) {
+      throw new Error('Access denied');
+    }
+
+    return prisma.cafeSubmissionPhoto.delete({
+      where: { id: photoId },
+    });
+  }
 }
+
+export const submissionService = new SubmissionService();
+export default submissionService;

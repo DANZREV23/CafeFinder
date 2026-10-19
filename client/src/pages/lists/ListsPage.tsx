@@ -27,9 +27,10 @@ const ListsPage: React.FC = () => {
         limit: 12,
         search: search || undefined
       });
-      if (response.success) {
-        setLists(response.data.lists);
-        setPagination(response.data.pagination);
+      if (response?.success) {
+        const raw = Array.isArray(response.data) ? response.data : (response.data?.lists || response.lists || []);
+        setLists(Array.isArray(raw) ? raw : []);
+        setPagination(response.data?.pagination || response.pagination || null);
       }
     } catch (error) {
       console.error('Failed to load curated lists:', error);

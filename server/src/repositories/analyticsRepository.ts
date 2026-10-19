@@ -1,18 +1,5 @@
-import { CafeAnalyticsEventType } from '@prisma/client';
 import { prisma } from '../config/database.js';
-
-export interface AnalyticsSeriesPoint {
-  date: string;
-  value: number;
-}
-
-export interface RatingDistribution {
-  one: number;
-  two: number;
-  three: number;
-  four: number;
-  five: number;
-}
+import { CafeAnalyticsEventType } from '@prisma/client';
 
 export class AnalyticsRepository {
   async recordEvent(data: {
@@ -22,20 +9,23 @@ export class AnalyticsRepository {
     visitorHash?: string;
   }) {
     return prisma.cafeAnalyticsEvent.create({
-      data
+      data: {
+        cafeId: data.cafeId,
+        userId: data.userId,
+        eventType: data.eventType,
+        visitorHash: data.visitorHash,
+      },
     });
   }
 
-  async findRecentEvent(hash: string, cafeId: string, eventType: CafeAnalyticsEventType, since: Date) {
+  async findRecentEvent(visitorHash: string, cafeId: string, eventType: CafeAnalyticsEventType, since: Date) {
     return prisma.cafeAnalyticsEvent.findFirst({
       where: {
-        visitorHash: hash,
+        visitorHash,
         cafeId,
         eventType,
-        createdAt: {
-          gt: since
-        }
-      }
+        createdAt: { gte: since },
+      },
     });
   }
 
@@ -44,55 +34,22 @@ export class AnalyticsRepository {
       where: {
         cafeId,
         eventType,
-        createdAt: {
-          gte: from,
-          lte: to
-        }
-      }
+        createdAt: { gte: from, lte: to },
+      },
     });
-  }
-
-  async getTimeSeries(cafeId: string, eventType: CafeAnalyticsEventType, from: Date, to: Date, interval: 'day' | 'week' | 'month') {
-    // PostgreSQL compatible date grouping
-    let dateFormat = 'YYYY-MM-DD'; // default for day
-    if (interval === 'week') dateFormat = 'IYYY-IW';
-    if (interval === 'month') dateFormat = 'YYYY-MM';
-    
-    const results = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT 
-        TO_CHAR("createdAt", '${dateFormat}') as "dateStr",
-        MIN("createdAt") as date,
-        COUNT(*) as value
-      FROM cafe_analytics_events
-      WHERE "cafeId" = $1 AND "eventType" = $2::"CafeAnalyticsEventType" AND "createdAt" >= $3 AND "createdAt" <= $4
-      GROUP BY "dateStr"
-      ORDER BY "dateStr" ASC
-    `, cafeId, eventType, from, to);
-
-    return results.map(r => ({
-      date: r.date instanceof Date ? r.date.toISOString() : new Date(r.date).toISOString(),
-      value: Number(r.value)
-    }));
   }
 
   async getFavoriteStats(cafeId: string, from: Date, to: Date) {
-    const current = await prisma.cafeFavorite.count({
-      where: {
-        cafeId,
-        createdAt: {
-          gte: from,
-          lte: to
-        }
-      }
-    });
-
-    const total = await prisma.cafeFavorite.count({
-      where: {
-        cafeId
-      }
-    });
-
-    return { current, total };
+    const [total, current] = await Promise.all([
+      prisma.cafeFavorite.count({ where: { cafeId } }),
+      prisma.cafeFavorite.count({
+        where: {
+          cafeId,
+          createdAt: { gte: from, lte: to },
+        },
+      }),
+    ]);
+    return { total, current };
   }
 
   async getReviewStats(cafeId: string, from: Date, to: Date) {
@@ -100,60 +57,68 @@ export class AnalyticsRepository {
       where: {
         cafeId,
         status: 'APPROVED',
-        createdAt: {
-          gte: from,
-          lte: to
-        }
+        createdAt: { gte: from, lte: to },
       },
-      select: {
-        overallRating: true,
-        createdAt: true
+      select: { overallRating: true },
+    });
+
+    const count = reviews.length;
+    const sum = reviews.reduce((acc, r) => acc + r.overallRating, 0);
+    const average = count > 0 ? sum / count : 0;
+
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews.forEach((r) => {
+      const rounded = Math.round(r.overallRating);
+      if (distribution[rounded] !== undefined) {
+        distribution[rounded]++;
       }
     });
 
-    const distribution = await prisma.cafeReview.groupBy({
-      by: ['overallRating'],
-      where: {
-        cafeId,
-        status: 'APPROVED'
-      },
-      _count: {
-        overallRating: true
-      }
-    });
-
-    const distObj: RatingDistribution = { one: 0, two: 0, three: 0, four: 0, five: 0 };
-    distribution.forEach(d => {
-      if (d.overallRating === 1) distObj.one = d._count.overallRating;
-      if (d.overallRating === 2) distObj.two = d._count.overallRating;
-      if (d.overallRating === 3) distObj.three = d._count.overallRating;
-      if (d.overallRating === 4) distObj.four = d._count.overallRating;
-      if (d.overallRating === 5) distObj.five = d._count.overallRating;
-    });
-
-    return {
-      count: reviews.length,
-      average: reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.overallRating, 0) / reviews.length : 0,
-      distribution: distObj,
-      reviews // returning for manual time series grouping if needed
-    };
+    return { count, average, distribution };
   }
 
-  async getHistoricalFavoritesCount(cafeId: string, from: Date, to: Date, interval: 'day' | 'week' | 'month') {
-    // PostgreSQL compatible date grouping
-    let dateFormat = 'YYYY-MM-DD';
-    if (interval === 'week') dateFormat = 'IYYY-IW';
-    if (interval === 'month') dateFormat = 'YYYY-MM';
-    
-    return prisma.$queryRawUnsafe<any[]>(`
-      SELECT 
-        TO_CHAR("createdAt", '${dateFormat}') as "dateStr",
-        MIN("createdAt") as date,
-        COUNT(*) as value
-      FROM cafe_favorites
-      WHERE "cafeId" = $1 AND "createdAt" >= $2 AND "createdAt" <= $3
-      GROUP BY "dateStr"
-      ORDER BY "dateStr" ASC
-    `, cafeId, from, to);
+  async getTimeSeries(cafeId: string, eventType: CafeAnalyticsEventType, from: Date, to: Date, _interval: string) {
+    const events = await prisma.cafeAnalyticsEvent.findMany({
+      where: {
+        cafeId,
+        eventType,
+        createdAt: { gte: from, lte: to },
+      },
+      select: { createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const grouped: Record<string, number> = {};
+    events.forEach((e) => {
+      const dateStr = e.createdAt.toISOString().split('T')[0];
+      grouped[dateStr] = (grouped[dateStr] || 0) + 1;
+    });
+
+    return Object.entries(grouped).map(([date, count]) => ({
+      date: new Date(date).toISOString(),
+      value: count,
+    }));
+  }
+
+  async getHistoricalFavoritesCount(cafeId: string, from: Date, to: Date, _interval: string) {
+    const favorites = await prisma.cafeFavorite.findMany({
+      where: {
+        cafeId,
+        createdAt: { gte: from, lte: to },
+      },
+      select: { createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const grouped: Record<string, number> = {};
+    favorites.forEach((f) => {
+      const dateStr = f.createdAt.toISOString().split('T')[0];
+      grouped[dateStr] = (grouped[dateStr] || 0) + 1;
+    });
+
+    return Object.entries(grouped).map(([date, count]) => ({
+      date: new Date(date),
+      value: count,
+    }));
   }
 }

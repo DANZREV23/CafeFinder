@@ -1,47 +1,22 @@
-import { Request, Response, NextFunction } from 'express';
-import { FavoriteService } from '../services/favoriteService.js';
-import { z } from 'zod';
-import { mapToFavoriteDto } from '../dtos/favoriteDto.js';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware.js';
-
-const emptyToUndefined = (val: any) => (val === '' ? undefined : val);
-
-export const getFavoritesQuerySchema = z.object({
-  page: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => {
-    const parsed = v ? parseInt(v) : 1;
-    return isNaN(parsed) ? 1 : parsed;
-  })),
-  limit: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => {
-    const parsed = v ? parseInt(v) : 12;
-    return isNaN(parsed) ? 12 : Math.min(parsed, 50);
-  })),
-  search: z.preprocess(emptyToUndefined, z.string().optional()),
-  city: z.preprocess(emptyToUndefined, z.string().optional()),
-  priceRange: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => {
-    const parsed = v ? parseInt(v) : undefined;
-    return parsed === undefined || isNaN(parsed) ? undefined : parsed;
-  })),
-  minRating: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => {
-    const parsed = v ? parseFloat(v) : undefined;
-    return parsed === undefined || isNaN(parsed) ? undefined : parsed;
-  })),
-  amenities: z.preprocess(emptyToUndefined, z.string().optional().transform((v) => (v ? v.split(',') : undefined))),
-  sort: z.preprocess(emptyToUndefined, z.enum(['recently_saved', 'rating', 'name_asc', 'name_desc']).optional()),
-});
+import { FavoriteService } from '../services/favoriteService.js';
+import { mapToFavoriteDto } from '../dtos/favoriteDto.js';
 
 export class FavoriteController {
-  private favoriteService = new FavoriteService();
+  private service = new FavoriteService();
 
-  toggle = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  getMyFavorites = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { cafeId } = req.params;
       const userId = req.user!.id;
-      
-      const result = await this.favoriteService.toggleFavorite(userId, cafeId);
-      
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 12;
+
+      const result = await this.service.getUserFavorites({ userId, page, limit });
       res.json({
         success: true,
-        data: result
+        data: result.data.map(mapToFavoriteDto),
+        pagination: result.pagination,
       });
     } catch (error) {
       next(error);
@@ -51,57 +26,21 @@ export class FavoriteController {
   getStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { cafeId } = req.params;
-      const userId = req.user?.id;
-      
-      if (!userId) {
-        return res.json({
-          success: true,
-          data: { isFavorite: false }
-        });
+      if (!req.user) {
+        return res.json({ success: true, isFavorite: false });
       }
-
-      const result = await this.favoriteService.getFavoriteStatus(userId, cafeId);
-      
-      res.json({
-        success: true,
-        data: result
-      });
+      const status = await this.service.getFavoriteStatus(req.user.id, cafeId);
+      res.json({ success: true, ...status });
     } catch (error) {
       next(error);
     }
   };
 
-  getMyFavorites = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const userId = req.user!.id;
-      const validatedQuery = getFavoritesQuerySchema.parse(req.query);
-      
-      const result = await this.favoriteService.getUserFavorites({
-        ...validatedQuery,
-        userId,
-      });
-      
-      res.json({
-        success: true,
-        data: result.data.map(mapToFavoriteDto),
-        pagination: result.pagination
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  add = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  toggle = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { cafeId } = req.params;
-      const userId = req.user!.id;
-      
-      const result = await this.favoriteService.addFavorite(userId, cafeId);
-      
-      res.json({
-        success: true,
-        data: result
-      });
+      const result = await this.service.toggleFavorite(req.user!.id, cafeId);
+      res.json({ success: true, ...result });
     } catch (error) {
       next(error);
     }
@@ -110,14 +49,8 @@ export class FavoriteController {
   remove = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { cafeId } = req.params;
-      const userId = req.user!.id;
-      
-      const result = await this.favoriteService.removeFavorite(userId, cafeId);
-      
-      res.json({
-        success: true,
-        data: result
-      });
+      const result = await this.service.removeFavorite(req.user!.id, cafeId);
+      res.json({ success: true, ...result });
     } catch (error) {
       next(error);
     }

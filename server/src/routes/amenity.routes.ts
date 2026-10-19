@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { AmenityController } from '../controllers/amenityController.js';
 
 const router = Router();
-const amenityController = new AmenityController();
+const controller = new AmenityController();
 
-router.get('/', amenityController.getAll);
+router.get('/', controller.getAll);
 
 export default router;

@@ -19,3 +19,6 @@ export const sanitizePlain = (content: string): string => {
     allowedAttributes: {}
   });
 };
+
+export const sanitizePlainText = sanitizePlain;
+

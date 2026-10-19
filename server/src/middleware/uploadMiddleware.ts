@@ -1,82 +1,56 @@
 import multer from 'multer';
 import path from 'path';
-import { 
-  REVIEW_UPLOAD_DIR, 
-  SUBMISSION_UPLOAD_DIR,
-  OWNER_UPLOAD_DIR,
-  AVATAR_UPLOAD_DIR,
-  MAX_FILE_SIZE, 
-  ALLOWED_MIME_TYPES 
-} from '../config/upload.js';
 import crypto from 'crypto';
+import {
+  AVATAR_UPLOAD_DIR,
+  OWNER_UPLOAD_DIR,
+  REVIEW_UPLOAD_DIR,
+  SUBMISSION_UPLOAD_DIR,
+  MAX_FILE_SIZE,
+  ALLOWED_MIME_TYPES,
+} from '../config/upload.js';
 
-const reviewStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, REVIEW_UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = crypto.randomBytes(8).toString('hex');
-    const ext = path.extname(file.originalname);
-    cb(null, `review-${uniqueSuffix}${ext}`);
-  },
-});
+function createStorage(destination: string) {
+  return multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, destination);
+    },
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const uniqueName = `${crypto.randomUUID()}${ext}`;
+      cb(null, uniqueName);
+    },
+  });
+}
 
-const submissionStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, SUBMISSION_UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = crypto.randomBytes(8).toString('hex');
-    const ext = path.extname(file.originalname);
-    cb(null, `submission-${uniqueSuffix}${ext}`);
-  },
-});
-
-const ownerStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, OWNER_UPLOAD_DIR),
-  filename: (_req, file, cb) => cb(null, `cafe-${crypto.randomBytes(8).toString('hex')}${path.extname(file.originalname).toLowerCase()}`),
-});
-
-const avatarStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, AVATAR_UPLOAD_DIR),
-  filename: (req: any, file, cb) => {
-    const userId = req.user?.id || 'unknown';
-    cb(null, `avatar-${userId}-${crypto.randomBytes(4).toString('hex')}${path.extname(file.originalname).toLowerCase()}`);
-  },
-});
-
-const fileFilter = (req: any, file: any, cb: any) => {
+function fileFilter(_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) {
   if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'), false);
+    cb(new Error(`Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`));
   }
-};
+}
 
-export const uploadReviewPhoto = multer({
-  storage: reviewStorage,
-  limits: {
-    fileSize: MAX_FILE_SIZE,
-  },
-  fileFilter,
-});
-
-export const uploadSubmissionPhoto = multer({
-  storage: submissionStorage,
-  limits: {
-    fileSize: MAX_FILE_SIZE,
-  },
-  fileFilter,
-});
-
-export const uploadOwnerPhoto = multer({
-  storage: ownerStorage,
+export const uploadAvatar = multer({
+  storage: createStorage(AVATAR_UPLOAD_DIR),
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter,
 });
 
-export const uploadAvatar = multer({
-  storage: avatarStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB for avatars
+export const uploadOwnerPhoto = multer({
+  storage: createStorage(OWNER_UPLOAD_DIR),
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter,
+});
+
+export const uploadReviewPhoto = multer({
+  storage: createStorage(REVIEW_UPLOAD_DIR),
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter,
+});
+
+export const uploadSubmissionPhoto = multer({
+  storage: createStorage(SUBMISSION_UPLOAD_DIR),
+  limits: { fileSize: MAX_FILE_SIZE },
   fileFilter,
 });

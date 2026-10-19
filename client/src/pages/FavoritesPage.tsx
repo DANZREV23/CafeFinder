@@ -1,223 +1,165 @@
-import * as React from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { PageContainer } from "@/components/layout/PageContainer";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { 
-  Heart, 
-  Search, 
-  Filter, 
-  MapPin, 
-  Coffee, 
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  SlidersHorizontal,
-  Loader2
-} from "lucide-react";
-import { CafeCard } from "@/components/cafe/CafeCard";
-import favoriteService, { Favorite } from "@/services/favoriteService";
-import { useAuth } from "@/contexts/AuthContext";
-import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
-import { cn } from "@/lib/utils";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Heart, Coffee, MapPin, Star, ArrowRight, Loader2 } from 'lucide-react';
+import { MainLayout } from '../components/layout/MainLayout';
+import { PageContainer } from '../components/layout/PageContainer';
+import { SEO } from '../components/common/SEO';
+import favoriteService, { Favorite } from '../services/favoriteService';
+import { Button } from '../components/ui/Button';
 
 export default function FavoritesPage() {
-  const { isAuthenticated } = useAuth();
-  const [favorites, setFavorites] = React.useState<Favorite[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [total, setTotal] = React.useState(0);
-  const [page, setPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const [search, setSearch] = React.useState("");
-  const [debouncedSearch, setDebouncedSearch] = React.useState("");
-  const [sort, setSort] = React.useState("recently_saved");
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  const fetchFavorites = async () => {
-    if (!isAuthenticated) return;
+  const loadFavorites = async (pageNum = 1) => {
     setLoading(true);
     try {
-      const response = await favoriteService.getFavorites({
-        page,
-        limit: 12,
-        search: debouncedSearch,
-        sort
-      });
-      if (response.success) {
-        setFavorites(response.data);
-        setTotal(response.pagination.total);
-        setTotalPages(response.pagination.totalPages);
+      const res = await favoriteService.getFavorites({ page: pageNum, limit: 12, search });
+      if (res.success && res.data) {
+        setFavorites(res.data.data || res.data || []);
+        if (res.data.pagination) {
+          setTotalPages(res.data.pagination.totalPages || 1);
+        }
       }
     } catch (err) {
-      console.error("Failed to fetch favorites", err);
+      console.error('Failed to load favorites', err);
     } finally {
-      setLoading(true);
-      // Extra delay for smoother transition
-      setTimeout(() => setLoading(false), 300);
+      setLoading(false);
     }
   };
 
-  React.useEffect(() => {
-    fetchFavorites();
-  }, [page, debouncedSearch, sort, isAuthenticated]);
+  useEffect(() => {
+    loadFavorites(page);
+  }, [page]);
 
-  if (!isAuthenticated) {
-    return (
-      <MainLayout>
-        <PageContainer className="py-24 text-center">
-          <div className="max-w-md mx-auto space-y-8">
-            <div className="w-24 h-24 bg-brand-cream rounded-full flex items-center justify-center mx-auto text-brand-coffee">
-              <Heart className="w-12 h-12" />
-            </div>
-            <div className="space-y-4">
-              <h1 className="text-4xl font-serif font-bold text-brand-charcoal">Sign in to see your favorites</h1>
-              <p className="text-brand-muted leading-relaxed">
-                Keep track of all the cafes you want to visit and discover new favorites.
-              </p>
-            </div>
-            <Button asChild variant="primary" className="h-14 px-12 rounded-2xl">
-              <Link to="/login?redirect=/favorites">Sign In</Link>
-            </Button>
-          </div>
-        </PageContainer>
-      </MainLayout>
-    );
-  }
+  const handleRemove = async (cafeId: string) => {
+    try {
+      await favoriteService.removeFavorite(cafeId);
+      setFavorites((prev) => prev.filter((f) => f.cafe?.id !== cafeId));
+    } catch (err) {
+      console.error('Failed to remove favorite', err);
+    }
+  };
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-brand-background">
-        <PageContainer className="py-12 md:py-20">
-          <div className="space-y-12">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-brand-coffee font-bold uppercase tracking-widest text-xs">
-                  <div className="h-px w-8 bg-brand-coffee" />
-                  Your Collection
-                </div>
-                <h1 className="text-5xl md:text-6xl font-serif font-bold text-brand-charcoal">Saved Cafes</h1>
-                <p className="text-brand-muted text-lg">
-                  {total === 0 
-                    ? "Start building your personal coffee map." 
-                    : `You have ${total} saved ${total === 1 ? 'cafe' : 'cafes'} in your collection.`}
-                </p>
-              </div>
+      <SEO title="My Favorites - CafeFinder" description="View and manage your saved coffee shops on CafeFinder." />
+      <PageContainer className="py-12">
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 flex items-center gap-3">
+            <Heart className="w-8 h-8 text-rose-500 fill-rose-500" />
+            Saved Cafes
+          </h1>
+          <p className="mt-2 text-stone-600">Your collection of favorite coffee spots across the city</p>
+        </div>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted group-focus-within:text-brand-coffee transition-colors" />
-                  <Input 
-                    placeholder="Search your saved cafes..."
-                    className="pl-11 h-12 w-full md:w-72 bg-white border-brand-border rounded-xl focus:ring-brand-coffee/20"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex items-center gap-2 bg-white border border-brand-border p-1 rounded-xl">
-                   <select 
-                     value={sort}
-                     onChange={(e) => setSort(e.target.value)}
-                     className="h-10 px-4 bg-transparent text-sm font-bold text-brand-charcoal focus:outline-none cursor-pointer"
-                   >
-                     <option value="recently_saved">Recently Saved</option>
-                     <option value="rating">Highest Rated</option>
-                     <option value="name_asc">Name (A-Z)</option>
-                     <option value="name_desc">Name (Z-A)</option>
-                   </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            {loading && favorites.length === 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="space-y-4 animate-pulse">
-                    <div className="aspect-video bg-brand-border/10 rounded-3xl" />
-                    <div className="h-6 w-3/4 bg-brand-border/10 rounded-lg" />
-                    <div className="h-4 w-1/2 bg-brand-border/10 rounded-lg" />
-                  </div>
-                ))}
-              </div>
-            ) : favorites.length > 0 ? (
-              <div className="space-y-12">
-                <div className={cn(
-                  "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 transition-opacity duration-300",
-                  loading ? "opacity-50" : "opacity-100"
-                )}>
-                  {favorites.map((fav) => (
-                    <motion.div
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      key={fav.id}
-                    >
-                      <CafeCard 
-                        cafe={{...fav.cafe, isFavorite: true}} 
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 pt-8">
-                    <Button 
-                      variant="outline" 
-                      disabled={page === 1}
-                      onClick={() => setPage(prev => prev - 1)}
-                      className="h-12 w-12 p-0 rounded-xl"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </Button>
-                    <span className="text-sm font-bold text-brand-charcoal">
-                      Page {page} of {totalPages}
-                    </span>
-                    <Button 
-                      variant="outline" 
-                      disabled={page === totalPages}
-                      onClick={() => setPage(prev => prev + 1)}
-                      className="h-12 w-12 p-0 rounded-xl"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-white border border-brand-border rounded-[40px] p-20 text-center space-y-8">
-                <div className="w-20 h-20 bg-brand-background rounded-3xl flex items-center justify-center mx-auto text-brand-muted">
-                  <Coffee className="w-10 h-10" />
-                </div>
-                <div className="space-y-4 max-w-sm mx-auto">
-                  <h2 className="text-3xl font-serif font-bold text-brand-charcoal">
-                    {search ? "No matches found" : "Your collection is empty"}
-                  </h2>
-                  <p className="text-brand-muted leading-relaxed">
-                    {search 
-                      ? `We couldn't find any saved cafes matching "${search}"` 
-                      : "Start saving cafes you want to visit and they'll appear here."}
-                  </p>
-                </div>
-                <Button asChild variant="primary" className="h-14 px-12 rounded-2xl">
-                  <Link to="/explore">Explore Cafes</Link>
-                </Button>
-              </div>
-            )}
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <Loader2 className="w-8 h-8 animate-spin text-brand-coffee" />
           </div>
-        </PageContainer>
-      </div>
+        ) : favorites.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-12 text-center">
+            <Coffee className="mx-auto h-12 w-12 text-stone-400 mb-4" />
+            <h3 className="text-lg font-serif font-semibold text-stone-900">No favorites yet</h3>
+            <p className="mt-1 text-sm text-stone-500 max-w-sm mx-auto">
+              Explore our curated cafe directory and save the spots you'd love to visit!
+            </p>
+            <Link to="/explore" className="inline-block mt-6">
+              <Button className="bg-brand-coffee hover:bg-brand-coffee-dark text-white rounded-xl">
+                Explore Cafes
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {favorites.map((fav) => {
+              const cafe = fav.cafe;
+              if (!cafe) return null;
+              const photoUrl = cafe.coverImage || cafe.photos?.[0]?.url || '/placeholder-cafe.jpg';
+
+              return (
+                <div
+                  key={fav.id || cafe.id}
+                  className="group rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative h-48 w-full overflow-hidden bg-stone-100">
+                      <img
+                        src={photoUrl}
+                        alt={cafe.name}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <button
+                        onClick={() => handleRemove(cafe.id)}
+                        className="absolute top-3 right-3 p-2 rounded-full bg-white/90 text-rose-500 hover:bg-white shadow-xs transition-colors cursor-pointer"
+                        title="Remove from favorites"
+                      >
+                        <Heart className="w-4 h-4 fill-rose-500" />
+                      </button>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <h3 className="font-serif font-bold text-lg text-stone-900 line-clamp-1 group-hover:text-brand-coffee transition-colors">
+                          <Link to={`/cafes/${cafe.slug}`}>{cafe.name}</Link>
+                        </h3>
+                        {cafe.ratingAverage !== undefined && (
+                          <div className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+                            <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                            {cafe.ratingAverage ? Number(cafe.ratingAverage).toFixed(1) : 'New'}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-xs text-stone-500 mb-3">
+                        <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                        <span className="line-clamp-1">{cafe.address || cafe.city}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-5 pb-5 pt-0">
+                    <Link
+                      to={`/cafes/${cafe.slug}`}
+                      className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-brand-border text-sm font-semibold text-stone-700 hover:bg-brand-cream/60 transition-colors"
+                    >
+                      View Details
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center gap-2">
+            <Button
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              className="rounded-xl"
+            >
+              Previous
+            </Button>
+            <span className="flex items-center px-4 text-sm font-medium text-stone-600">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              className="rounded-xl"
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </PageContainer>
     </MainLayout>
   );
 }
