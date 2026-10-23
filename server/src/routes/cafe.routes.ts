@@ -2,15 +2,24 @@ import { Router } from 'express';
 import { CafeController } from '../controllers/cafeController.js';
 import { FavoriteController } from '../controllers/favoriteController.js';
 import { FollowController } from '../controllers/followController.js';
+import { InquiryController } from '../controllers/inquiryController.js';
 import { optionalAuth, requireAuth } from '../middleware/authMiddleware.js';
+import { inquiryRateLimit } from '../config/security.js';
 import { prisma } from '../config/database.js';
 
 const router = Router();
 const controller = new CafeController();
 const favoriteController = new FavoriteController();
 const followController = new FollowController();
+const inquiryController = new InquiryController();
 
 router.get('/', optionalAuth, controller.getAll);
+
+// Cafe Inquiries Subroutes
+router.post('/:id/inquiries', optionalAuth, inquiryRateLimit, inquiryController.createInquiry);
+router.post('/:cafeId/inquiries', optionalAuth, inquiryRateLimit, inquiryController.createInquiry);
+router.get('/:id/inquiries', optionalAuth, inquiryController.getOwnerInquiries);
+router.get('/:cafeId/inquiries', optionalAuth, inquiryController.getOwnerInquiries);
 
 // Cafe Favorites Subroutes
 router.get('/:id/favorite', optionalAuth, favoriteController.getStatus);

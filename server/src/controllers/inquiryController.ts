@@ -5,6 +5,30 @@ import { InquiryService } from '../services/inquiryService.js';
 export class InquiryController {
   private inquiryService = new InquiryService();
 
+  // Public/Customer creation endpoint
+  createInquiry = async (req: AuthRequest, res: Response) => {
+    try {
+      const cafeId = req.params.cafeId || req.params.id;
+      const result = await this.inquiryService.createInquiry({
+        cafeId,
+        userId: req.user?.id,
+        guestName: req.body.guestName,
+        guestEmail: req.body.guestEmail,
+        subject: req.body.subject,
+        message: req.body.message,
+        category: req.body.category,
+        source: req.body.source,
+        eventId: req.body.eventId,
+        specialId: req.body.specialId,
+        ipAddress: req.ip || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent'],
+      });
+      res.status(201).json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
   // Customer endpoints
   getMyInquiries = async (req: AuthRequest, res: Response) => {
     try {

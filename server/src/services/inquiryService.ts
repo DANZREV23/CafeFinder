@@ -51,8 +51,13 @@ export class InquiryService {
    * Create a new cafe inquiry from an authenticated user or guest visitor.
    */
   async createInquiry(input: CreateInquiryInput) {
-    const cafe = await prisma.cafe.findUnique({
-      where: { id: input.cafeId },
+    const cafe = await prisma.cafe.findFirst({
+      where: {
+        OR: [
+          { id: input.cafeId },
+          { slug: input.cafeId },
+        ],
+      },
       include: {
         owner: {
           select: { id: true, name: true, email: true, status: true },
@@ -63,6 +68,9 @@ export class InquiryService {
     if (!cafe || cafe.status !== 'PUBLISHED') {
       throw fail('Cafe not found or is not accepting inquiries at this time.', 404);
     }
+
+    // Ensure input.cafeId is always the canonical primary key CUID
+    input.cafeId = cafe.id;
 
     const subject = this.normalizeText(input.subject || '');
     const message = this.normalizeText(input.message || '');
