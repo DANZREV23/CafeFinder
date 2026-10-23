@@ -156,7 +156,7 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
 
                 <div className="mt-3 pt-2 border-t border-brand-border/40 text-right">
                   <Link
-                    to="/rewards"
+                    to={`/rewards?rewardId=${r.id}`}
                     className="text-xs font-semibold text-brand-coffee hover:underline inline-flex items-center gap-0.5"
                   >
                     Redeem details <ChevronRight className="w-3 h-3" />

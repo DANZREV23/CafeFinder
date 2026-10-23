@@ -9,7 +9,13 @@ CafeFinder Davao is a full-stack specialty coffee discovery, community review, e
 ### 1. Public Discovery, Interactive Mapping & Editorial Guides
 - **Advanced Cafe Explorer (`/explore`)**: Search and filter by keyword, city/neighborhood, price range (`₱` to `₱₱₱₱`), Wi-Fi availability/speed, power outlet access, noise levels, seating capacity, pet friendliness, parking, and real-time **"Open Now"** operating status. Sort by rating, review count, trending popularity, or proximity.
 - **Interactive Google Maps Visualizer**: Full-screen map interface with custom pins, viewport search, interactive cafe summary cards, geolocation ("Near Me"), and direct Google Maps directions.
-- **Detailed Cafe Profiles (`/cafes/:slug`)**: Operating hours with live open/closed indicators, verified owner badges, photo galleries with accessibility `alt` tags, food & drink menus with pricing, social links, community review breakdown, and algorithmic "Similar Cafes" recommendations.
+- **Time-Sensitive Discovery Hub & Events Calendar (`/events`, `/specials`)**: 
+  - Dedicated public discovery hub for coffee cupping sessions, brewing workshops, barista throwdowns, live music, and community meetups.
+  - Active specials & promotions showcase featuring seasonal drinks, afternoon happy hours, pastry-coffee combos, and limited-run beans.
+  - Real-time urgency badges ("Today", "Tomorrow", "In X days", "% OFF", "Free Entry") with city and category filters.
+  - Interactive RSVP & Special Offer Inquiry modals (`ContactCafeModal`) linking customer questions directly to cafe proprietors with context pre-attached.
+- **Homepage "Happening Now & Coming Soon" Section**: Real-time home page feed highlighting upcoming events and active specials with instant tab toggling.
+- **Detailed Cafe Profiles (`/cafes/:slug`)**: Operating hours with live open/closed indicators, verified owner badges, photo galleries with accessibility `alt` tags, food & drink menus with pricing, **live events & current specials showcase**, official cafe announcements, social links, community review breakdown, and algorithmic "Similar Cafes" recommendations.
 - **Side-by-Side Cafe Comparison (`/compare`)**: Compare up to 4 cafes simultaneously across ratings, workspace amenities (Wi-Fi, outlets, noise), operating hours, pricing, and features.
 - **Editorial Magazine & Curated Lists (`/blog`, `/lists`)**: Handcrafted neighborhood guides (e.g., *Davao Digital Nomad Favorites*, *Late-Night Study Spots*, *Hidden Garden Cafes*) and brewing articles with dynamic OpenGraph SEO metadata.
 - **Public Rewards Catalog (`/rewards`)**: Discover loyalty perks, free beverages, discounts, and bakery treats available across participating Davao coffee shops.
@@ -39,6 +45,12 @@ CafeFinder Davao is a full-stack specialty coffee discovery, community review, e
   - Create and manage reward catalog items with point costs, redemption limits, and terms.
   - **In-Store Voucher Verification**: Search customer redemption codes at POS, review details, and mark vouchers as `REDEEMED` to prevent duplicate redemptions.
   - Approve or decline pending reward requests with custom rejection reasons.
+- **Events, Specials & Promos Manager (`/owner/cafes/:id/events`)**:
+  - Create and schedule upcoming cafe happenings (Coffee Cuppings, Latte Art Throwdowns, Brewing Workshops, Live Music, Community Circles).
+  - Configure event timing, venue/area, capacity, entry fee or free admission, and instant publishing.
+  - Launch active specials & promotions (Seasonal Drinks, Happy Hours, Combos, Percentage Discounts) with custom terms and validity periods.
+  - Broadcast official announcements with priority levels (`NORMAL`, `IMPORTANT`, `URGENT`).
+  - Draft mode with instant "Publish Now" actions, deletion controls, and automated safe follower notification dispatch.
 - **Customer Review Engagement**: Post official owner responses to customer reviews.
 
 ### 4. System Administration & Editorial Governance (`ADMIN` Role — `/admin/*`)
@@ -225,7 +237,14 @@ For instant testing, use the 1-click login buttons on `/login` or enter these cr
 6. Present the code to the cafe barista or cashier.
 7. *Need to cancel?* If your voucher is still pending, click **"Cancel Request"** to immediately refund the points back to your balance.
 
-#### 4. Writing Reviews & Bookmarking Favorites
+#### 4. Discovering Events, Specials & Sending RSVPs (`/events`)
+1. Click **"Events & Specials"** in the top navigation bar or browse the **"Happening Now & Coming Soon"** section on the homepage.
+2. Toggle between **"Upcoming Events"** (cuppings, workshops, latte art showdowns, acoustic nights) and **"Active Specials"** (happy hours, combos, seasonal drinks).
+3. Filter by neighborhood/city or event category, and look for countdown badges (*"Today"*, *"Tomorrow"*, *"In 3 days"*).
+4. Click **"Event Details & RSVP"** or **"Ask About This Event"** on any cafe page to open the inquiry dialog.
+5. Inquiries are instantly routed to the cafe owner's portal with full event or promo details pre-attached.
+
+#### 5. Writing Reviews & Bookmarking Favorites
 1. On any cafe page, click the **Heart icon** to save the cafe to your Favorites (`/favorites`).
 2. Scroll to the Community Reviews section and click **"Write a Review"**.
 3. Rate the cafe (1 to 5 stars), enter your review text, upload photos, and rate specific workspace criteria (Wi-Fi speed, noise level, outlet availability).
@@ -265,6 +284,21 @@ For instant testing, use the 1-click login buttons on `/login` or enter these cr
 3. Click **"Verify & Redeem"**.
 4. Confirm the voucher code matches the customer's screen.
 5. Click **"Mark as Redeemed"**. The voucher status transitions to `REDEEMED`, preventing duplicate redemptions.
+
+#### 5. Hosting Events, Specials & Publishing Announcements
+1. Go to your cafe details page in the Owner Portal (`/owner/cafes/:id`).
+2. Click **"Events & Specials"** (`/owner/cafes/:id/events`).
+3. To host an event:
+   - Click **"New Event"**.
+   - Enter title, event type (Cupping/Tasting, Workshop, Competition, Live Music, Community), pricing, schedule, and area.
+   - Choose **"Publish immediately"** or save as a draft.
+4. To launch a promotion:
+   - Click **"New Special"**.
+   - Enter title, special type (Seasonal, Happy Hour, Combo, Discount, BOGO), percentage discount or package price, valid dates, and terms.
+5. To post an urgent or priority update:
+   - Click the **"Announcements"** tab and click **"New Announcement"**.
+   - Set priority (`NORMAL`, `IMPORTANT`, `URGENT`) and message content.
+6. Manage active items with real-time **"Publish Now"** triggers or the **Delete** button. Followers are automatically notified in the background.
 
 ---
 
@@ -375,6 +409,7 @@ npm run rollback
 | `npm run db:restore-test`| Validates database backup restoration integrity | ✅ Yes |
 | `npm run db:push` | Synchronizes additive Prisma schema changes with database | ✅ Yes |
 | `npm run db:generate` | Regenerates Prisma TypeScript client types | ✅ Yes |
+| `npx tsx server/src/scripts/seed-events-specials.ts` | Seeds upcoming cuppings, latte art throwdowns, workshops, and active specials | ✅ Yes |
 | `npm run db:seed` | Wipes and populates fresh demonstration records | ⚠️ **Fresh installs only** |
 
 ---

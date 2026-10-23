@@ -8,7 +8,8 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  const status = err.status || 500;
+  const status = err.status || (typeof err.statusCode === 'number' ? err.statusCode : 500);
+  const isClientError = status >= 400 && status < 500;
   const errorCode = err.code || (status === 400 ? 'VALIDATION_ERROR' : 
                     status === 401 ? 'UNAUTHORIZED' : 
                     status === 403 ? 'FORBIDDEN' : 
@@ -21,12 +22,16 @@ export function errorHandler(
     userId: (req as any).user?.id,
     route: req.originalUrl,
     method: req.method,
-    event: 'error.internal',
+    event: isClientError ? 'error.client' : 'error.internal',
     errorCode,
     status
   };
 
-  logger.error(err.message || 'Error caught by handler', err, logData);
+  if (isClientError) {
+    logger.warn(err.message || 'Client error caught by handler', logData);
+  } else {
+    logger.error(err.message || 'Error caught by handler', err, logData);
+  }
 
   if (err instanceof ZodError) {
     return res.status(400).json({

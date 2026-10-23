@@ -36,6 +36,8 @@ import seoRoutes from './routes/seo.routes.js';
 import searchRoutes from './routes/search.routes.js';
 import collectionRoutes from './routes/collection.routes.js';
 import loyaltyRoutes from './routes/loyalty.routes.js';
+import eventRoutes from './routes/event.routes.js';
+import specialRoutes from './routes/special.routes.js';
 
 const getCurrentDir = () => {
   if (typeof __dirname !== 'undefined') {
@@ -179,6 +181,8 @@ export async function createApp() {
   app.use('/api/search', searchRoutes);
   app.use('/api/collections', collectionRoutes);
   app.use('/api/loyalty', loyaltyRoutes);
+  app.use('/api/events', eventRoutes);
+  app.use('/api/specials', specialRoutes);
 
   // SEO Routes (Robots and Sitemap)
   app.use('/', seoRoutes);

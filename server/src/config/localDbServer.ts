@@ -8,7 +8,7 @@ let isStarting = false;
 
 export const LOCAL_PG_PORT = 5445;
 export const LOCAL_PG_HOST = '127.0.0.1';
-export const LOCAL_DATABASE_URL = `postgresql://postgres:postgres@127.0.0.1:${LOCAL_PG_PORT}/cloud_sql_development_database?sslmode=disable&connect_timeout=15&connection_limit=1&pool_timeout=30&statement_cache_size=0`;
+export const LOCAL_DATABASE_URL = `postgresql://postgres:postgres@127.0.0.1:${LOCAL_PG_PORT}/cloud_sql_development_database?sslmode=disable&connect_timeout=15&connection_limit=5&pool_timeout=20&statement_cache_size=0`;
 
 const IDENT_TO_MESSAGE_NAME: Record<number, string> = {
   ['B'.charCodeAt(0)]: 'Bind',
@@ -292,6 +292,13 @@ function checkPortListening(port: number, host = '127.0.0.1'): Promise<boolean> 
 }
 
 function ensurePostgresDirectories(dataDir: string) {
+  // Only maintain subdirectories if the PostgreSQL cluster was already initialized
+  // (PG_VERSION file exists). If PG_VERSION does not exist, creating directory skeletons beforehand
+  // tricks PGlite into skipping initdb and failing with catalog errors such as "cache lookup failed for type 16400".
+  if (!fs.existsSync(path.join(dataDir, 'PG_VERSION'))) {
+    return;
+  }
+
   const requiredDirs = [
     'base',
     'global',
@@ -385,26 +392,36 @@ export async function startLocalPostgresServer(): Promise<string> {
 
     const dataDir = path.resolve(process.cwd(), 'prisma/pgdata_v10');
     console.log(`[LocalPostgres]: Using data directory: ${dataDir}`);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+
+    // If dataDir exists but PG_VERSION is missing, it's a corrupted/incomplete initialization skeleton.
+    if (fs.existsSync(dataDir) && !fs.existsSync(path.join(dataDir, 'PG_VERSION'))) {
+      console.log('[LocalPostgres]: Incomplete cluster directory found without PG_VERSION, clearing directory before initdb...');
+      fs.rmSync(dataDir, { recursive: true, force: true });
     }
 
-    // Ensure all mandatory Postgres subdirectories exist to avoid startup crash
-    ensurePostgresDirectories(dataDir);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    } else {
+      ensurePostgresDirectories(dataDir);
+    }
 
     console.log('[LocalPostgres]: Initializing PGlite...');
     try {
       pgliteDbInstance = new PGlite(dataDir);
       await pgliteDbInstance.waitReady;
       await pgliteDbInstance.query('SELECT 1');
+      await pgliteDbInstance.query(`SELECT to_regclass('public.cafes') AS reg;`);
     } catch (pgErr: any) {
       console.warn('[LocalPostgres]: PGlite failed with existing dataDir, resetting corrupted directory:', pgErr.message || pgErr);
       try {
+        if (pgliteDbInstance) {
+          try { await pgliteDbInstance.close(); } catch (_) {}
+          pgliteDbInstance = null;
+        }
         fs.rmSync(dataDir, { recursive: true, force: true });
-        fs.mkdirSync(dataDir, { recursive: true });
-        ensurePostgresDirectories(dataDir);
         pgliteDbInstance = new PGlite(dataDir);
         await pgliteDbInstance.waitReady;
+        await pgliteDbInstance.query('SELECT 1');
       } catch (resetErr: any) {
         console.warn('[LocalPostgres]: Disk PGlite reset failed, falling back to in-memory PGlite:', resetErr.message || resetErr);
         pgliteDbInstance = new PGlite();
@@ -414,9 +431,10 @@ export async function startLocalPostgresServer(): Promise<string> {
     console.log('[LocalPostgres]: PGlite ready.');
 
     // Check if initial schema needs to be applied
+    let hasCafesTable = false;
     try {
       const checkRes = await pgliteDbInstance.query(`SELECT to_regclass('public.cafes') AS reg;`);
-      const hasCafesTable = Boolean(checkRes?.rows?.[0]?.reg);
+      hasCafesTable = Boolean(checkRes?.rows?.[0]?.reg);
       if (!hasCafesTable) {
         const fullSchemaPath = path.resolve(process.cwd(), 'prisma/full_schema.sql');
         if (fs.existsSync(fullSchemaPath)) {
@@ -424,15 +442,17 @@ export async function startLocalPostgresServer(): Promise<string> {
           const fullSql = fs.readFileSync(fullSchemaPath, 'utf8');
           await pgliteDbInstance.exec(fullSql);
           console.log('[LocalPostgres]: Full schema initialized successfully.');
+          hasCafesTable = true;
         }
       }
     } catch (initErr: any) {
       console.warn('[LocalPostgres]: Notice during full schema check:', initErr.message || initErr);
     }
 
-    // Ensure Stage 40 & 41 schema tables, columns, and enums exist in local PGlite instance
-    try {
-      await pgliteDbInstance.exec(`
+    // Ensure Stage 40 & 41 schema tables, columns, and enums exist in local PGlite instance if not loaded
+    if (!hasCafesTable) {
+      try {
+        await pgliteDbInstance.exec(`
         DO $$ BEGIN
           CREATE TYPE "InquiryCategory" AS ENUM ('GENERAL', 'HOURS', 'MENU', 'RESERVATION', 'EVENT', 'SPECIAL', 'WIFI', 'AMENITIES', 'PRIVATE_EVENT', 'ACCESSIBILITY', 'OTHER');
         EXCEPTION WHEN duplicate_object THEN null; END $$;
@@ -706,8 +726,9 @@ export async function startLocalPostgresServer(): Promise<string> {
         CREATE INDEX IF NOT EXISTS "cafe_visit_check_ins_status_idx" ON "cafe_visit_check_ins"("status");
         CREATE INDEX IF NOT EXISTS "cafe_visit_check_ins_createdAt_idx" ON "cafe_visit_check_ins"("createdAt");
       `);
-    } catch (schemaErr: any) {
-      console.warn('[LocalPostgres]: Non-fatal notice during schema sync:', schemaErr.message || schemaErr);
+      } catch (schemaErr: any) {
+        console.warn('[LocalPostgres]: Non-fatal notice during schema sync:', schemaErr.message || schemaErr);
+      }
     }
 
     console.log('[LocalPostgres]: Creating serialized wire-protocol server...');

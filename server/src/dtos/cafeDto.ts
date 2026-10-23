@@ -63,5 +63,8 @@ export function mapToPublicCafeProfile(cafe: any) {
     menu: cafe.menu || [],
     claim: cafe.claim || null,
     isClaimed: !!cafe.ownerId,
+    events: cafe.events || [],
+    specials: cafe.specials || [],
+    announcements: cafe.announcements || [],
   };
 }

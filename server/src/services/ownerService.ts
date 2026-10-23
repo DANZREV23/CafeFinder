@@ -1,4 +1,4 @@
-import { CafeChangeRequestStatus, CafeChangeRequestType, Prisma, ReviewStatus, ClaimStatus, CafeStatus } from '@prisma/client';
+import { CafeChangeRequestStatus, CafeChangeRequestType, Prisma, ReviewStatus, ClaimStatus, CafeStatus, TimeSensitiveStatus, EventType, SpecialType, AnnouncementPriority } from '@prisma/client';
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '../config/database.js';
@@ -391,70 +391,401 @@ export class OwnerService {
     return { message: 'Item deleted' };
   }
 
+  private generateSlug(text: string): string {
+    const base = (text || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    return base ? `${base}-${randomSuffix}` : `item-${randomSuffix}`;
+  }
+
   // Events
   async getEvents(cafeId: string, userId: string, isAdmin: boolean) {
     await this.requireCafe(cafeId, userId, isAdmin);
-    return this.eventService.getCafeEvents(cafeId);
+    return prisma.cafeEvent.findMany({
+      where: { cafeId },
+      orderBy: { startAt: 'asc' },
+    });
   }
 
   async createEvent(cafeId: string, userId: string, isAdmin: boolean, data: any) {
-    await this.requireCafe(cafeId, userId, isAdmin);
-    return this.eventService.createEvent({
-      ...data,
-      cafe: { connect: { id: cafeId } },
-      createdBy: { connect: { id: userId } }
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+
+    // Normalize eventType to Prisma enum
+    let eventType: EventType = EventType.COMMUNITY;
+    const rawType = String(data.eventType || '').toUpperCase();
+    if (rawType === 'WORKSHOP') eventType = EventType.WORKSHOP;
+    else if (rawType === 'TASTING' || rawType === 'CUPPING') eventType = EventType.TASTING;
+    else if (rawType === 'LIVE_MUSIC') eventType = EventType.LIVE_MUSIC;
+    else if (rawType === 'OPEN_MIC') eventType = EventType.OPEN_MIC;
+    else if (rawType === 'COMMUNITY') eventType = EventType.COMMUNITY;
+    else if (rawType === 'MEETUP' || rawType === 'POPUP') eventType = EventType.MEETUP;
+    else if (rawType === 'CLASS') eventType = EventType.CLASS;
+    else if (rawType === 'COMPETITION' || rawType === 'LATTE_ART') eventType = EventType.COMPETITION;
+    else if (rawType === 'SEASONAL') eventType = EventType.SEASONAL;
+    else eventType = EventType.OTHER;
+
+    const slug = data.slug || this.generateSlug(data.title);
+    const startAt = new Date(data.startAt || Date.now());
+    const endAt = new Date(data.endAt || startAt.getTime() + 2 * 60 * 60 * 1000);
+    const isPublish = data.status === 'PUBLISHED' || data.publishImmediately === true;
+    const status = isPublish ? TimeSensitiveStatus.PUBLISHED : TimeSensitiveStatus.DRAFT;
+
+    const price = (data.price !== undefined && data.price !== null && data.price !== '')
+      ? new Prisma.Decimal(data.price)
+      : undefined;
+
+    const event = await prisma.cafeEvent.create({
+      data: {
+        title: data.title,
+        slug,
+        shortDescription: data.shortDescription || undefined,
+        description: data.description || data.title,
+        eventType,
+        status,
+        startAt,
+        endAt,
+        timezone: data.timezone || 'Asia/Manila',
+        allDay: Boolean(data.allDay),
+        location: data.location || undefined,
+        capacity: data.capacity ? parseInt(String(data.capacity), 10) : undefined,
+        registrationUrl: data.registrationUrl || undefined,
+        price,
+        currency: data.currency || 'PHP',
+        coverPhotoUrl: data.coverPhotoUrl || undefined,
+        isFeatured: Boolean(data.isFeatured),
+        cafe: { connect: { id: cafeId } },
+        createdBy: { connect: { id: userId } },
+        publishedAt: isPublish ? new Date() : undefined,
+      },
+      include: {
+        cafe: true,
+      },
     });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_CREATED_EVENT',
+      entityType: 'CafeEvent',
+      entityId: event.id,
+      description: `Created event "${event.title}" for ${cafe.name}`,
+    });
+
+    if (isPublish) {
+      this.notifyFollowersSafe(cafeId, 'events', `New Event at ${cafe.name}`, `${event.title} is happening on ${startAt.toLocaleDateString()}. Don't miss it!`);
+    }
+
+    return event;
   }
 
   async publishEvent(cafeId: string, eventId: string, userId: string, isAdmin: boolean) {
     const cafe = await this.requireCafe(cafeId, userId, isAdmin);
-    const event = await this.eventService.getEventById(eventId);
+    const event = await prisma.cafeEvent.findUnique({
+      where: { id: eventId },
+    });
     if (!event || event.cafeId !== cafe.id) throw fail('Event not found', 404);
-    return this.eventService.publishEvent(eventId);
+
+    const published = await prisma.cafeEvent.update({
+      where: { id: eventId },
+      data: {
+        status: TimeSensitiveStatus.PUBLISHED,
+        publishedAt: new Date(),
+      },
+      include: { cafe: true },
+    });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_PUBLISHED_EVENT',
+      entityType: 'CafeEvent',
+      entityId: event.id,
+      description: `Published event "${event.title}" for ${cafe.name}`,
+    });
+
+    this.notifyFollowersSafe(cafeId, 'events', `New Event at ${cafe.name}`, `${event.title} is happening on ${event.startAt.toLocaleDateString()}. Don't miss it!`);
+
+    return published;
+  }
+
+  async deleteEvent(cafeId: string, eventId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const event = await prisma.cafeEvent.findUnique({ where: { id: eventId } });
+    if (!event || event.cafeId !== cafe.id) throw fail('Event not found', 404);
+
+    await prisma.cafeEvent.delete({ where: { id: eventId } });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_DELETED_EVENT',
+      entityType: 'CafeEvent',
+      entityId: eventId,
+      description: `Deleted event "${event.title}" for ${cafe.name}`,
+    });
+
+    return { success: true, message: 'Event deleted' };
   }
 
   // Specials
   async getSpecials(cafeId: string, userId: string, isAdmin: boolean) {
     await this.requireCafe(cafeId, userId, isAdmin);
-    return this.specialService.getCafeSpecials(cafeId);
+    return prisma.cafeSpecial.findMany({
+      where: { cafeId },
+      orderBy: { startAt: 'asc' },
+    });
   }
 
   async createSpecial(cafeId: string, userId: string, isAdmin: boolean, data: any) {
-    await this.requireCafe(cafeId, userId, isAdmin);
-    return this.specialService.createSpecial({
-      ...data,
-      cafe: { connect: { id: cafeId } },
-      createdBy: { connect: { id: userId } }
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+
+    // Normalize specialType
+    let specialType: SpecialType = SpecialType.SEASONAL;
+    const rawType = String(data.specialType || '').toUpperCase();
+    if (rawType === 'DISCOUNT') specialType = SpecialType.DISCOUNT;
+    else if (rawType === 'BOGO') specialType = SpecialType.BOGO;
+    else if (rawType === 'HAPPY_HOUR') specialType = SpecialType.HAPPY_HOUR;
+    else if (rawType === 'SEASONAL') specialType = SpecialType.SEASONAL;
+    else if (rawType === 'COMBO') specialType = SpecialType.COMBO;
+    else if (rawType === 'STUDENT') specialType = SpecialType.STUDENT;
+    else if (rawType === 'MEMBERSHIP') specialType = SpecialType.MEMBERSHIP;
+    else if (rawType === 'NEW_MENU') specialType = SpecialType.NEW_MENU;
+    else if (rawType === 'LIMITED_TIME' || rawType === 'LIMITED_EDITION') specialType = SpecialType.LIMITED_TIME;
+    else specialType = SpecialType.OTHER;
+
+    const slug = data.slug || this.generateSlug(data.title);
+    const startAt = new Date(data.startAt || Date.now());
+    const endAt = new Date(data.endAt || startAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const isPublish = data.status === 'PUBLISHED' || data.publishImmediately === true;
+    const status = isPublish ? TimeSensitiveStatus.PUBLISHED : TimeSensitiveStatus.DRAFT;
+
+    const price = (data.price !== undefined && data.price !== null && data.price !== '')
+      ? new Prisma.Decimal(data.price)
+      : undefined;
+
+    const discountPercent = data.discountPercent ? parseInt(String(data.discountPercent), 10) : undefined;
+
+    const special = await prisma.cafeSpecial.create({
+      data: {
+        title: data.title,
+        slug,
+        shortDescription: data.shortDescription || undefined,
+        description: data.description || data.title,
+        specialType,
+        status,
+        startAt,
+        endAt,
+        timezone: data.timezone || 'Asia/Manila',
+        terms: data.terms || undefined,
+        redemptionInstructions: data.redemptionInstructions || undefined,
+        price,
+        discountPercent,
+        currency: data.currency || 'PHP',
+        coverPhotoUrl: data.coverPhotoUrl || undefined,
+        isFeatured: Boolean(data.isFeatured),
+        cafe: { connect: { id: cafeId } },
+        createdBy: { connect: { id: userId } },
+        publishedAt: isPublish ? new Date() : undefined,
+      },
+      include: {
+        cafe: true,
+      },
     });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_CREATED_SPECIAL',
+      entityType: 'CafeSpecial',
+      entityId: special.id,
+      description: `Created special "${special.title}" for ${cafe.name}`,
+    });
+
+    if (isPublish) {
+      this.notifyFollowersSafe(cafeId, 'specials', `New Special at ${cafe.name}`, `Enjoy ${special.title}! ${special.shortDescription || ''}`);
+    }
+
+    return special;
   }
 
   async publishSpecial(cafeId: string, specialId: string, userId: string, isAdmin: boolean) {
     const cafe = await this.requireCafe(cafeId, userId, isAdmin);
-    const special = await this.specialService.getSpecialById(specialId);
+    const special = await prisma.cafeSpecial.findUnique({
+      where: { id: specialId },
+    });
     if (!special || special.cafeId !== cafe.id) throw fail('Special not found', 404);
-    return this.specialService.publishSpecial(specialId);
+
+    const published = await prisma.cafeSpecial.update({
+      where: { id: specialId },
+      data: {
+        status: TimeSensitiveStatus.PUBLISHED,
+        publishedAt: new Date(),
+      },
+      include: { cafe: true },
+    });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_PUBLISHED_SPECIAL',
+      entityType: 'CafeSpecial',
+      entityId: special.id,
+      description: `Published special "${special.title}" for ${cafe.name}`,
+    });
+
+    this.notifyFollowersSafe(cafeId, 'specials', `New Special at ${cafe.name}`, `Enjoy ${special.title}! ${special.shortDescription || ''}`);
+
+    return published;
+  }
+
+  async deleteSpecial(cafeId: string, specialId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const special = await prisma.cafeSpecial.findUnique({ where: { id: specialId } });
+    if (!special || special.cafeId !== cafe.id) throw fail('Special not found', 404);
+
+    await prisma.cafeSpecial.delete({ where: { id: specialId } });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_DELETED_SPECIAL',
+      entityType: 'CafeSpecial',
+      entityId: specialId,
+      description: `Deleted special "${special.title}" for ${cafe.name}`,
+    });
+
+    return { success: true, message: 'Special deleted' };
   }
 
   // Announcements
   async getAnnouncements(cafeId: string, userId: string, isAdmin: boolean) {
     await this.requireCafe(cafeId, userId, isAdmin);
-    return this.announcementService.getCafeAnnouncements(cafeId);
+    return prisma.cafeAnnouncement.findMany({
+      where: { cafeId },
+      orderBy: { startAt: 'desc' },
+    });
   }
 
   async createAnnouncement(cafeId: string, userId: string, isAdmin: boolean, data: any) {
-    await this.requireCafe(cafeId, userId, isAdmin);
-    return this.announcementService.createAnnouncement({
-      ...data,
-      cafe: { connect: { id: cafeId } },
-      createdBy: { connect: { id: userId } }
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+
+    // Normalize priority
+    let priority: AnnouncementPriority = AnnouncementPriority.NORMAL;
+    const rawPriority = String(data.priority || '').toUpperCase();
+    if (rawPriority === 'URGENT') priority = AnnouncementPriority.URGENT;
+    else if (rawPriority === 'IMPORTANT' || rawPriority === 'HIGH') priority = AnnouncementPriority.IMPORTANT;
+    else priority = AnnouncementPriority.NORMAL;
+
+    const slug = data.slug || this.generateSlug(data.title);
+    const startAt = new Date(data.startAt || Date.now());
+    const endAt = data.endAt ? new Date(data.endAt) : undefined;
+    const isPublish = data.status === 'PUBLISHED' || data.publishImmediately === true;
+    const status = isPublish ? TimeSensitiveStatus.PUBLISHED : TimeSensitiveStatus.DRAFT;
+
+    const announcement = await prisma.cafeAnnouncement.create({
+      data: {
+        title: data.title,
+        slug,
+        content: data.content || data.title,
+        priority,
+        status,
+        startAt,
+        endAt,
+        timezone: data.timezone || 'Asia/Manila',
+        coverPhotoUrl: data.coverPhotoUrl || undefined,
+        cafe: { connect: { id: cafeId } },
+        createdBy: { connect: { id: userId } },
+        publishedAt: isPublish ? new Date() : undefined,
+      },
+      include: {
+        cafe: true,
+      },
     });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_CREATED_ANNOUNCEMENT',
+      entityType: 'CafeAnnouncement',
+      entityId: announcement.id,
+      description: `Created announcement "${announcement.title}" for ${cafe.name}`,
+    });
+
+    if (isPublish) {
+      this.notifyFollowersSafe(cafeId, 'announcements', `Announcement from ${cafe.name}`, announcement.title);
+    }
+
+    return announcement;
   }
 
   async publishAnnouncement(cafeId: string, announcementId: string, userId: string, isAdmin: boolean) {
     const cafe = await this.requireCafe(cafeId, userId, isAdmin);
-    const announcement = await this.announcementService.getAnnouncementById(announcementId);
+    const announcement = await prisma.cafeAnnouncement.findUnique({
+      where: { id: announcementId },
+    });
     if (!announcement || announcement.cafeId !== cafe.id) throw fail('Announcement not found', 404);
-    return this.announcementService.publishAnnouncement(announcementId);
+
+    const published = await prisma.cafeAnnouncement.update({
+      where: { id: announcementId },
+      data: {
+        status: TimeSensitiveStatus.PUBLISHED,
+        publishedAt: new Date(),
+      },
+      include: { cafe: true },
+    });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_PUBLISHED_ANNOUNCEMENT',
+      entityType: 'CafeAnnouncement',
+      entityId: announcement.id,
+      description: `Published announcement "${announcement.title}" for ${cafe.name}`,
+    });
+
+    this.notifyFollowersSafe(cafeId, 'announcements', `Announcement from ${cafe.name}`, announcement.title);
+
+    return published;
+  }
+
+  async deleteAnnouncement(cafeId: string, announcementId: string, userId: string, isAdmin: boolean) {
+    const cafe = await this.requireCafe(cafeId, userId, isAdmin);
+    const announcement = await prisma.cafeAnnouncement.findUnique({ where: { id: announcementId } });
+    if (!announcement || announcement.cafeId !== cafe.id) throw fail('Announcement not found', 404);
+
+    await prisma.cafeAnnouncement.delete({ where: { id: announcementId } });
+
+    await this.activityLogs.logAction({
+      userId,
+      action: 'OWNER_DELETED_ANNOUNCEMENT',
+      entityType: 'CafeAnnouncement',
+      entityId: announcementId,
+      description: `Deleted announcement "${announcement.title}" for ${cafe.name}`,
+    });
+
+    return { success: true, message: 'Announcement deleted' };
+  }
+
+  private async notifyFollowersSafe(cafeId: string, type: 'events' | 'specials' | 'announcements', title: string, message: string) {
+    try {
+      const followers = await prisma.cafeFollow.findMany({
+        where: {
+          cafeId,
+          ...(type === 'events' ? { eventsEnabled: true } : {}),
+          ...(type === 'specials' ? { specialsEnabled: true } : {}),
+          ...(type === 'announcements' ? { announcementsEnabled: true } : {}),
+        },
+      });
+
+      for (const f of followers) {
+        await prisma.notification.create({
+          data: {
+            userId: f.userId,
+            title,
+            message,
+            type: `CAFE_${type.toUpperCase()}`,
+          },
+        }).catch(() => null);
+      }
+    } catch (err) {
+      console.warn(`[OwnerService] Follower notification error:`, err);
+    }
   }
 
   async notifyMenuUpdate(cafeId: string, userId: string, isAdmin: boolean, menuName: string) {

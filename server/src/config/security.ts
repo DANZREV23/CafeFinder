@@ -39,7 +39,7 @@ export const searchRateLimit = rateLimit({
   }
 });
 
-// Review/Submission rate limit: 5 requests per 10 minutes
+// Review/Submission rate limit: 10 requests per 10 minutes
 export const submissionRateLimit = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 10,
@@ -48,6 +48,18 @@ export const submissionRateLimit = rateLimit({
   message: {
     success: false,
     error: { message: 'Too many submissions, please wait before trying again.' }
+  }
+});
+
+// Owner dashboard operations rate limit: 120 requests per 10 minutes
+export const ownerActionRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: { message: 'Too many owner requests, please slow down.' }
   }
 });
 

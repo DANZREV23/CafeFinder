@@ -15,7 +15,7 @@ export class FollowController {
 
   follow = async (req: AuthRequest, res: Response) => {
     try {
-      const { cafeId } = req.params;
+      const cafeId = req.params.cafeId || req.params.id;
       const userId = req.user!.id;
       const follow = await this.followService.followCafe(userId, cafeId);
       res.json({ success: true, data: follow });
@@ -26,7 +26,7 @@ export class FollowController {
 
   unfollow = async (req: AuthRequest, res: Response) => {
     try {
-      const { cafeId } = req.params;
+      const cafeId = req.params.cafeId || req.params.id;
       const userId = req.user!.id;
       const result = await this.followService.unfollowCafe(userId, cafeId);
       res.json({ success: true, ...result });
@@ -37,7 +37,7 @@ export class FollowController {
 
   getStatus = async (req: AuthRequest, res: Response) => {
     try {
-      const { cafeId } = req.params;
+      const cafeId = req.params.cafeId || req.params.id;
       const userId = req.user?.id;
       
       if (!userId) {
@@ -53,7 +53,7 @@ export class FollowController {
 
   updatePreferences = async (req: AuthRequest, res: Response) => {
     try {
-      const { cafeId } = req.params;
+      const cafeId = req.params.cafeId || req.params.id;
       const userId = req.user!.id;
       const preferences = preferencesSchema.parse(req.body);
       

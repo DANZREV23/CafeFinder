@@ -35,6 +35,8 @@ export const enPH = {
   nav: {
     home: "Home",
     explore: "Explore",
+    events: "Events & Specials",
+    rewards: "Rewards",
     blog: "Blog",
     about: "About",
     lists: "Curated Lists",

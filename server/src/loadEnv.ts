@@ -18,7 +18,7 @@ if (!isValidPgUrl(process.env.PRISMA_DATABASE_URL)) {
     process.env.PRISMA_DATABASE_URL = process.env.DATABASE_URL;
   } else {
     process.env.PRISMA_DATABASE_URL =
-      'postgresql://postgres:postgres@127.0.0.1:5445/cloud_sql_development_database?sslmode=disable&connect_timeout=15&connection_limit=1&pool_timeout=30&statement_cache_size=0';
+      'postgresql://postgres:postgres@127.0.0.1:5445/cloud_sql_development_database?sslmode=disable&connect_timeout=15&connection_limit=5&pool_timeout=20&statement_cache_size=0';
   }
 }
 process.env.DATABASE_URL = process.env.PRISMA_DATABASE_URL;

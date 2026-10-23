@@ -159,6 +159,29 @@ export const CafeMap: React.FC<CafeMapProps> = ({
             Retry Connection
           </button>
         </div>
+        {validCafes.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-brand-border/60 w-full max-w-md">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-brand-coffee mb-2 text-left">Cafe Locations ({validCafes.length}):</p>
+            <div className="max-h-40 overflow-y-auto space-y-1.5 text-left text-xs text-brand-charcoal pr-1">
+              {validCafes.slice(0, 6).map(c => (
+                <div key={c.id} className="p-2 bg-white rounded-xl border border-brand-border/60 flex items-center justify-between">
+                  <div className="truncate mr-2">
+                    <span className="font-semibold block truncate">{c.name}</span>
+                    <span className="text-[10px] text-brand-muted block truncate">{c.city || c.address}</span>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${c.latitude},${c.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-bold text-brand-coffee hover:underline whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-cream/60 shrink-0"
+                  >
+                    Directions
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

@@ -12,7 +12,8 @@ import { useI18n } from "@/i18n";
 const navLinks = [
   { labelPath: "nav.home", href: "/" },
   { labelPath: "nav.explore", href: "/explore" },
-  { labelPath: "Rewards", href: "/rewards" },
+  { labelPath: "nav.events", href: "/events" },
+  { labelPath: "nav.rewards", href: "/rewards" },
   { labelPath: "nav.blog", href: "/blog" },
   { labelPath: "nav.about", href: "/about" },
 ];

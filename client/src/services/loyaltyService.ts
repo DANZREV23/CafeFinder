@@ -154,14 +154,15 @@ export const loyaltyService = {
   },
 
   regenerateCode: async (redemptionId: string) => {
-    return fetchApi<{ success: boolean; data: { plainCode: string; codeHint: string } }>(`/loyalty/redemptions/${redemptionId}/code`, {
+    return fetchApi<{ success: boolean; data: { plainCode?: string; verificationCode?: string; code?: string; codeHint?: string } }>(`/loyalty/redemptions/${redemptionId}/code`, {
       method: 'POST',
     });
   },
 
   // Owner
-  getOwnerOverview: async () => {
-    return fetchApi<{ success: boolean; data: any }>(`/owner/loyalty/overview`);
+  getOwnerOverview: async (cafeId?: string) => {
+    const query = cafeId ? `?cafeId=${encodeURIComponent(cafeId)}` : '';
+    return fetchApi<{ success: boolean; data: any }>(`/owner/loyalty/overview${query}`);
   },
 
   upsertOwnerProgram: async (cafeId: string, data: Partial<LoyaltyProgram>) => {
@@ -185,22 +186,38 @@ export const loyaltyService = {
     });
   },
 
+  deleteOwnerReward: async (cafeId: string, rewardId: string) => {
+    return fetchApi<{ success: boolean; data: any }>(`/owner/loyalty/cafes/${cafeId}/rewards/${rewardId}`, {
+      method: 'DELETE',
+    });
+  },
+
   getOwnerCustomers: async (cafeId: string, search?: string) => {
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     return fetchApi<{ success: boolean; data: any[] }>(`/owner/loyalty/cafes/${cafeId}/customers${query}`);
   },
 
-  issueOwnerPoints: async (cafeId: string, data: { accountId: string; points: number; type?: string; description?: string; reason?: string }) => {
+  issueOwnerPoints: async (cafeId: string, data: { accountId: string; points: number; mode?: 'VISIT_EARN' | 'ADJUSTMENT'; type?: string; description?: string; reason?: string }) => {
+    const payload = {
+      ...data,
+      mode: data.mode || (data.type === 'EARN' ? 'VISIT_EARN' : 'ADJUSTMENT'),
+    };
     return fetchApi<{ success: boolean; data: any }>(`/owner/loyalty/cafes/${cafeId}/points`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   },
 
   reviewCheckIn: async (cafeId: string, checkInId: string, approved: boolean, pointsAwarded?: number, ownerNotes?: string) => {
     return fetchApi<{ success: boolean; data: any }>(`/owner/loyalty/cafes/${cafeId}/check-ins/${checkInId}/review`, {
       method: 'POST',
-      body: JSON.stringify({ approved, pointsAwarded, ownerNotes }),
+      body: JSON.stringify({
+        decision: approved ? 'APPROVED' : 'REJECTED',
+        approved,
+        pointsAwarded,
+        ownerNotes,
+        rejectionReason: ownerNotes,
+      }),
     });
   },
 

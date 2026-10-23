@@ -347,6 +347,36 @@ export class OwnerController {
     }
   };
 
+  deleteEvent = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await this.ownerService.deleteEvent(req.params.id, req.params.eventId, req.user!.id, isAdmin);
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  deleteSpecial = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await this.ownerService.deleteSpecial(req.params.id, req.params.specialId, req.user!.id, isAdmin);
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  deleteAnnouncement = async (req: AuthRequest, res: Response) => {
+    try {
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await this.ownerService.deleteAnnouncement(req.params.id, req.params.announcementId, req.user!.id, isAdmin);
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
   notifyMenuUpdate = async (req: AuthRequest, res: Response) => {
     try {
       const isAdmin = req.user?.role === 'ADMIN';

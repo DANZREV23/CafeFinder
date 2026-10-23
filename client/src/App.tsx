@@ -21,6 +21,7 @@ const HomePage = lazy(() => import('@/pages/HomePage'));
 const ExplorePage = lazy(() => import('@/pages/ExplorePage'));
 const CafeProfilePage = lazy(() => import('@/pages/CafeProfilePage'));
 const CafeMenuPage = lazy(() => import('@/pages/CafeMenuPage'));
+const EventsPage = lazy(() => import('@/pages/EventsPage'));
 const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -40,6 +41,7 @@ const OwnerCafePhotosPage = lazy(() => import('./pages/OwnerCafePhotosPage'));
 const OwnerCafeReviewsPage = lazy(() => import('./pages/OwnerCafeReviewsPage'));
 const OwnerCafeAnalyticsPage = lazy(() => import('./pages/OwnerCafeAnalyticsPage'));
 const OwnerCafeMenuPage = lazy(() => import('./pages/OwnerCafeMenuPage'));
+const OwnerCafeEventsPage = lazy(() => import('./pages/OwnerCafeEventsPage'));
 const OwnerChangeRequestsPage = lazy(() => import('./pages/OwnerChangeRequestsPage'));
 const OwnerCafeChangeRequestFormPage = lazy(() => import('./pages/OwnerCafeChangeRequestFormPage'));
 const OwnerClaimsPage = lazy(() => import('./pages/OwnerClaimsPage'));
@@ -127,6 +129,10 @@ export default function App() {
                 {/* Loyalty & Rewards Public Catalog */}
                 <Route path="/rewards" element={<RewardsPage />} />
 
+                {/* Events & Specials Discovery */}
+                <Route path="/events" element={<EventsPage />} />
+                <Route path="/specials" element={<EventsPage />} />
+
                 <Route path="/offline" element={<OfflinePage />} />
 
                 <Route path="/submit-cafe" element={
@@ -212,6 +218,7 @@ export default function App() {
                 <Route path="/owner/cafes/:id/amenities" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeAmenitiesPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/photos" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafePhotosPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/menu" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeMenuPage /></RoleRoute>} />
+                <Route path="/owner/cafes/:id/events" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeEventsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/reviews" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeReviewsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/analytics" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerCafeAnalyticsPage /></RoleRoute>} />
                 <Route path="/owner/cafes/:id/change-requests" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerChangeRequestsPage /></RoleRoute>} />
@@ -227,6 +234,7 @@ export default function App() {
                 <Route path="/owner/loyalty/rewards" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
                 <Route path="/owner/loyalty/redemptions" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
                 <Route path="/owner/loyalty/customers" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
+                <Route path="/owner/loyalty/checkins" element={<RoleRoute allowedRoles={['OWNER', 'ADMIN']}><OwnerLoyaltyPage /></RoleRoute>} />
                 
                 <Route path="/admin" element={
                   <RoleRoute allowedRoles={['ADMIN']}>

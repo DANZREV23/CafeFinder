@@ -101,7 +101,7 @@ export async function seedDatabase(skipConnect = false) {
     }),
   ]);
 
-  const [admin, owner, user, maria, john] = users;
+  const [admin, revero, owner, user, maria, john] = users;
 
   // 3. Seed Amenities
   console.log('✨ Seeding amenities...');
@@ -171,6 +171,7 @@ export async function seedDatabase(skipConnect = false) {
       trending: false,
       ratingAverage: 4.8,
       reviewCount: 92,
+      ownerId: revero.id,
     },
     {
       name: 'Purge Coffee Roasters',
@@ -872,6 +873,69 @@ export async function seedDatabase(skipConnect = false) {
         ]
       }
     }
+  });
+
+  // 9. Seed Sample Loyalty Program & Rewards for Green Coffee
+  console.log('🎁 Seeding loyalty program and rewards...');
+  const loyaltyProgram = await prisma.cafeLoyaltyProgram.create({
+    data: {
+      cafeId: firstCafe.id,
+      name: 'Green Coffee Perks',
+      description: 'Earn 10 points with every cup. Redeem for complimentary drinks, pastries, and house roasts.',
+      status: 'ACTIVE',
+      pointsEnabled: true,
+      pointsPerVisit: 10,
+      minimumRedemptionPoints: 50,
+      termsAndConditions: 'Points are valid for in-store redemption only. Non-transferable.',
+      rewards: {
+        create: [
+          {
+            name: 'Free Espresso or Americano',
+            description: 'Single or double shot of our specialty roast.',
+            pointsCost: 50,
+            status: 'ACTIVE',
+            stockLimit: 100,
+          },
+          {
+            name: 'Signature Latte Upgrade',
+            description: 'Any hot or iced specialty latte in regular size.',
+            pointsCost: 80,
+            status: 'ACTIVE',
+            stockLimit: 50,
+          },
+          {
+            name: 'Freshly Baked Pastry of Choice',
+            description: 'Choose any croissant, muffin, or cookie from our daily display.',
+            pointsCost: 100,
+            status: 'ACTIVE',
+            stockLimit: 30,
+          },
+        ],
+      },
+    },
+  });
+
+  // Also create a sample loyalty account for Maria Santos with points
+  const mariaAccount = await prisma.cafeLoyaltyAccount.create({
+    data: {
+      programId: loyaltyProgram.id,
+      userId: maria.id,
+      pointsBalance: 120,
+      lifetimePointsEarned: 120,
+      lifetimePointsRedeemed: 0,
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.cafeLoyaltyTransaction.create({
+    data: {
+      accountId: mariaAccount.id,
+      type: 'EARN',
+      points: 120,
+      balanceAfter: 120,
+      description: 'Initial welcome points & visits',
+      createdByUserId: owner.id,
+    },
   });
 
     console.log('✅ Seeding completed successfully!');

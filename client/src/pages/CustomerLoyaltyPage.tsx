@@ -70,8 +70,14 @@ export default function CustomerLoyaltyPage() {
   const handleGetCode = async (redemptionId: string) => {
     try {
       const res = await loyaltyService.regenerateCode(redemptionId);
-      if (res.success) {
-        setViewingCode({ id: redemptionId, code: res.data.plainCode, hint: res.data.codeHint });
+      if (res.success && res.data) {
+        const plain =
+          res.data.plainCode ||
+          res.data.verificationCode ||
+          res.data.code ||
+          '';
+        const hint = res.data.codeHint || (plain ? plain.slice(-4) : '');
+        setViewingCode({ id: redemptionId, code: plain, hint });
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to retrieve code');
@@ -443,10 +449,10 @@ export default function CustomerLoyaltyPage() {
                     </div>
 
                     <Link
-                      to="/rewards"
-                      className="w-full py-2.5 rounded-xl border border-brand-border text-center text-xs font-semibold text-brand-coffee hover:bg-brand-cream transition"
+                      to={`/rewards?rewardId=${reward.id}`}
+                      className="w-full py-2.5 rounded-xl bg-brand-coffee text-white text-center text-xs font-semibold hover:bg-brand-coffee-dark transition shadow-xs"
                     >
-                      Redeem on Catalog
+                      Redeem Reward ({reward.pointsCost} pts)
                     </Link>
                   </div>
                 ))}
@@ -462,7 +468,7 @@ export default function CustomerLoyaltyPage() {
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative">
             <button
               onClick={() => setViewingCode(null)}
-              className="absolute right-4 top-4 text-brand-muted hover:text-brand-coffee"
+              className="absolute right-4 top-4 text-brand-muted hover:text-brand-coffee cursor-pointer"
             >
               ✕
             </button>
@@ -474,18 +480,31 @@ export default function CustomerLoyaltyPage() {
               Present this verification code to cafe staff when placing your order.
             </p>
 
-            <div className="bg-brand-cream/80 p-4 rounded-2xl border border-brand-border mb-6">
-              <span className="text-2xl font-mono font-extrabold tracking-widest text-brand-coffee-dark">
-                {viewingCode.code}
+            <div className="bg-brand-cream/80 p-4 rounded-2xl border border-brand-border mb-4">
+              <span className="text-2xl font-mono font-extrabold tracking-widest text-brand-coffee-dark select-all">
+                {viewingCode.code || 'CODE UNAVAILABLE'}
               </span>
             </div>
 
-            <button
-              onClick={() => setViewingCode(null)}
-              className="w-full py-2.5 rounded-xl bg-brand-coffee text-white font-medium text-sm hover:bg-brand-coffee-dark transition"
-            >
-              Close
-            </button>
+            <div className="flex gap-2">
+              {viewingCode.code && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(viewingCode.code);
+                    toast.success('Code copied to clipboard!');
+                  }}
+                  className="flex-1 py-2.5 rounded-xl border border-brand-border text-brand-coffee font-medium text-xs hover:bg-brand-cream transition cursor-pointer"
+                >
+                  Copy Code
+                </button>
+              )}
+              <button
+                onClick={() => setViewingCode(null)}
+                className="flex-1 py-2.5 rounded-xl bg-brand-coffee text-white font-medium text-xs hover:bg-brand-coffee-dark transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

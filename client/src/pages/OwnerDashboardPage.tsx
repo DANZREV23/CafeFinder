@@ -7,6 +7,7 @@ import {
   ShieldCheck, 
   BarChart3,
   Star,
+  Award,
   ArrowRight
 } from 'lucide-react';
 import { MainLayout } from '../components/layout/MainLayout';
@@ -124,6 +125,17 @@ export default function OwnerDashboardPage() {
             </p>
             <div className="mt-8 flex items-center gap-2 text-sm font-bold text-brand-coffee">
               Manage Inquiries <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link to="/owner/loyalty" className="rounded-[40px] border border-brand-border bg-white p-10 hover:border-brand-coffee transition-all group shadow-sm hover:shadow-xl">
+            <Award className="w-10 h-10 text-brand-coffee mb-8 group-hover:scale-110 transition-transform duration-500" />
+            <h2 className="text-2xl font-serif font-bold text-brand-charcoal">Loyalty & Rewards</h2>
+            <p className="mt-2 text-brand-muted leading-relaxed font-medium">
+              Configure points per visit, manage redeemable rewards, approve check-ins, and verify customer vouchers.
+            </p>
+            <div className="mt-8 flex items-center gap-2 text-sm font-bold text-brand-coffee">
+              Manage Loyalty <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
 

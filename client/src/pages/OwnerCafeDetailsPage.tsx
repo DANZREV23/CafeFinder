@@ -10,7 +10,8 @@ import {
   MessageSquare, 
   Pencil, 
   Utensils, 
-  BarChart3 
+  BarChart3,
+  Calendar
 } from 'lucide-react';
 import { MainLayout } from '../components/layout/MainLayout';
 import { PageContainer } from '../components/layout/PageContainer';
@@ -61,6 +62,7 @@ export default function OwnerCafeDetailsPage() {
     { href: `/owner/cafes/${id}/amenities`, label: 'Amenities', icon: ListChecks },
     { href: `/owner/cafes/${id}/photos`, label: 'Photos', icon: Image },
     { href: `/owner/cafes/${id}/menu`, label: 'Menu', icon: Utensils },
+    { href: `/owner/cafes/${id}/events`, label: 'Events & Specials', icon: Calendar },
     { href: `/owner/inquiries?cafeId=${id}`, label: 'Customer Inquiries', icon: MessageSquare },
     { href: `/owner/cafes/${id}/reviews`, label: 'Reviews', icon: MessageSquare },
     { href: `/owner/cafes/${id}/analytics`, label: 'Analytics', icon: BarChart3 },

@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { HeroSearch } from '../components/home/HeroSearch';
 import { RecommendedForYou } from '../components/home/RecommendedForYou';
 import { TrendingCafes } from '../components/home/TrendingCafes';
+import { TimeSensitiveDiscovery } from '../components/home/TimeSensitiveDiscovery';
 import { CuratedLists } from '../components/home/CuratedLists';
 import { VibeExplorer } from '../components/home/VibeExplorer';
 import { DiscoveryCTA } from '../components/home/DiscoveryCTA';
@@ -31,6 +32,8 @@ const HomePage: React.FC = () => {
         <RecommendedForYou />
 
         <TrendingCafes />
+        
+        <TimeSensitiveDiscovery />
         
         <CuratedLists />
         

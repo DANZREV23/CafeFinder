@@ -75,6 +75,13 @@ export class LoyaltyService {
       return cafe;
     }
 
+    const approvedClaim = await prisma.cafeOwnerClaim.findFirst({
+      where: { cafeId: cafe.id, userId, status: 'APPROVED' },
+    });
+    if (approvedClaim) {
+      return cafe;
+    }
+
     throw new AppError('You do not have permission to manage loyalty programs for this cafe', 403);
   }
 
@@ -537,6 +544,8 @@ export class LoyaltyService {
         name: r.program?.name,
         pointsPerVisit: r.program?.pointsPerVisit,
         minimumRedemptionPoints: r.program?.minimumRedemptionPoints,
+        cafeId: r.program?.cafe?.id,
+        cafe: r.program?.cafe,
       },
       cafe: {
         id: r.program?.cafe?.id,
@@ -857,11 +866,12 @@ export class LoyaltyService {
       });
     }
 
-    return Object.assign(checkIn, {
-      checkIn,
+    return {
+      ...checkIn,
+      checkIn: { ...checkIn },
       verificationDisclaimer:
         'Self-reported visit check-ins are not automatically verified by CafeFinder. Points are issued only after the cafe owner confirms your visit.',
-    });
+    };
   }
 
   /**
@@ -948,7 +958,11 @@ export class LoyaltyService {
         link: `/dashboard/loyalty`,
       });
 
-      return Object.assign(updated, { checkIn: updated, transaction: null });
+      return {
+        ...updated,
+        checkIn: { ...updated },
+        transaction: null,
+      };
     }
 
     // APPROVED
@@ -1025,11 +1039,12 @@ export class LoyaltyService {
       }),
     ]);
 
-    return Object.assign(result.checkIn, {
-      checkIn: result.checkIn,
+    return {
+      ...result.checkIn,
+      checkIn: { ...result.checkIn },
       transaction: result.transaction,
       account: result.account,
-    });
+    };
   }
 
   /**
@@ -1252,7 +1267,7 @@ export class LoyaltyService {
       throw new AppError('This reward is outside its valid redemption window', 400);
     }
 
-    const account = await prisma.cafeLoyaltyAccount.findUnique({
+    let account = await prisma.cafeLoyaltyAccount.findUnique({
       where: {
         programId_userId: {
           programId: program.id,
@@ -1264,15 +1279,37 @@ export class LoyaltyService {
       },
     });
 
-    if (!account || account.status !== LoyaltyAccountStatus.ACTIVE) {
-      throw new AppError('You must have an active loyalty account with this cafe to redeem rewards', 403);
+    if (!account && program.status === LoyaltyProgramStatus.ACTIVE) {
+      account = await prisma.cafeLoyaltyAccount.create({
+        data: {
+          programId: program.id,
+          userId,
+          status: LoyaltyAccountStatus.ACTIVE,
+          pointsBalance: 0,
+          lifetimePointsEarned: 0,
+          lifetimePointsRedeemed: 0,
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      });
     }
 
-    if (account.pointsBalance < program.minimumRedemptionPoints) {
-      throw new AppError(
-        `A minimum balance of ${program.minimumRedemptionPoints} points is required to redeem rewards in this program`,
-        400
-      );
+    if (account && account.status !== LoyaltyAccountStatus.ACTIVE) {
+      account = await prisma.cafeLoyaltyAccount.update({
+        where: { id: account.id },
+        data: {
+          status: LoyaltyAccountStatus.ACTIVE,
+          leftAt: null,
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      });
+    }
+
+    if (!account || account.status !== LoyaltyAccountStatus.ACTIVE) {
+      throw new AppError('You must have an active loyalty account with this cafe to redeem rewards', 403);
     }
 
     if (account.pointsBalance < reward.pointsCost) {
@@ -1461,10 +1498,15 @@ export class LoyaltyService {
       data: { redemptionCodeHash: codeHash },
     });
 
+    const codeHint = rawCode.slice(-4);
+
     return {
       redemptionId: redemption.id,
       rewardName: redemption.reward.name,
       verificationCode: rawCode,
+      plainCode: rawCode,
+      code: rawCode,
+      codeHint,
     };
   }
 
@@ -1662,7 +1704,10 @@ export class LoyaltyService {
         }),
       ]);
 
-      return Object.assign(updated, { redemption: updated });
+      return {
+        ...updated,
+        redemption: { ...updated },
+      };
     }
 
     if (action === 'REDEEM') {
@@ -1715,7 +1760,10 @@ export class LoyaltyService {
         }),
       ]);
 
-      return Object.assign(updated, { redemption: updated });
+      return {
+        ...updated,
+        redemption: { ...updated },
+      };
     }
 
     // REJECT: Atomically mark REJECTED and restore points exactly once via REVERSAL ledger transaction
@@ -1811,7 +1859,13 @@ export class LoyaltyService {
       }),
     ]);
 
-    return Object.assign(result.redemption, result);
+    const redemptionClone = { ...result.redemption };
+    return {
+      ...redemptionClone,
+      redemption: redemptionClone,
+      account: result.account,
+      transaction: result.transaction,
+    };
   }
 
   /**
@@ -1884,6 +1938,7 @@ export class LoyaltyService {
       leftAt: acc.leftAt,
       program: {
         id: acc.program.id,
+        cafeId: acc.program.cafe?.id,
         name: acc.program.name,
         description: acc.program.description,
         status: acc.program.status,
@@ -1903,7 +1958,6 @@ export class LoyaltyService {
           isEligible:
             acc.status === LoyaltyAccountStatus.ACTIVE &&
             acc.program.status === LoyaltyProgramStatus.ACTIVE &&
-            acc.pointsBalance >= acc.program.minimumRedemptionPoints &&
             acc.pointsBalance >= r.pointsCost &&
             (r.stockLimit === null || r.redeemedCount < r.stockLimit),
           termsAndConditions: r.termsAndConditions,
@@ -1990,14 +2044,17 @@ export class LoyaltyService {
    * Owner Loyalty Management: Get full overview for a cafe (or all owned cafes).
    */
   static async getOwnerLoyaltyOverview(ownerUserId: string, userRole: string, cafeId?: string) {
-    // Find all cafes controlled by this owner
+    // Find all cafes controlled by this owner or admin
     const ownedCafes = await prisma.cafe.findMany({
       where:
-        userRole === 'ADMIN' && cafeId
-          ? { id: cafeId }
-          : userRole === 'ADMIN'
+        userRole === 'ADMIN'
           ? {}
-          : { ownerId: ownerUserId },
+          : {
+              OR: [
+                { ownerId: ownerUserId },
+                { claims: { some: { userId: ownerUserId, status: 'APPROVED' } } },
+              ],
+            },
       select: {
         id: true,
         name: true,
@@ -2135,6 +2192,7 @@ export class LoyaltyService {
         id: r.id,
         rewardId: r.rewardId,
         rewardName: r.reward.name,
+        reward: r.reward,
         pointsSpent: r.pointsSpent,
         status: r.status,
         requestedAt: r.requestedAt,
@@ -2143,8 +2201,35 @@ export class LoyaltyService {
         expiresAt: r.expiresAt,
         rejectionReason: r.rejectionReason,
         customer: r.account.user,
+        account: r.account,
         accountId: r.accountId,
       })),
+      pendingRedemptions: recentRedemptions
+        .filter((r) => r.status === RewardRedemptionStatus.REQUESTED || r.status === RewardRedemptionStatus.APPROVED)
+        .map((r) => ({
+          id: r.id,
+          rewardId: r.rewardId,
+          rewardName: r.reward.name,
+          reward: r.reward,
+          pointsSpent: r.pointsSpent,
+          status: r.status,
+          requestedAt: r.requestedAt,
+          approvedAt: r.approvedAt,
+          redeemedAt: r.redeemedAt,
+          expiresAt: r.expiresAt,
+          rejectionReason: r.rejectionReason,
+          customer: r.account.user,
+          account: r.account,
+          accountId: r.accountId,
+        })),
+      customers: await prisma.cafeLoyaltyAccount.findMany({
+        where: { programId: program.id },
+        orderBy: { pointsBalance: 'desc' },
+        take: 50,
+        include: {
+          user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+        },
+      }),
       pendingCheckIns: pendingCheckIns.map((c) => ({
         id: c.id,
         programId: c.programId,
@@ -2195,9 +2280,9 @@ export class LoyaltyService {
       );
     }
 
-    const name = sanitizePlainText(data.name || '').trim();
+    let name = sanitizePlainText(data.name || '').trim();
     if (!name || name.length < 3) {
-      throw new AppError('Program name must be at least 3 characters', 400);
+      name = `${cafe.name} Rewards`;
     }
 
     const pointsPerVisit = Math.max(1, Math.min(1000, Number(data.pointsPerVisit ?? 10)));
@@ -2210,10 +2295,16 @@ export class LoyaltyService {
       LoyaltyProgramStatus.ENDED,
     ];
 
-    const status =
-      data.status && (allowedOwnerStatuses.includes(data.status) || userRole === 'ADMIN')
-        ? data.status
-        : existing?.status || LoyaltyProgramStatus.ACTIVE;
+    let status: LoyaltyProgramStatus = LoyaltyProgramStatus.ACTIVE;
+    if (data.status && (allowedOwnerStatuses.includes(data.status) || userRole === 'ADMIN')) {
+      status = data.status;
+    } else if (data.pointsEnabled === false) {
+      status = LoyaltyProgramStatus.PAUSED;
+    } else if (existing && existing.status !== LoyaltyProgramStatus.DRAFT) {
+      status = existing.status;
+    } else {
+      status = LoyaltyProgramStatus.ACTIVE;
+    }
 
     const programPayload = {
       name,
@@ -2281,12 +2372,22 @@ export class LoyaltyService {
 
     const cafe = await this.verifyCafeOwnerAccess(ownerUserId, userRole, cafeId);
 
-    const program = await prisma.cafeLoyaltyProgram.findUnique({
+    let program = await prisma.cafeLoyaltyProgram.findUnique({
       where: { cafeId: cafe.id },
     });
 
     if (!program) {
-      throw new AppError('Please configure your cafe’s loyalty program first before adding rewards', 400);
+      program = await prisma.cafeLoyaltyProgram.create({
+        data: {
+          cafeId: cafe.id,
+          name: `${cafe.name} Rewards`,
+          description: 'Earn points with each visit and unlock exclusive perks.',
+          pointsEnabled: true,
+          pointsPerVisit: 10,
+          minimumRedemptionPoints: 50,
+          status: LoyaltyProgramStatus.ACTIVE,
+        },
+      });
     }
 
     const name = sanitizePlainText(data.name || '').trim();
@@ -2308,7 +2409,7 @@ export class LoyaltyService {
       data: {
         programId: program.id,
         name,
-        description: data.description ? sanitizePlainText(data.description).trim() : null,
+        description: data.description ? sanitizePlainText(data.description).trim() : '',
         pointsCost,
         status: data.status || CafeRewardStatus.ACTIVE,
         stockLimit,
@@ -2380,7 +2481,7 @@ export class LoyaltyService {
       updateData.name = cleanName;
     }
     if (data.description !== undefined) {
-      updateData.description = data.description ? sanitizePlainText(data.description).trim() : null;
+      updateData.description = data.description ? sanitizePlainText(data.description).trim() : '';
     }
     if (data.pointsCost !== undefined) {
       const cost = Number(data.pointsCost);
@@ -2425,6 +2526,59 @@ export class LoyaltyService {
     });
 
     return updated;
+  }
+
+  /**
+   * Delete or archive a reward safely.
+   */
+  static async deleteOwnerReward(
+    ownerUserId: string,
+    userRole: string,
+    cafeId: string,
+    rewardId: string,
+    ipAddress?: string
+  ) {
+    const cafe = await this.verifyCafeOwnerAccess(ownerUserId, userRole, cafeId);
+
+    const reward = await prisma.cafeReward.findUnique({
+      where: { id: rewardId },
+      include: { program: true, _count: { select: { redemptions: true } } },
+    });
+
+    if (!reward || reward.program.cafeId !== cafe.id) {
+      throw new AppError('Reward not found for this cafe', 404);
+    }
+
+    if (reward._count.redemptions > 0) {
+      const updated = await prisma.cafeReward.update({
+        where: { id: reward.id },
+        data: { status: 'ARCHIVED' },
+      });
+      await AuditService.log({
+        actorUserId: ownerUserId,
+        action: 'LOYALTY_REWARD_ARCHIVED',
+        entityType: 'CafeReward',
+        entityId: reward.id,
+        metadata: { cafeId: cafe.id, redemptionsCount: reward._count.redemptions },
+        ipAddress,
+      });
+      return { archived: true, reward: updated };
+    }
+
+    await prisma.cafeReward.delete({
+      where: { id: reward.id },
+    });
+
+    await AuditService.log({
+      actorUserId: ownerUserId,
+      action: 'LOYALTY_REWARD_DELETED',
+      entityType: 'CafeReward',
+      entityId: reward.id,
+      metadata: { cafeId: cafe.id, name: reward.name },
+      ipAddress,
+    });
+
+    return { deleted: true, id: reward.id };
   }
 
   /**

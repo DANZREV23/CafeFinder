@@ -7,7 +7,8 @@ import {
   ExternalLink,
   Star,
   MessageSquare,
-  Coffee
+  Coffee,
+  Award
 } from 'lucide-react';
 import { MainLayout } from '../components/layout/MainLayout';
 import { PageContainer } from '../components/layout/PageContainer';
@@ -141,10 +142,14 @@ export default function OwnerCafesPage() {
                     </Link>
                   </div>
                   
-                  <div className="pt-4 border-t border-brand-border">
+                  <div className="pt-4 border-t border-brand-border flex items-center justify-between">
                     <Link to={`/cafes/${cafe.slug}`} className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-muted hover:text-brand-coffee transition-colors">
                       <ExternalLink className="w-3.5 h-3.5" />
                       Public Profile
+                    </Link>
+                    <Link to={`/owner/loyalty?cafeId=${cafe.id}`} className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-brand-coffee hover:underline font-bold">
+                      <Award className="w-3.5 h-3.5" />
+                      Loyalty
                     </Link>
                   </div>
                 </div>

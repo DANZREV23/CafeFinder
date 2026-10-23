@@ -41,8 +41,39 @@ export const MapProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn("Google Maps authentication or billing notice detected (gm_authFailure).");
       setIsAuthFailure(true);
     };
+
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      const msg = typeof args[0] === 'string' ? args[0] : '';
+      if (
+        msg.includes('BillingNotEnabledMapError') ||
+        msg.includes('ApiNotActivatedMapError') ||
+        msg.includes('Google Maps JavaScript API error')
+      ) {
+        console.warn('[MapProvider]: Handled Google Maps billing notice:', ...args);
+        setIsAuthFailure(true);
+        return;
+      }
+      originalConsoleError.apply(console, args);
+    };
+
+    const handleWindowError = (event: ErrorEvent) => {
+      if (
+        typeof event?.message === 'string' &&
+        (event.message.includes('BillingNotEnabledMapError') ||
+         event.message.includes('ApiNotActivatedMapError') ||
+         event.message.includes('Google Maps JavaScript API error'))
+      ) {
+        console.warn("Google Maps error captured:", event.message);
+        setIsAuthFailure(true);
+      }
+    };
+    window.addEventListener('error', handleWindowError);
+
     return () => {
       (window as any).gm_authFailure = null;
+      console.error = originalConsoleError;
+      window.removeEventListener('error', handleWindowError);
     };
   }, []);
 

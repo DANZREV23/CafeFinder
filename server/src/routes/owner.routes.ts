@@ -5,7 +5,7 @@ import { OwnerAnalyticsController } from '../controllers/ownerAnalyticsControlle
 import { InquiryController } from '../controllers/inquiryController.js';
 import { LoyaltyController } from '../controllers/loyaltyController.js';
 import { uploadOwnerPhoto } from '../middleware/uploadMiddleware.js';
-import { submissionRateLimit } from '../config/security.js';
+import { submissionRateLimit, ownerActionRateLimit } from '../config/security.js';
 
 const router = Router();
 const controller = new OwnerController();
@@ -56,27 +56,31 @@ router.delete('/cafes/:id/items/:itemId', controller.deleteMenuItem);
 router.get('/cafes/:id/events', controller.getEvents);
 router.post('/cafes/:id/events', submissionRateLimit, controller.createEvent);
 router.post('/cafes/:id/events/:eventId/publish', controller.publishEvent);
+router.delete('/cafes/:id/events/:eventId', controller.deleteEvent);
 
 // Special management
 router.get('/cafes/:id/specials', controller.getSpecials);
 router.post('/cafes/:id/specials', submissionRateLimit, controller.createSpecial);
 router.post('/cafes/:id/specials/:specialId/publish', controller.publishSpecial);
+router.delete('/cafes/:id/specials/:specialId', controller.deleteSpecial);
 
 // Announcement management
 router.get('/cafes/:id/announcements', controller.getAnnouncements);
 router.post('/cafes/:id/announcements', submissionRateLimit, controller.createAnnouncement);
 router.post('/cafes/:id/announcements/:announcementId/publish', controller.publishAnnouncement);
+router.delete('/cafes/:id/announcements/:announcementId', controller.deleteAnnouncement);
 
 router.post('/cafes/:id/notify-menu-update', controller.notifyMenuUpdate);
 
 // Stage 43 Loyalty & Rewards Management
 router.get('/loyalty/overview', loyaltyController.getOwnerLoyaltyOverview);
-router.put('/loyalty/cafes/:cafeId/program', submissionRateLimit, loyaltyController.upsertOwnerProgram);
-router.post('/loyalty/cafes/:cafeId/rewards', submissionRateLimit, loyaltyController.createOwnerReward);
-router.patch('/loyalty/cafes/:cafeId/rewards/:rewardId', submissionRateLimit, loyaltyController.updateOwnerReward);
+router.put('/loyalty/cafes/:cafeId/program', ownerActionRateLimit, loyaltyController.upsertOwnerProgram);
+router.post('/loyalty/cafes/:cafeId/rewards', ownerActionRateLimit, loyaltyController.createOwnerReward);
+router.patch('/loyalty/cafes/:cafeId/rewards/:rewardId', ownerActionRateLimit, loyaltyController.updateOwnerReward);
+router.delete('/loyalty/cafes/:cafeId/rewards/:rewardId', ownerActionRateLimit, loyaltyController.deleteOwnerReward);
 router.get('/loyalty/cafes/:cafeId/customers', loyaltyController.getOwnerCustomers);
-router.post('/loyalty/cafes/:cafeId/points', submissionRateLimit, loyaltyController.issueOwnerPoints);
-router.post('/loyalty/cafes/:cafeId/check-ins/:checkInId/review', submissionRateLimit, loyaltyController.reviewVisitCheckIn);
-router.post('/loyalty/cafes/:cafeId/redemptions/:redemptionId/process', submissionRateLimit, loyaltyController.processOwnerRedemption);
+router.post('/loyalty/cafes/:cafeId/points', ownerActionRateLimit, loyaltyController.issueOwnerPoints);
+router.post('/loyalty/cafes/:cafeId/check-ins/:checkInId/review', ownerActionRateLimit, loyaltyController.reviewVisitCheckIn);
+router.post('/loyalty/cafes/:cafeId/redemptions/:redemptionId/process', ownerActionRateLimit, loyaltyController.processOwnerRedemption);
 
 export default router;

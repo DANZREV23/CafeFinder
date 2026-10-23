@@ -9,7 +9,7 @@ import { AuthRequest } from '../middleware/authMiddleware.js';
 import { LoyaltyService } from '../services/loyaltyService.js';
 
 const upsertProgramSchema = z.object({
-  name: z.string().trim().min(3, 'Program name must be at least 3 characters').max(120),
+  name: z.string().trim().max(120).optional(),
   description: z.string().trim().max(1000).optional().nullable(),
   status: z.nativeEnum(LoyaltyProgramStatus).optional(),
   pointsEnabled: z.boolean().optional(),
@@ -24,7 +24,7 @@ const createRewardSchema = z.object({
   name: z.string().trim().min(2, 'Reward name must be at least 2 characters').max(120),
   description: z.string().trim().max(1000).optional().nullable(),
   pointsCost: z.coerce.number().int().min(1).max(100000),
-  status: z.nativeEnum(CafeRewardStatus).optional(),
+  status: z.preprocess((val) => (val === 'INACTIVE' ? CafeRewardStatus.PAUSED : val), z.nativeEnum(CafeRewardStatus)).optional(),
   stockLimit: z.union([z.coerce.number().int().min(1), z.null(), z.literal('')]).optional(),
   startsAt: z.string().optional().nullable(),
   endsAt: z.string().optional().nullable(),
@@ -35,16 +35,20 @@ const updateRewardSchema = createRewardSchema.partial();
 
 const issuePointsSchema = z.object({
   accountId: z.string().min(1),
-  mode: z.enum(['VISIT_EARN', 'ADJUSTMENT']),
+  mode: z.enum(['VISIT_EARN', 'ADJUSTMENT']).optional().default('ADJUSTMENT'),
   points: z.coerce.number().int().optional(),
   description: z.string().trim().max(500).optional(),
+  reason: z.string().trim().max(500).optional(),
   referenceId: z.string().trim().max(120).optional(),
   idempotencyKey: z.string().trim().max(120).optional(),
 });
 
 const reviewCheckInSchema = z.object({
-  decision: z.enum(['APPROVED', 'REJECTED']),
+  decision: z.enum(['APPROVED', 'REJECTED']).optional(),
+  approved: z.boolean().optional(),
   rejectionReason: z.string().trim().max(300).optional(),
+  ownerNotes: z.string().trim().max(300).optional(),
+  pointsAwarded: z.coerce.number().int().min(0).optional(),
 });
 
 const processRedemptionSchema = z.object({
@@ -248,7 +252,7 @@ export class LoyaltyController {
         req.user!.role,
         req.params.cafeId,
         {
-          name: parsed.name,
+          name: parsed.name || '',
           description: parsed.description ?? undefined,
           status: parsed.status,
           pointsEnabled: parsed.pointsEnabled,
@@ -333,6 +337,27 @@ export class LoyaltyController {
   };
 
   /**
+   * DELETE /api/owner/loyalty/cafes/:cafeId/rewards/:rewardId
+   */
+  deleteOwnerReward = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const result = await LoyaltyService.deleteOwnerReward(
+        req.user!.id,
+        req.user!.role,
+        req.params.cafeId,
+        req.params.rewardId,
+        req.ip
+      );
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
    * GET /api/owner/loyalty/cafes/:cafeId/customers
    */
   getOwnerCustomers = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -364,11 +389,17 @@ export class LoyaltyController {
   issueOwnerPoints = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const parsed = issuePointsSchema.parse(req.body);
+      const mode = parsed.mode || (req.body.type === 'EARN' ? 'VISIT_EARN' : 'ADJUSTMENT');
+      const description = parsed.description || parsed.reason || req.body.reason || 'Manual adjustment by owner';
       const result = await LoyaltyService.issuePointsByOwner(
         req.user!.id,
         req.user!.role,
         req.params.cafeId,
-        parsed,
+        {
+          ...parsed,
+          mode,
+          description,
+        },
         req.ip
       );
       res.json({
@@ -386,13 +417,15 @@ export class LoyaltyController {
   reviewVisitCheckIn = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const parsed = reviewCheckInSchema.parse(req.body);
+      const decision: 'APPROVED' | 'REJECTED' = parsed.decision || (parsed.approved ? 'APPROVED' : 'REJECTED');
+      const rejectionReason = parsed.rejectionReason || parsed.ownerNotes;
       const result = await LoyaltyService.reviewVisitCheckIn(
         req.user!.id,
         req.user!.role,
         req.params.cafeId,
         req.params.checkInId,
-        parsed.decision,
-        parsed.rejectionReason,
+        decision,
+        rejectionReason,
         req.ip
       );
       res.json({
