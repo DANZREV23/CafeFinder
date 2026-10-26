@@ -544,7 +544,7 @@ export default function CafeProfilePage() {
               </section>
 
               {/* Cafe Loyalty & Rewards Section */}
-              <CafeLoyaltySection cafeId={cafe.id} cafeName={cafe.name} />
+              <CafeLoyaltySection cafeId={cafe.id} cafeSlug={cafe.slug} cafeName={cafe.name} />
 
               {/* Amenities */}
               <section className="space-y-8 pt-8 border-t border-brand-border" aria-labelledby="amenities-heading">

@@ -55,7 +55,7 @@ export const AdminLoyaltyPage: React.FC = () => {
     }
   };
 
-  const stats = data?.stats || {};
+  const stats = data?.stats || data?.summary || {};
   const programs = data?.programs || [];
 
   return (
@@ -76,7 +76,7 @@ export const AdminLoyaltyPage: React.FC = () => {
           <button
             onClick={handleReconcile}
             disabled={reconciling}
-            className="px-4 py-2 rounded-xl bg-purple-600 text-white font-semibold text-xs hover:bg-purple-700 transition flex items-center gap-1.5 disabled:opacity-50"
+            className="px-4 py-2 rounded-xl bg-purple-600 text-white font-semibold text-xs hover:bg-purple-700 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? 'animate-spin' : ''}`} />
             {reconciling ? 'Auditing...' : 'Reconcile Ledgers'}
@@ -86,21 +86,23 @@ export const AdminLoyaltyPage: React.FC = () => {
 
       {/* Platform Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
           <span className="text-xs text-gray-500 block mb-1">Total Programs</span>
-          <span className="text-2xl font-bold text-gray-900">{stats.totalPrograms || 0}</span>
+          <span className="text-2xl font-bold text-gray-900">{stats.totalPrograms ?? programs.length ?? 0}</span>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
           <span className="text-xs text-gray-500 block mb-1">Active Programs</span>
-          <span className="text-2xl font-bold text-emerald-600">{stats.activePrograms || 0}</span>
+          <span className="text-2xl font-bold text-emerald-600">
+            {stats.activePrograms ?? programs.filter((p: any) => p.status === 'ACTIVE').length ?? 0}
+          </span>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
           <span className="text-xs text-gray-500 block mb-1">Total Customer Accounts</span>
-          <span className="text-2xl font-bold text-brand-coffee">{stats.totalAccounts || 0}</span>
+          <span className="text-2xl font-bold text-brand-coffee">{stats.totalAccounts ?? 0}</span>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-gray-200">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
           <span className="text-xs text-gray-500 block mb-1">Completed Redemptions</span>
-          <span className="text-2xl font-bold text-amber-600">{stats.completedRedemptions || 0}</span>
+          <span className="text-2xl font-bold text-amber-600">{stats.completedRedemptions ?? 0}</span>
         </div>
       </div>
 

@@ -107,7 +107,7 @@ export const loyaltyService = {
   },
 
   getCafeLoyalty: async (cafeId: string) => {
-    return fetchApi<{ success: boolean; data: { program: LoyaltyProgram | null; account: LoyaltyAccount | null; rewards: Reward[] } }>(`/loyalty/cafes/${cafeId}`);
+    return fetchApi<{ success: boolean; data: { program: LoyaltyProgram | null; account: LoyaltyAccount | null; customerAccount?: LoyaltyAccount | null; rewards: Reward[] } }>(`/loyalty/cafes/${cafeId}`);
   },
 
   // Customer

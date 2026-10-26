@@ -1,44 +1,79 @@
 # CafeFinder Davao
 
-CafeFinder Davao is a full-stack specialty coffee discovery, community review, editorial publishing, digital loyalty rewards, and cafe operations platform built specifically for Davao City. It connects coffee lovers with local coffee shops through high-precision filtering, interactive Google Maps visualization, curated neighborhood guides, and side-by-side cafe comparisons—while providing verified cafe owners and platform administrators with customer loyalty programs, real-time analytics, editorial publishing governance, media management, and automated zero-downtime deployment pipelines.
+CafeFinder Davao is a production-grade full-stack specialty coffee discovery, community review, editorial magazine, digital loyalty rewards, and cafe operations platform built specifically for Davao City, Philippines. It connects coffee lovers, remote workers, students, and tourists with local coffee shops through high-precision filtering, interactive Google Maps visualization, curated neighborhood guides, and side-by-side cafe comparisons—while providing verified cafe owners and platform administrators with customer loyalty programs, real-time analytics, event scheduling, direct customer inquiries, editorial publishing governance, media management, and automated zero-downtime deployment pipelines.
 
 ---
 
 ## 🚀 Key Features Overview
 
-### 1. Public Discovery, Interactive Mapping & Editorial Guides
-- **Advanced Cafe Explorer (`/explore`)**: Search and filter by keyword, city/neighborhood, price range (`₱` to `₱₱₱₱`), Wi-Fi availability/speed, power outlet access, noise levels, seating capacity, pet friendliness, parking, and real-time **"Open Now"** operating status. Sort by rating, review count, trending popularity, or proximity.
-- **Interactive Google Maps Visualizer**: Full-screen map interface with custom pins, viewport search, interactive cafe summary cards, geolocation ("Near Me"), and direct Google Maps directions.
-- **Time-Sensitive Discovery Hub & Events Calendar (`/events`, `/specials`)**: 
-  - Dedicated public discovery hub for coffee cupping sessions, brewing workshops, barista throwdowns, live music, and community meetups.
-  - Active specials & promotions showcase featuring seasonal drinks, afternoon happy hours, pastry-coffee combos, and limited-run beans.
-  - Real-time urgency badges ("Today", "Tomorrow", "In X days", "% OFF", "Free Entry") with city and category filters.
-  - Interactive RSVP & Special Offer Inquiry modals (`ContactCafeModal`) linking customer questions directly to cafe proprietors with context pre-attached.
-- **Homepage "Happening Now & Coming Soon" Section**: Real-time home page feed highlighting upcoming events and active specials with instant tab toggling.
-- **Detailed Cafe Profiles (`/cafes/:slug`)**: Operating hours with live open/closed indicators, verified owner badges, photo galleries with accessibility `alt` tags, food & drink menus with pricing, **live events & current specials showcase**, official cafe announcements, social links, community review breakdown, and algorithmic "Similar Cafes" recommendations.
-- **Side-by-Side Cafe Comparison (`/compare`)**: Compare up to 4 cafes simultaneously across ratings, workspace amenities (Wi-Fi, outlets, noise), operating hours, pricing, and features.
-- **Editorial Magazine & Curated Lists (`/blog`, `/lists`)**: Handcrafted neighborhood guides (e.g., *Davao Digital Nomad Favorites*, *Late-Night Study Spots*, *Hidden Garden Cafes*) and brewing articles with dynamic OpenGraph SEO metadata.
-- **Public Rewards Catalog (`/rewards`)**: Discover loyalty perks, free beverages, discounts, and bakery treats available across participating Davao coffee shops.
-- **Progressive Web App (PWA)**: Installable on iOS, Android, macOS, and Windows with offline connectivity detection, offline cached assets, and service worker background syncing.
+### 1. Public Discovery, Interactive Mapping & Time-Sensitive Happenings
+- **Advanced Cafe Explorer (`/explore`)**:
+  - Filter by keyword, neighborhood/district (*Poblacion*, *Matina*, *Lanang*, *Bajada*, *Toril*, *Buhangin*, etc.), price tier (`₱` to `₱₱₱₱`), Wi-Fi speed & stability, power outlet access, noise levels (*Quiet*, *Moderate*, *Lively*), seating capacity, pet friendliness, parking, outdoor patio, and real-time **"Open Now"** operating status.
+  - Sort results by rating, review count, trending popularity, or proximity.
+- **Interactive Google Maps Visualizer**:
+  - Full-screen map interface with custom coffee bean pins, marker clustering, viewport search as you drag, interactive cafe summary cards, geolocation ("Near Me"), and direct Google Maps turn-by-turn directions.
+- **Time-Sensitive Discovery Hub & Events Calendar (`/events`, `/specials`)**:
+  - **Upcoming Events**: Discover coffee cupping sessions, brewing masterclasses, barista throwdowns, latte art jams, acoustic live music, and book meetups.
+  - **Active Specials & Promos**: Browse seasonal drinks, cascara cold brew promotions, afternoon happy hour espresso discounts, and pastry-coffee combos.
+  - **Real-Time Urgency Badges**: Live visual badges (*"Today"*, *"Tomorrow"*, *"In 3 days"*, *"% OFF"*, *"Free Entry"*).
+  - **Contextual Inquiries & RSVPs**: Direct in-card inquiry modal (`ContactCafeModal`) routing questions directly to cafe proprietors with event or special offer context automatically attached.
+- **Homepage "Happening Now & Coming Soon" Showcase**:
+  - Dynamic homepage feed displaying upcoming events and active specials with instant tab toggling.
+- **Detailed Cafe Profiles (`/cafes/:slug`)**:
+  - Live open/closed indicators with current day operating hours and split shift alerts.
+  - Verified owner badges, photo galleries with accessibility `alt` tags, food & drink menus with pricing, **live events & current specials showcase**, official cafe announcements, social links, community review breakdown, and algorithmic "Similar Cafes" recommendations.
+- **Interactive Cafe Loyalty Section (`CafeLoyaltySection`)**:
+  - Highlights active cafe loyalty programs.
+  - **Smart Membership Status Detection**: Automatically displays an **"Active Member"** badge with current points balance, one-click **"Check In for Visit"**, and quick access to **"My Wallet"** if the logged-in customer is already enrolled.
+  - Displays a clean **"Join Loyalty Program"** action for new customers to enroll in one click.
+  - Displays available rewards at that specific cafe with point costs and direct redemption links.
+- **Direct Cafe Inquiries (`ContactCafeModal`)**:
+  - Allows customers and visitors to message cafe management directly regarding general questions, reservations, operating hours, private events, or dietary options.
+- **Side-by-Side Cafe Comparison (`/compare`)**:
+  - Compare up to 4 cafes simultaneously across aggregate ratings, workspace amenities (Wi-Fi, outlets, noise), operating hours, pricing, and amenities.
+- **Editorial Magazine & Curated Lists (`/blog`, `/lists`)**:
+  - Handcrafted neighborhood guides (e.g., *Davao Digital Nomad Favorites*, *Late-Night Study Spots*, *Hidden Garden Cafes*) and brewing articles with dynamic OpenGraph SEO metadata.
+- **Public Rewards Catalog (`/rewards`)**:
+  - Discover loyalty perks, free specialty beverages, percentage discounts, and bakery treats available across participating Davao coffee shops.
+- **Progressive Web App (PWA)**:
+  - Installable on iOS, Android, macOS, and Windows with offline connectivity detection, offline cached assets, and service worker background syncing.
+
+---
 
 ### 2. Customer Loyalty & Community Member Experience (`USER` Role)
-- **1-Click Quick Demo Sign-in (`/login`)**: Pre-populated demo buttons for instant access as Customer, Cafe Owner, or System Administrator (`password123`).
+- **1-Click Quick Demo Sign-in (`/login`)**:
+  - Instant demo buttons for testing as Customer (`maria@example.com`), Cafe Owner (`owner@cafefinder.local`), or System Administrator (`revero.b@agentsofvalue.com` / `admin@cafefinder.local`).
 - **Customer Loyalty Hub (`/dashboard/loyalty`)**:
   - Join cafe loyalty programs with a single click.
-  - Automatically earn visit points upon checking in.
-  - Track active points balances and lifetime earned/redeemed points per cafe.
+  - Submit visit check-ins to self-report visits and earn loyalty points.
+  - Real-time tracking of active points balance and lifetime earned/redeemed points per cafe.
   - Request reward redemptions and receive digital voucher codes with verification hints.
   - Cancel pending redemptions with instant point refunds.
   - View full points activity ledgers (earn, redeem, adjustment).
-- **Favorites & Custom Collections (`/favorites`, `/dashboard/collections`)**: Bookmark cafes, create curated personal collections with custom slugs, and share public collection links with friends.
-- **Multi-Photo Community Reviews**: Post verified ratings, multi-image galleries, and helpfulness upvotes.
-- **Community Cafe Submissions (`/submit-cafe`)**: Submit newly opened cafes using a pin-drop map picker, operating hours schedule builder, and photo uploader.
-- **Ownership Claims (`/cafes/:slug/claim`)**: Cafe proprietors can submit business verification documents to claim their listing.
+- **Customer Inquiry Center (`/dashboard/inquiries`)**:
+  - View all submitted inquiries to cafes with unread response badges.
+  - Interactive two-way message threads with cafe owners and management.
+  - Ability to reply or reopen closed inquiry threads.
+- **Favorites & Custom Collections (`/favorites`, `/dashboard/collections`)**:
+  - Bookmark cafes with one click.
+  - Create curated personal collections with custom titles, descriptions, and public shareable links.
+- **Multi-Photo Community Reviews**:
+  - Post verified ratings, multi-image galleries, and helpfulness upvotes.
+  - Rate specific workspace amenities (Wi-Fi speed, noise level, outlet availability).
+- **Community Cafe Submissions (`/submit-cafe`)**:
+  - Submit newly opened cafes using a pin-drop map picker, operating hours schedule builder, and photo uploader.
+- **Ownership Claims (`/cafes/:slug/claim`)**:
+  - Cafe proprietors can submit business verification documents (Mayor's Permit, DTI Registration) to claim their listing.
+
+---
 
 ### 3. Verified Cafe Owner Portal (`OWNER` Role — `/owner/*`)
-- **Owner Analytics Dashboard (`/owner`)**: Track listing impressions, direction requests, phone calls, website clicks, favorites, and review velocity with interactive charts.
-- **Multi-Location Management (`/owner/cafes`)**: Manage one or multiple cafe branches from a unified workspace.
-- **Governed Change Requests**: Submit proposed updates to hours, menus, geolocation, and amenities. Proposed changes are staged for admin review to safeguard directory integrity.
+- **Owner Analytics Dashboard (`/owner`)**:
+  - Track listing impressions, direction requests, phone calls, website clicks, favorites, and review velocity with interactive charts.
+- **Multi-Location Management (`/owner/cafes`)**:
+  - Manage one or multiple cafe branches from a unified workspace.
+- **Governed Change Requests**:
+  - Submit proposed updates to hours, menus, geolocation, and amenities. Proposed changes are staged for admin review to safeguard directory integrity.
 - **Digital Loyalty Program Manager (`/owner/loyalty`)**:
   - Activate or pause custom loyalty programs per cafe location.
   - Set points awarded per customer visit (e.g., 10 pts per visit) and minimum redemption thresholds.
@@ -46,32 +81,42 @@ CafeFinder Davao is a full-stack specialty coffee discovery, community review, e
   - **In-Store Voucher Verification**: Search customer redemption codes at POS, review details, and mark vouchers as `REDEEMED` to prevent duplicate redemptions.
   - Approve or decline pending reward requests with custom rejection reasons.
 - **Events, Specials & Promos Manager (`/owner/cafes/:id/events`)**:
-  - Create and schedule upcoming cafe happenings (Coffee Cuppings, Latte Art Throwdowns, Brewing Workshops, Live Music, Community Circles).
+  - Schedule upcoming cafe happenings (Coffee Cuppings, Latte Art Throwdowns, Brewing Workshops, Live Music, Community Circles).
   - Configure event timing, venue/area, capacity, entry fee or free admission, and instant publishing.
   - Launch active specials & promotions (Seasonal Drinks, Happy Hours, Combos, Percentage Discounts) with custom terms and validity periods.
   - Broadcast official announcements with priority levels (`NORMAL`, `IMPORTANT`, `URGENT`).
   - Draft mode with instant "Publish Now" actions, deletion controls, and automated safe follower notification dispatch.
-- **Customer Review Engagement**: Post official owner responses to customer reviews.
+- **Owner Customer Inquiry Inbox (`/owner/inquiries`)**:
+  - Centralized messaging inbox for all inquiries submitted by customers and visitors across your managed cafes.
+  - Filter by cafe, category (General, Hours, Menu, Reservation, Event, Special, Wifi, Private Event), and status (`NEW`, `READ`, `IN_PROGRESS`, `RESPONDED`, `CLOSED`).
+  - Direct two-way reply interface with customer notification dispatch.
+- **Customer Review Engagement**:
+  - Post official owner responses to customer reviews.
+
+---
 
 ### 4. System Administration & Editorial Governance (`ADMIN` Role — `/admin/*`)
 - **Modern Charcoal & Orange Admin Sidebar**:
   - Categorized into `MODERATION`, `DIRECTORY`, `USERS`, `CONTENT`, and `SYSTEM`.
-  - Fast keyboard and route navigation with direct route aliases (`/admin/recommendations`, `/admin/alerts`, `/admin/jobs`, `/admin/claims`, `/admin/quality`, `/admin/loyalty`).
+  - Fast keyboard and route navigation with direct route aliases (`/admin/recommendations`, `/admin/alerts`, `/admin/jobs`, `/admin/claims`, `/admin/quality`, `/admin/loyalty`, `/admin/inquiries`).
 - **Moderation Queues**:
   - **Cafe Submissions (`/admin/submissions`)**: Review, edit, approve, or reject community listings.
   - **Reviews & Flagged Reports (`/admin/reviews`, `/admin/review-reports`)**: Moderate user reviews, inspect flagged reports, and take disciplinary actions.
   - **Owner Claims (`/admin/claims`)**: Verify legal permits and assign cafe ownership.
   - **Change Requests (`/admin/change-requests`)**: Review staged business edits before they go live.
-  - **Customer Inquiries (`/admin/inquiries`)**: Helpdesk ticket system for support inquiries.
+  - **Customer Inquiries & Helpdesk (`/admin/inquiries`)**: Oversee all platform customer inquiries, triage issues, or assist cafe owners in responding to inquiries.
 - **Editorial CMS & Scheduled Publishing (`/admin/blog`, `/admin/lists`)**:
   - Draft, schedule, and publish magazine posts and curated lists.
   - Automatic background scheduler (`schedulerService`) that publishes scheduled items at target timestamps.
   - **Revision History & Rollback (`RevisionHistoryDialog`)**: Inspect immutable snapshots of prior versions and restore them in one click.
   - **Automated Content Quality Audits (`/admin/content/quality`)**: Automated health checks flagging missing cover photos, empty descriptions, or broken schedules.
   - **301/302 URL Redirect Governance (`/admin/redirects`)**: Manage path redirects to preserve SEO when slugs change.
-- **Centralized Media Library (`/admin/media`)**: Manage all uploaded images, edit SEO alt text and captions, and check active entity dependencies before deleting files.
-- **User Management (`/admin/users`)**: Search accounts, modify roles (`USER`, `OWNER`, `ADMIN`), and update account statuses (`ACTIVE`, `SUSPENDED`).
-- **Platform Observability & System Tools (`/admin/system`)**: Real-time telemetry (RAM, uptime, DB latency, HTTP requests), database integrity audits, one-click rating recalculation, scheduled maintenance jobs, and automated deployment history.
+- **Centralized Media Library (`/admin/media`)**:
+  - Manage all uploaded images, edit SEO alt text and captions, and check active entity dependencies before deleting files.
+- **User Management (`/admin/users`)**:
+  - Search accounts, modify roles (`USER`, `OWNER`, `ADMIN`), and update account statuses (`ACTIVE`, `SUSPENDED`).
+- **Platform Observability & System Tools (`/admin/system`)**:
+  - Real-time telemetry (RAM, uptime, DB latency, HTTP requests), database integrity audits, one-click rating recalculation, scheduled maintenance jobs, and automated deployment history.
 
 ---
 
@@ -149,7 +194,7 @@ GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
 ### Step 3: Initialize Database & Demo Data
 
 #### Using Zero-Config Embedded Database (Default):
-Run the development command. The app will boot the embedded PostgreSQL engine, apply schema tables, and seed initial Davao City cafes, amenities, curated lists, blog posts, and demonstration accounts automatically:
+Run the development command. The app will boot the embedded PostgreSQL engine, apply schema tables, and seed initial Davao City cafes, amenities, curated lists, blog posts, loyalty programs, and demonstration accounts automatically:
 
 ```bash
 npm run dev
@@ -168,7 +213,10 @@ npm run db:push
 # 3. Seed demonstration cafes, users, and taxonomy (Fresh setup only)
 npm run db:seed
 
-# 4. Start the application
+# 4. Seed realistic events and specials
+npx tsx server/src/scripts/seed-events-specials.ts
+
+# 5. Start the application
 npm run dev
 ```
 
@@ -210,7 +258,7 @@ For instant testing, use the 1-click login buttons on `/login` or enter these cr
 
 ---
 
-## 📖 Step-by-Step User Guides
+## 📖 Detailed Instructions: How to Use the Application
 
 ### ☕ For Customers & Visitors
 
@@ -221,30 +269,38 @@ For instant testing, use the 1-click login buttons on `/login` or enter these cr
 4. Adjust price filters (`₱` to `₱₱₱₱`) and sort by **Rating**, **Review Count**, or **Trending**.
 5. Click **"View Map"** to switch to the full interactive Google Maps mode with live marker clustering.
 
-#### 2. Joining Cafe Loyalty Programs & Earning Points
+#### 2. Joining Cafe Loyalty Programs & Tracking Membership
 1. Sign in to your account (`/login`).
-2. Open any participating cafe listing (e.g., *Glasshouse Coffee*, *Blugré Coffee*).
-3. If the cafe offers a loyalty program, click **"Join Loyalty Program"** in the Loyalty banner.
-4. When visiting the cafe in person, click **"Check In"** on the cafe profile to earn your visit points (e.g., 10 points per visit).
-5. Open **`/dashboard/loyalty`** to track your total points balance, lifetime earnings, and transaction history.
+2. Open any participating cafe listing (e.g., *Green Coffee - Marfori*, *Glasshouse Coffee*, *Purge Coffee Roasters*).
+3. In the **Loyalty Program Active** section:
+   - If you are not yet a member: Click **"Join Loyalty Program"**. You will be instantly enrolled.
+   - If you are already enrolled: The button automatically shows your **"Active Member"** badge and current points balance.
+4. When visiting the cafe in person, click **"Check In for Visit"** to record your visit (e.g., earn 10 points per visit).
+5. Click **"My Wallet"** or navigate to **`/dashboard/loyalty`** to track your lifetime earnings, redemption vouchers, and transaction history.
 
-#### 3. Redeeming Rewards & Using Vouchers
+#### 3. Redeeming Rewards & Using Digital Vouchers
 1. Go to **`/rewards`** or the **"Available Rewards"** tab on your Loyalty Dashboard (`/dashboard/loyalty`).
-2. Select a reward within your points balance (e.g., *Free Pour-Over Coffee*, *15% Off Total Bill*, *Free Pastry*).
+2. Select a reward within your points balance (e.g., *Free Espresso*, *15% Off Total Bill*, *Freshly Baked Pastry*).
 3. Click **"Redeem Reward"**.
-4. Your points are deducted and an active **Redemption Voucher** is generated.
-5. In the **"Redemption Vouchers"** tab, click **"View Voucher Code"** to reveal your unique verification code.
-6. Present the code to the cafe barista or cashier.
+4. Your points are deducted and an active **Redemption Voucher** is generated with a unique voucher code.
+5. In the **"Redemption Vouchers"** tab, click **"View Voucher Code"** to reveal your code.
+6. Present the code to the cafe cashier or barista at checkout.
 7. *Need to cancel?* If your voucher is still pending, click **"Cancel Request"** to immediately refund the points back to your balance.
 
-#### 4. Discovering Events, Specials & Sending RSVPs (`/events`)
-1. Click **"Events & Specials"** in the top navigation bar or browse the **"Happening Now & Coming Soon"** section on the homepage.
-2. Toggle between **"Upcoming Events"** (cuppings, workshops, latte art showdowns, acoustic nights) and **"Active Specials"** (happy hours, combos, seasonal drinks).
+#### 4. Discovering Events, Specials & Sending Inquiries (`/events`, `/specials`)
+1. Click **"Events & Specials"** in the navigation bar or browse the **"Happening Now & Coming Soon"** section on the homepage.
+2. Toggle between **"Upcoming Events"** (cuppings, workshops, latte art competitions, live music) and **"Active Specials"** (happy hours, combos, seasonal drinks).
 3. Filter by neighborhood/city or event category, and look for countdown badges (*"Today"*, *"Tomorrow"*, *"In 3 days"*).
-4. Click **"Event Details & RSVP"** or **"Ask About This Event"** on any cafe page to open the inquiry dialog.
+4. Click **"Ask About This Event"** or **"Ask About This Special"** on any cafe page to open the inquiry dialog.
 5. Inquiries are instantly routed to the cafe owner's portal with full event or promo details pre-attached.
 
-#### 5. Writing Reviews & Bookmarking Favorites
+#### 5. Sending Direct Inquiries to Cafes (`ContactCafeModal`)
+1. On any cafe page, click **"Message Cafe"** or the inquiry button in the event/special card.
+2. Select an inquiry category (*General*, *Operating Hours*, *Menu*, *Reservations*, *Event*, *Special Offer*, *Private Event*).
+3. Enter your subject and message. (If not logged in, provide your guest name and email so the cafe can reply).
+4. Submit the inquiry. Track replies under **`/dashboard/inquiries`**.
+
+#### 6. Writing Reviews & Bookmarking Favorites
 1. On any cafe page, click the **Heart icon** to save the cafe to your Favorites (`/favorites`).
 2. Scroll to the Community Reviews section and click **"Write a Review"**.
 3. Rate the cafe (1 to 5 stars), enter your review text, upload photos, and rate specific workspace criteria (Wi-Fi speed, noise level, outlet availability).
@@ -300,6 +356,12 @@ For instant testing, use the 1-click login buttons on `/login` or enter these cr
    - Set priority (`NORMAL`, `IMPORTANT`, `URGENT`) and message content.
 6. Manage active items with real-time **"Publish Now"** triggers or the **Delete** button. Followers are automatically notified in the background.
 
+#### 6. Managing Customer Inquiries (`/owner/inquiries`)
+1. Open **`/owner/inquiries`** to view all questions received from customers.
+2. Filter by status (`NEW`, `READ`, `RESPONDED`, `CLOSED`) or search by customer name.
+3. Click on any inquiry to inspect the customer's question and any attached event or special promotion context.
+4. Type your reply in the thread and click **"Send Reply"**. The customer is instantly notified.
+
 ---
 
 ### 🛡️ For System Administrators (`/admin`)
@@ -312,6 +374,7 @@ For instant testing, use the 1-click login buttons on `/login` or enter these cr
    - **Owner Claims (`/admin/claims`)**: Verify submitted business permits. Approving a claim automatically upgrades the user to the `OWNER` role and assigns ownership.
    - **Reviews & Flagged Reports (`/admin/reviews`, `/admin/review-reports`)**: Review reported community content, hide policy-violating reviews, or resolve reports.
    - **Cafe Change Requests (`/admin/change-requests`)**: Compare side-by-side diffs of owner modifications and merge approved updates to live listings.
+   - **Customer Inquiries & Helpdesk (`/admin/inquiries`)**: Oversee platform inquiries and customer satisfaction.
 
 #### 2. Editorial CMS & Automated Scheduled Publishing
 1. Navigate to **`/admin/blog`** (Articles) or **`/admin/lists`** (Curated Lists).
@@ -416,10 +479,10 @@ npm run rollback
 
 ## 🔒 Security & Privacy Best Practices
 
-- **Bearer Token & Cookie Dual Authentication**: Client requests automatically pass JWT bearer tokens via the `fetchApi` utility, with HTTP-only cookie failover for resilient cross-context authentication.
+- **Dual Authentication**: Client requests automatically pass JWT bearer tokens via the `fetchApi` utility, with HTTP-only cookie failover for resilient cross-context authentication.
 - **Input Sanitization & Validation**: All user-submitted review texts, descriptions, and comments are sanitized using `sanitize-html` and validated against strict `Zod` schemas.
 - **Image Optimization & Metadata Scrubbing**: Uploaded images are re-encoded and resized using `Sharp` to strip sensitive EXIF GPS data and reduce bandwidth usage.
-- **Rate Limiting**: Critical endpoints (login, registration, check-ins, voucher redemptions, review submissions) are protected by IP and user rate limiters.
+- **Rate Limiting**: Critical endpoints (login, registration, check-ins, voucher redemptions, review submissions, inquiries) are protected by IP and user rate limiters.
 
 ---
 

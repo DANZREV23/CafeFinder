@@ -429,6 +429,7 @@ export class LoyaltyService {
       },
       rewards: publicRewards,
       customerAccount,
+      account: customerAccount,
     };
   }
 
@@ -2671,7 +2672,17 @@ export class LoyaltyService {
       ];
     }
 
-    const [programs, recentLargeTransactions, recentRedemptions, totals] = await Promise.all([
+    const [
+      programs,
+      totalPrograms,
+      activePrograms,
+      suspendedPrograms,
+      completedRedemptions,
+      totalRedemptions,
+      recentLargeTransactions,
+      recentRedemptions,
+      totals,
+    ] = await Promise.all([
       prisma.cafeLoyaltyProgram.findMany({
         where,
         orderBy: { updatedAt: 'desc' },
@@ -2684,6 +2695,11 @@ export class LoyaltyService {
           },
         },
       }),
+      prisma.cafeLoyaltyProgram.count(),
+      prisma.cafeLoyaltyProgram.count({ where: { status: LoyaltyProgramStatus.ACTIVE } }),
+      prisma.cafeLoyaltyProgram.count({ where: { status: LoyaltyProgramStatus.SUSPENDED } }),
+      prisma.cafeRewardRedemption.count({ where: { status: RewardRedemptionStatus.REDEEMED } }),
+      prisma.cafeRewardRedemption.count(),
       prisma.cafeLoyaltyTransaction.findMany({
         where: {
           OR: [{ points: { gte: 200 } }, { points: { lte: -200 } }, { type: LoyaltyTransactionType.ADJUSTMENT }],
@@ -2727,16 +2743,21 @@ export class LoyaltyService {
       }),
     ]);
 
+    const statsData = {
+      totalPrograms,
+      activePrograms,
+      suspendedPrograms,
+      totalAccounts: totals._count.id,
+      completedRedemptions,
+      totalRedemptions,
+      totalPointsOutstanding: totals._sum.pointsBalance ?? 0,
+      totalPointsEarned: totals._sum.lifetimePointsEarned ?? 0,
+      totalPointsRedeemed: totals._sum.lifetimePointsRedeemed ?? 0,
+    };
+
     return {
-      summary: {
-        totalPrograms: programs.length,
-        activePrograms: programs.filter((p) => p.status === LoyaltyProgramStatus.ACTIVE).length,
-        suspendedPrograms: programs.filter((p) => p.status === LoyaltyProgramStatus.SUSPENDED).length,
-        totalAccounts: totals._count.id,
-        totalPointsOutstanding: totals._sum.pointsBalance ?? 0,
-        totalPointsEarned: totals._sum.lifetimePointsEarned ?? 0,
-        totalPointsRedeemed: totals._sum.lifetimePointsRedeemed ?? 0,
-      },
+      summary: statsData,
+      stats: statsData,
       programs,
       recentLargeTransactions,
       recentRedemptions,

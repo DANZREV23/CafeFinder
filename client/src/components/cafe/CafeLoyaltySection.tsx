@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { loyaltyService, LoyaltyProgram, LoyaltyAccount, Reward } from '@/services/loyaltyService';
-import { Award, Gift, CheckCircle2, Coffee, ChevronRight, UserCheck, Plus } from 'lucide-react';
+import { Award, Gift, CheckCircle2, Coffee, ChevronRight, UserCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 interface CafeLoyaltySectionProps {
   cafeId: string;
+  cafeSlug?: string;
   cafeName: string;
 }
 
-export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, cafeName }) => {
+export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, cafeSlug, cafeName }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [program, setProgram] = useState<LoyaltyProgram | null>(null);
   const [account, setAccount] = useState<LoyaltyAccount | null>(null);
@@ -22,11 +24,15 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
   const [visitNotes, setVisitNotes] = useState('');
 
   const fetchLoyaltyInfo = async () => {
+    const identifier = cafeId || cafeSlug;
+    if (!identifier) return;
+
     try {
-      const res = await loyaltyService.getCafeLoyalty(cafeId);
+      const res = await loyaltyService.getCafeLoyalty(identifier);
       if (res.success && res.data) {
         setProgram(res.data.program);
-        setAccount(res.data.account);
+        const resolvedAccount = (res.data as any).account || (res.data as any).customerAccount || null;
+        setAccount(resolvedAccount);
         setRewards(res.data.rewards || []);
       }
     } catch (err) {
@@ -37,22 +43,25 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
   };
 
   useEffect(() => {
-    if (cafeId) {
-      fetchLoyaltyInfo();
-    }
-  }, [cafeId]);
+    fetchLoyaltyInfo();
+  }, [cafeId, cafeSlug, user?.id]);
 
   const handleEnroll = async () => {
     if (!user) {
       toast.error('Please log in to join the loyalty program');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
+
+    const identifier = cafeId || cafeSlug;
+    if (!identifier) return;
+
     setEnrolling(true);
     try {
-      const res = await loyaltyService.enroll(cafeId);
+      const res = await loyaltyService.enroll(identifier);
       if (res.success) {
         toast.success(`You are now enrolled in ${program?.name || 'the loyalty program'}!`);
-        fetchLoyaltyInfo();
+        await fetchLoyaltyInfo();
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to enroll');
@@ -62,13 +71,17 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
   };
 
   const handleCheckIn = async () => {
+    const identifier = cafeId || cafeSlug;
+    if (!identifier) return;
+
     setCheckingIn(true);
     try {
-      const res = await loyaltyService.checkIn(cafeId, visitNotes);
+      const res = await loyaltyService.checkIn(identifier, visitNotes);
       if (res.success) {
         toast.success(res.message || 'Visit check-in submitted for review!');
         setShowCheckInModal(false);
         setVisitNotes('');
+        await fetchLoyaltyInfo();
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit check-in');
@@ -80,6 +93,8 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
   if (loading || !program || program.status !== 'ACTIVE') {
     return null;
   }
+
+  const isMember = Boolean(account && account.status === 'ACTIVE');
 
   return (
     <div className="bg-gradient-to-br from-brand-cream/80 to-amber-50/50 border border-brand-border rounded-3xl p-6 md:p-8 my-8 shadow-xs">
@@ -98,30 +113,44 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
         </div>
 
         <div>
-          {account ? (
-            <div className="bg-white rounded-2xl p-4 border border-brand-border shadow-xs text-right">
-              <span className="text-xs text-brand-muted block">Your Points Balance</span>
-              <span className="text-2xl font-extrabold text-brand-coffee">{account.pointsBalance} pts</span>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => setShowCheckInModal(true)}
-                  className="px-3 py-1.5 rounded-xl bg-brand-coffee text-white text-xs font-semibold hover:bg-brand-coffee-dark transition"
-                >
-                  Check In for Visit
-                </button>
-                <Link
-                  to="/dashboard/loyalty"
-                  className="px-3 py-1.5 rounded-xl border border-brand-border text-brand-coffee text-xs font-semibold hover:bg-brand-cream transition"
-                >
-                  My Wallet
-                </Link>
+          {isMember && account ? (
+            <div className="flex flex-col sm:items-end gap-2.5">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold shadow-xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Active Member</span>
+              </div>
+              <div className="bg-white rounded-2xl p-4 border border-brand-border shadow-xs text-right min-w-[210px]">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <span className="text-xs text-brand-muted">Points Balance</span>
+                  <span className="text-[11px] font-bold text-brand-coffee bg-brand-cream px-2 py-0.5 rounded-full">
+                    {program.pointsPerVisit} pts / visit
+                  </span>
+                </div>
+                <span className="text-2xl font-extrabold text-brand-coffee block">
+                  {account.pointsBalance} pts
+                </span>
+                <div className="mt-2.5 flex gap-2 justify-end">
+                  <button
+                    onClick={() => setShowCheckInModal(true)}
+                    className="px-3 py-1.5 rounded-xl bg-brand-coffee text-white text-xs font-semibold hover:bg-brand-coffee-dark transition shadow-xs flex items-center gap-1"
+                  >
+                    <Coffee className="w-3.5 h-3.5" />
+                    Check In
+                  </button>
+                  <Link
+                    to="/dashboard/loyalty"
+                    className="px-3 py-1.5 rounded-xl border border-brand-border text-brand-coffee text-xs font-semibold hover:bg-brand-cream transition flex items-center gap-1"
+                  >
+                    My Wallet →
+                  </Link>
+                </div>
               </div>
             </div>
           ) : (
             <button
               onClick={handleEnroll}
               disabled={enrolling}
-              className="px-6 py-3 rounded-2xl bg-brand-coffee text-white font-semibold text-sm hover:bg-brand-coffee-dark transition shadow-md flex items-center gap-2 whitespace-nowrap"
+              className="px-6 py-3 rounded-2xl bg-brand-coffee text-white font-semibold text-sm hover:bg-brand-coffee-dark transition shadow-md flex items-center gap-2 whitespace-nowrap cursor-pointer"
             >
               <UserCheck className="w-4 h-4" />
               {enrolling ? 'Enrolling...' : 'Join Loyalty Program'}
@@ -174,7 +203,7 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl relative">
             <button
               onClick={() => setShowCheckInModal(false)}
-              className="absolute right-4 top-4 text-brand-muted hover:text-brand-coffee"
+              className="absolute right-4 top-4 text-brand-muted hover:text-brand-coffee cursor-pointer"
             >
               ✕
             </button>
@@ -200,14 +229,14 @@ export const CafeLoyaltySection: React.FC<CafeLoyaltySectionProps> = ({ cafeId, 
             <div className="flex gap-2">
               <button
                 onClick={() => setShowCheckInModal(false)}
-                className="flex-1 py-2 rounded-xl border border-brand-border text-xs font-semibold text-brand-muted"
+                className="flex-1 py-2 rounded-xl border border-brand-border text-xs font-semibold text-brand-muted cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCheckIn}
                 disabled={checkingIn}
-                className="flex-1 py-2 rounded-xl bg-brand-coffee text-white text-xs font-semibold hover:bg-brand-coffee-dark"
+                className="flex-1 py-2 rounded-xl bg-brand-coffee text-white text-xs font-semibold hover:bg-brand-coffee-dark cursor-pointer"
               >
                 {checkingIn ? 'Submitting...' : 'Submit Check-In'}
               </button>
