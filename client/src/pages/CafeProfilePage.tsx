@@ -1,5 +1,6 @@
 import * as React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/Button";
@@ -8,6 +9,8 @@ import { CafeRating } from "@/components/cafe/CafeRating";
 import { CafePrice } from "@/components/cafe/CafePrice";
 import { ErrorState } from "@/components/ui/States";
 import { cafeService } from "@/services/cafeService";
+import { ownerClaimService } from "@/services/ownerClaimService";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/Dialog";
 import { Cafe } from "@/types";
 import { 
   Heart, 
@@ -21,6 +24,9 @@ import {
   ShieldCheck,
   Navigation,
   Check,
+  CheckCircle2,
+  Coffee,
+  Loader2,
   ArrowLeft,
   ExternalLink,
   Instagram,
@@ -120,6 +126,74 @@ export default function CafeProfilePage() {
       eventContext: options?.eventContext || null,
       specialContext: options?.specialContext || null,
     });
+  };
+
+  const navigate = useNavigate();
+  const [isClaimingVisit, setIsClaimingVisit] = React.useState(false);
+  const [isVisited, setIsVisited] = React.useState(false);
+  const [showAutoClaimModal, setShowAutoClaimModal] = React.useState(false);
+  const [isSubmittingClaim, setIsSubmittingClaim] = React.useState(false);
+  const [claimPhone, setClaimPhone] = React.useState('');
+  const [claimRole, setClaimRole] = React.useState('Owner / Manager');
+
+  React.useEffect(() => {
+    if (cafe) {
+      setIsVisited(Boolean(cafe.isVisited));
+    }
+  }, [cafe?.isVisited]);
+
+  const handleClaimVisit = async () => {
+    if (!cafe?.id) return;
+    if (!isAuthenticated) {
+      toast.error('Please log in to claim your visit to this cafe');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    setIsClaimingVisit(true);
+    try {
+      const res = await cafeService.claimVisit(cafe.id);
+      if (res.success) {
+        setIsVisited(true);
+        toast.success(res.message || `Visit to ${cafe.name} claimed!`);
+        fetchCafe();
+      } else {
+        toast.error(res.message || 'Unable to claim visit');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Unable to claim visit');
+    } finally {
+      setIsClaimingVisit(false);
+    }
+  };
+
+  const handleAutoClaimSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!cafe?.id) return;
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    setIsSubmittingClaim(true);
+    try {
+      const res = await ownerClaimService.createClaim(cafe.id, {
+        businessName: cafe.name,
+        contactName: user?.name || 'Cafe Representative',
+        contactEmail: user?.email || '',
+        contactPhone: claimPhone.trim() || undefined,
+        message: `Automatic ownership claim for ${cafe.name}. Authorized representative: ${user?.name || 'User'} (${claimRole}).`,
+      });
+      if (res.success) {
+        toast.success(`Claim for ${cafe.name} submitted! An administrator will review your request.`);
+        setShowAutoClaimModal(false);
+        setCafe(prev => prev ? { ...prev, claimStatus: 'PENDING' } : null);
+      } else {
+        toast.error((res as any).error?.message || 'Unable to submit claim');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Unable to submit claim');
+    } finally {
+      setIsSubmittingClaim(false);
+    }
   };
 
   const isCafeOwner = Boolean(user && cafe && (cafe.ownerId === user.id || (user.role === 'OWNER' && (cafe as any).claimedBy === user.id)));
@@ -412,7 +486,38 @@ export default function CafeProfilePage() {
               <span className="text-brand-charcoal truncate" aria-current="page">{cafe.name}</span>
             </nav>
             
-            <div className="flex items-center gap-2 md:gap-4">
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+              <Button
+                variant={isVisited ? "secondary" : "outline"}
+                size="sm"
+                disabled={isClaimingVisit}
+                className={cn(
+                  "h-9 px-4 rounded-xl border transition-all font-semibold",
+                  isVisited
+                    ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                    : "border-brand-coffee/30 text-brand-coffee hover:bg-brand-cream hover:border-brand-coffee"
+                )}
+                onClick={handleClaimVisit}
+                title={isVisited ? "You have visited this cafe. Click to log another visit." : "Claim your visit to this cafe"}
+              >
+                {isClaimingVisit ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin text-brand-coffee" />
+                    Claiming...
+                  </>
+                ) : isVisited ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 mr-1.5 text-emerald-600" />
+                    Visited
+                  </>
+                ) : (
+                  <>
+                    <Coffee className="w-4 h-4 mr-1.5 text-brand-coffee" />
+                    Claim Visit
+                  </>
+                )}
+              </Button>
+
               <FavoriteButton 
                 cafeId={cafe.id} 
                 cafeName={cafe.name} 
@@ -485,25 +590,38 @@ export default function CafeProfilePage() {
                   <CafePrice priceRange={cafe.priceRange} className="text-sm font-bold text-brand-coffee" />
                   
                   {cafe.claimStatus === 'MANAGED' && (
-                    <Button asChild variant="outline" size="sm" className="rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-8 px-4">
+                    <Button asChild variant="outline" size="sm" className="rounded-full border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 h-8 px-4 font-bold shadow-xs">
                       <Link to={`/owner/cafes/${cafe.id}`}>
-                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" /> {t("cafe.managed")}
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-600" aria-hidden="true" /> {t("cafe.managed")}
                       </Link>
                     </Button>
                   )}
                   {cafe.claimStatus === 'PENDING' && (
-                    <Button asChild variant="outline" size="sm" className="rounded-full border-amber-200 text-amber-700 hover:bg-amber-50 h-8 px-4">
+                    <Button asChild variant="outline" size="sm" className="rounded-full border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 h-8 px-4 font-bold shadow-xs">
                       <Link to="/owner/claims">
-                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" /> {t("cafe.claimPending")}
+                        <Clock className="w-3.5 h-3.5 mr-1.5 text-amber-600" aria-hidden="true" /> {t("cafe.claimPending")}
                       </Link>
                     </Button>
                   )}
-                  {cafe.claimStatus === 'OWNED' && <span className="px-4 py-2 rounded-full bg-stone-100 text-stone-600 text-xs font-bold">{t("cafe.ownerClaimed")}</span>}
+                  {cafe.claimStatus === 'OWNED' && !isCafeOwner && (
+                    <span className="px-4 py-1.5 rounded-full bg-stone-100 text-stone-600 text-xs font-bold border border-stone-200">
+                      {t("cafe.ownerClaimed")}
+                    </span>
+                  )}
                   {cafe.claimStatus === 'AVAILABLE' && (
-                    <Button asChild variant="outline" size="sm" className="rounded-full border-brand-coffee/20 text-brand-coffee hover:bg-brand-cream h-8 px-4">
-                      <Link to={isAuthenticated ? `/cafes/${cafe.slug}/claim` : `/login?redirect=/cafes/${cafe.slug}/claim`}>
-                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" /> {t("cafe.claimThis")}
-                      </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+                        } else {
+                          setShowAutoClaimModal(true);
+                        }
+                      }}
+                      className="rounded-full border-brand-coffee bg-brand-cream/80 text-brand-coffee hover:bg-brand-coffee hover:text-white h-8 px-4 font-bold shadow-xs transition-all cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5" aria-hidden="true" /> {t("cafe.claimThis")}
                     </Button>
                   )}
                 </div>
@@ -800,8 +918,150 @@ export default function CafeProfilePage() {
               specialContext={contactModal.specialContext}
             />
 
+            {/* Auto-Claim Ownership Modal */}
+            <Dialog open={showAutoClaimModal} onOpenChange={setShowAutoClaimModal}>
+              <DialogContent className="max-w-md rounded-3xl p-6 md:p-8">
+                <DialogHeader className="space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-cream text-brand-coffee flex items-center justify-center mb-1">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <DialogTitle className="text-2xl font-serif font-bold text-brand-charcoal">
+                    Claim {cafe.name}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-brand-muted">
+                    Submit an ownership claim to manage this cafe listing on CafeFinder.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleAutoClaimSubmit} className="space-y-4 mt-4">
+                  <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Applicant:</span>
+                      <span className="font-bold text-stone-800">{user?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Account Email:</span>
+                      <span className="font-bold text-stone-800">{user?.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">Target Cafe:</span>
+                      <span className="font-bold text-stone-800">{cafe.name}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-brand-charcoal uppercase tracking-wider mb-1.5">
+                      Your Role at {cafe.name}
+                    </label>
+                    <input
+                      type="text"
+                      value={claimRole}
+                      onChange={(e) => setClaimRole(e.target.value)}
+                      placeholder="e.g. Owner, Co-Owner, General Manager"
+                      className="w-full h-11 px-3 rounded-xl border border-brand-border text-sm focus:border-brand-coffee focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-brand-charcoal uppercase tracking-wider mb-1.5">
+                      Contact Phone (Optional)
+                    </label>
+                    <input
+                      type="tel"
+                      value={claimPhone}
+                      onChange={(e) => setClaimPhone(e.target.value)}
+                      placeholder="+63 912 345 6789"
+                      className="w-full h-11 px-3 rounded-xl border border-brand-border text-sm focus:border-brand-coffee focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex flex-col gap-2.5">
+                    <Button
+                      type="submit"
+                      disabled={isSubmittingClaim}
+                      className="w-full h-11 bg-brand-coffee hover:bg-brand-coffee-dark text-white font-bold rounded-xl shadow-xs"
+                    >
+                      {isSubmittingClaim ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting Claim...
+                        </>
+                      ) : (
+                        'Confirm & Submit Claim'
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setShowAutoClaimModal(false)}
+                      className="w-full h-10 text-xs text-brand-muted hover:text-brand-charcoal"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+
             {/* Sidebar Sticky Area */}
-            <aside className="space-y-10 lg:sticky lg:top-36 self-start">
+            <aside className="space-y-8 lg:sticky lg:top-36 self-start">
+              {/* Ownership & Claim Action Card */}
+              <div className="p-8 rounded-[40px] border border-brand-border bg-white shadow-sm space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-brand-cream flex items-center justify-center text-brand-coffee shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-lg text-brand-charcoal leading-tight">
+                      {cafe.claimStatus === 'MANAGED'
+                        ? 'You Manage This Cafe'
+                        : cafe.claimStatus === 'PENDING'
+                        ? 'Claim Under Review'
+                        : `Own or Manage ${cafe.name}?`}
+                    </h3>
+                    <p className="text-xs text-brand-muted mt-0.5">
+                      {cafe.claimStatus === 'MANAGED'
+                        ? 'Manage your hours, menu, and community feedback.'
+                        : cafe.claimStatus === 'PENDING'
+                        ? 'Your ownership application is being verified.'
+                        : 'Claim this verified listing to manage details and rewards.'}
+                    </p>
+                  </div>
+                </div>
+
+                {cafe.claimStatus === 'MANAGED' ? (
+                  <Button asChild className="w-full bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl h-11 font-bold">
+                    <Link to={`/owner/cafes/${cafe.id}`}>Open Owner Dashboard</Link>
+                  </Button>
+                ) : cafe.claimStatus === 'PENDING' ? (
+                  <Button asChild variant="outline" className="w-full border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-2xl h-11 font-bold">
+                    <Link to="/owner/claims">View Claim Status</Link>
+                  </Button>
+                ) : cafe.claimStatus === 'AVAILABLE' ? (
+                  <div className="space-y-2 pt-1">
+                    <Button
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+                        } else {
+                          setShowAutoClaimModal(true);
+                        }
+                      }}
+                      className="w-full bg-brand-coffee hover:bg-brand-coffee-dark text-white rounded-2xl h-11 font-bold shadow-xs cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2 text-amber-300" />
+                      Auto-Claim This Cafe
+                    </Button>
+                    <Link
+                      to={`/cafes/${cafe.slug}/claim`}
+                      className="block text-center text-xs font-semibold text-brand-muted hover:text-brand-coffee transition-colors pt-1"
+                    >
+                      Or open full claim form &rarr;
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+
               {/* Quick Contact Card */}
               <div className="bg-brand-coffee-dark text-white rounded-[40px] p-10 shadow-2xl space-y-10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
@@ -898,6 +1158,26 @@ export default function CafeProfilePage() {
                     >
                       <MessageCircleQuestion className="w-4 h-4" aria-hidden="true" />
                       Contact Cafe
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full h-14 rounded-2xl gap-2 font-bold transition-all",
+                        isVisited 
+                          ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                          : "border-amber-400/30 bg-white/5 text-white hover:bg-white/10"
+                      )}
+                      onClick={handleClaimVisit}
+                      disabled={isClaimingVisit}
+                    >
+                      {isClaimingVisit ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                      ) : isVisited ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <Coffee className="w-4 h-4 text-amber-300" />
+                      )}
+                      {isVisited ? 'Visited Cafe' : 'Claim Visited Cafe'}
                     </Button>
                 </div>
               </div>

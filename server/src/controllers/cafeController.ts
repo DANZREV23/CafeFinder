@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { mapToPublicCafeProfile, mapToPublicCafeSummary } from '../dtos/cafeDto.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { CafeAnalyticsEventType } from '@prisma/client';
+import { prisma } from '../config/database.js';
+import { LoyaltyService } from '../services/loyaltyService.js';
 
 const emptyToUndefined = (val: any) => (val === '' || val === null ? undefined : val);
 
@@ -172,10 +174,8 @@ export class CafeController {
       let pointsAwarded = 0;
       if (cafe.loyaltyProgram && cafe.loyaltyProgram.status === 'ACTIVE') {
         try {
-          const { LoyaltyService } = await import('../services/loyaltyService.js');
-          const loyaltyService = new LoyaltyService();
-          await loyaltyService.enrollCustomer(cafe.id, userId);
-          await loyaltyService.checkInVisit(cafe.id, userId, { visitNotes: 'Auto-claimed visit via cafe page' });
+          await LoyaltyService.enrollInProgram(userId, cafe.id);
+          await LoyaltyService.submitVisitCheckIn(userId, cafe.id, { visitNotes: 'Auto-claimed visit via cafe page' });
           pointsAwarded = cafe.loyaltyProgram.pointsPerVisit;
           loyaltyMessage = ` Earned ${pointsAwarded} loyalty points!`;
         } catch {
