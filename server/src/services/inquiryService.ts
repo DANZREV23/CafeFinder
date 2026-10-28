@@ -118,9 +118,11 @@ export class InquiryService {
 
     const ipHash = this.hashIp(input.ipAddress);
 
-    // Cooldown & Duplicate protection (last 10 minutes)
+    // Cooldown & Duplicate protection
+    const isDev = process.env.NODE_ENV !== 'production';
+    const cooldownMs = isDev ? 0 : 3 * 1000; // 0 in dev, 3s in production
+    const cooldownThreshold = new Date(Date.now() - cooldownMs);
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
 
     const recentInquiries = await prisma.cafeInquiry.findMany({
       where: {
@@ -131,7 +133,7 @@ export class InquiryService {
           : {
               OR: [
                 ...(guestEmail ? [{ guestEmail }] : []),
-                ...(ipHash ? [{ ipAddressHash: ipHash }] : []),
+                ...(!isDev && ipHash ? [{ ipAddressHash: ipHash }] : []),
               ],
             }),
       },
@@ -139,12 +141,14 @@ export class InquiryService {
       take: 5,
     });
 
-    if (recentInquiries.length > 0) {
+    if (recentInquiries.length > 0 && cooldownMs > 0) {
       const latest = recentInquiries[0];
-      if (latest.createdAt >= twoMinutesAgo) {
+      if (latest.createdAt >= cooldownThreshold) {
         throw fail('Please wait a moment before sending another inquiry to this cafe.', 429);
       }
+    }
 
+    if (recentInquiries.length > 0) {
       const isDuplicate = recentInquiries.some(
         (inq) =>
           inq.subject.toLowerCase() === subject.toLowerCase() &&

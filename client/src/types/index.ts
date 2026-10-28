@@ -259,3 +259,59 @@ export interface RecommendationDiagnostics {
   simulation?: any;
   [key: string]: any;
 }
+
+export interface CollectionItem {
+  id: string;
+  collectionId: string;
+  cafeId: string;
+  note?: string | null;
+  sortOrder: number;
+  createdAt: string;
+  cafe?: any;
+}
+
+export interface UserCollection {
+  id: string;
+  userId: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  visibility: 'PRIVATE' | 'PUBLIC';
+  itemCount?: number;
+  items?: CollectionItem[];
+  user?: {
+    id: string;
+    name: string;
+    username?: string;
+    avatarUrl?: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    items: number;
+  };
+}
+
+export interface CafeFollowPreferences {
+  eventsEnabled?: boolean;
+  specialsEnabled?: boolean;
+  announcementsEnabled?: boolean;
+  menuUpdatesEnabled?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+export type FollowPreferences = CafeFollowPreferences;
+
+export interface CafeFollow {
+  id?: string;
+  cafeId: string;
+  userId?: string;
+  eventsEnabled?: boolean;
+  specialsEnabled?: boolean;
+  announcementsEnabled?: boolean;
+  menuUpdatesEnabled?: boolean;
+  createdAt?: string;
+  cafe?: any;
+  [key: string]: any;
+}
+

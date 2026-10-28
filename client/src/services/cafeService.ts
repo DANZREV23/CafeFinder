@@ -36,5 +36,11 @@ export const cafeService = {
     return fetchApi<ApiResponse<any>>(`/cafes/${id}/track/${eventType}`, {
       method: 'POST'
     });
+  },
+
+  claimVisit: async (id: string) => {
+    return fetchApi<ApiResponse<{ isVisited: boolean; visitedAt: string; pointsAwarded?: number }>>(`/cafes/${id}/claim-visit`, {
+      method: 'POST'
+    });
   }
 };

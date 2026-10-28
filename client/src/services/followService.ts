@@ -5,6 +5,22 @@ export interface FollowPreferences {
   specialsEnabled?: boolean;
   announcementsEnabled?: boolean;
   menuUpdatesEnabled?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+export type CafeFollowPreferences = FollowPreferences;
+
+export interface CafeFollow {
+  id?: string;
+  cafeId: string;
+  userId?: string;
+  eventsEnabled?: boolean;
+  specialsEnabled?: boolean;
+  announcementsEnabled?: boolean;
+  menuUpdatesEnabled?: boolean;
+  createdAt?: string;
+  cafe?: any;
+  [key: string]: any;
 }
 
 export interface FollowStatus {
@@ -51,3 +67,5 @@ export const followService = {
     return fetchApi<FollowResponse<any[]>>(`/users/me/following?${query.toString()}`);
   },
 };
+
+export default followService;

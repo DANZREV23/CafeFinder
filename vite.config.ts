@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 import {defineConfig, loadEnv, Plugin} from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
 
 function aistudioMediaPlugin(): Plugin {
   return {
@@ -63,16 +62,19 @@ function aistudioMediaPlugin(): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const port = Number(env.PORT) || 3000;
 
-  return {
-    root: 'client',
-    plugins: [
-      react(), 
-      tailwindcss(), 
-      aistudioMediaPlugin(),
+  const plugins: any[] = [
+    react(), 
+    tailwindcss(), 
+    aistudioMediaPlugin(),
+  ];
+
+  if (command === 'build') {
+    const { VitePWA } = await import('vite-plugin-pwa');
+    plugins.push(
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
@@ -169,12 +171,13 @@ export default defineConfig(({ mode }) => {
             },
           ],
         },
-        devOptions: {
-          enabled: false,
-          type: 'module',
-        },
       })
-    ],
+    );
+  }
+
+  return {
+    root: 'client',
+    plugins,
     resolve: {
       alias: {
         '@': path.resolve(process.cwd(), './client/src'),

@@ -52,6 +52,12 @@ export async function connectWithRetry(retries = 5, delay = 1500): Promise<void>
       const localUrl = await startLocalPostgresServer();
       process.env.PRISMA_DATABASE_URL = localUrl;
       process.env.DATABASE_URL = localUrl;
+      if (prismaInstance) {
+        try {
+          await prismaInstance.$disconnect();
+        } catch (_) {}
+        prismaInstance = null;
+      }
     } catch (err) {
       console.error('[Database]: Failed to start local embedded PostgreSQL:', err);
     }

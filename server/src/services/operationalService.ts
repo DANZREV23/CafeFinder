@@ -75,7 +75,12 @@ export class OperationalService {
       await prisma.$queryRaw`SELECT 1`;
       dbLatency = Date.now() - startTime;
     } catch (err) {
-      dbStatus = 'disconnected';
+      try {
+        await prisma.cafe.findFirst({ select: { id: true } });
+        dbLatency = Date.now() - startTime;
+      } catch {
+        dbStatus = 'disconnected';
+      }
     }
 
     const uploadsDir = path.resolve(process.cwd(), 'uploads');

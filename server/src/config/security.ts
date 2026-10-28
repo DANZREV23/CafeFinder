@@ -1,13 +1,13 @@
 import { rateLimit } from 'express-rate-limit';
 import { Role } from '@prisma/client';
 
-// Global rate limit: 1000 API requests per 15 minutes (never rate-limit Vite/static asset requests)
+// Global rate limit: 2000 API requests per 15 minutes (never rate-limit Vite/static asset requests, skip in development)
 export const globalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => !req.path.startsWith('/api'),
+  skip: (req) => process.env.NODE_ENV !== 'production' || !req.path.startsWith('/api'),
   message: {
     success: false,
     error: { message: 'Too many requests from this IP, please try again later.' }
@@ -63,15 +63,29 @@ export const ownerActionRateLimit = rateLimit({
   }
 });
 
-// Customer Inquiry rate limit: 5 inquiries per 15 minutes
+// Customer Inquiry rate limit: 60 inquiries per 15 minutes (skipped in development)
 export const inquiryRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV !== 'production',
   message: {
     success: false,
     error: { message: 'Too many inquiries submitted recently. Please wait a few minutes before sending another question.' }
+  }
+});
+
+// Guest Token Rate Limit: 100 requests per 10 minutes (skipped in development)
+export const guestTokenRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV !== 'production',
+  message: {
+    success: false,
+    error: { message: 'Too many requests for this inquiry token, please slow down.' }
   }
 });
 

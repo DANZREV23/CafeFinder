@@ -111,9 +111,13 @@ export class DeploymentService {
    * Get latest deployment record
    */
   async getLatestDeployment() {
-    return prisma.deploymentRecord.findFirst({
-      orderBy: { startedAt: 'desc' },
-    });
+    try {
+      return await prisma.deploymentRecord.findFirst({
+        orderBy: { startedAt: 'desc' },
+      });
+    } catch {
+      return null;
+    }
   }
 
   /**

@@ -111,7 +111,8 @@ export class CafeService {
         },
         orderBy: [{ priority: 'desc' }, { startAt: 'desc' }],
         take: 5,
-      }
+      },
+      loyaltyProgram: true,
     };
 
     if (currentUserId) {
@@ -131,8 +132,9 @@ export class CafeService {
     }
 
     // Record view if user is logged in
+    let userView = null;
     if (currentUserId) {
-      await this.userCafeViewRepository.upsert(currentUserId, cafe.id);
+      userView = await this.userCafeViewRepository.upsert(currentUserId, cafe.id);
     }
 
     // Get related cafes (same city, excluding current)
@@ -152,13 +154,39 @@ export class CafeService {
 
     const relatedCafes = await recommendationService.getSimilarCafes(cafe.id, 4, currentUserId);
 
-    const pendingClaim = currentUserId && !cafe.ownerId
-      ? await prisma.cafeOwnerClaim.findFirst({ where: { cafeId: cafe.id, userId: currentUserId, status: 'PENDING' } })
+    const userClaim = currentUserId
+      ? await prisma.cafeOwnerClaim.findFirst({
+          where: { cafeId: cafe.id, userId: currentUserId },
+          orderBy: { submittedAt: 'desc' },
+        })
       : null;
+
+    const userCheckIn = currentUserId
+      ? await prisma.cafeVisitCheckIn.findFirst({
+          where: {
+            program: { cafeId: cafe.id },
+            account: { userId: currentUserId },
+          },
+          orderBy: { createdAt: 'desc' },
+        })
+      : null;
+
+    let claimStatus: 'MANAGED' | 'OWNED' | 'PENDING' | 'AVAILABLE' = 'AVAILABLE';
+    if (cafe.ownerId && cafe.ownerId === currentUserId) {
+      claimStatus = 'MANAGED';
+    } else if (userClaim?.status === 'PENDING') {
+      claimStatus = 'PENDING';
+    } else if (cafe.ownerId) {
+      claimStatus = 'OWNED';
+    } else {
+      claimStatus = 'AVAILABLE';
+    }
 
     return {
       ...cafe,
-      claimStatus: cafe.ownerId === currentUserId ? 'MANAGED' : cafe.ownerId ? 'OWNED' : pendingClaim ? 'PENDING' : 'AVAILABLE',
+      claimStatus,
+      isVisited: Boolean(userView || userCheckIn),
+      visitedAt: userCheckIn?.createdAt || userView?.viewedAt || null,
       relatedCafes,
     };
   }

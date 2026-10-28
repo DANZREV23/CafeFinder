@@ -52,6 +52,7 @@ export const ContactCafeModal: React.FC<ContactCafeModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     if (!subject.trim() || !message.trim()) {
       toast.error('Please enter a subject and message.');
       return;

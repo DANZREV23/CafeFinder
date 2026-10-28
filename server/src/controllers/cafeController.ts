@@ -138,4 +138,62 @@ export class CafeController {
       next(error);
     }
   };
+
+  claimVisit = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const cafeId = req.params.id;
+      const userId = req.user!.id;
+
+      const cafe = await prisma.cafe.findFirst({
+        where: { OR: [{ id: cafeId }, { slug: cafeId }] },
+        include: { loyaltyProgram: true },
+      });
+
+      if (!cafe) {
+        return res.status(404).json({ success: false, error: { message: 'Cafe not found' } });
+      }
+
+      const view = await prisma.userCafeView.upsert({
+        where: {
+          userId_cafeId: {
+            userId,
+            cafeId: cafe.id,
+          },
+        },
+        update: { viewedAt: new Date() },
+        create: {
+          userId,
+          cafeId: cafe.id,
+          viewedAt: new Date(),
+        },
+      });
+
+      let loyaltyMessage = '';
+      let pointsAwarded = 0;
+      if (cafe.loyaltyProgram && cafe.loyaltyProgram.status === 'ACTIVE') {
+        try {
+          const { LoyaltyService } = await import('../services/loyaltyService.js');
+          const loyaltyService = new LoyaltyService();
+          await loyaltyService.enrollCustomer(cafe.id, userId);
+          await loyaltyService.checkInVisit(cafe.id, userId, { visitNotes: 'Auto-claimed visit via cafe page' });
+          pointsAwarded = cafe.loyaltyProgram.pointsPerVisit;
+          loyaltyMessage = ` Earned ${pointsAwarded} loyalty points!`;
+        } catch {
+          // Cooldown or already submitted is fine
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Visit to ${cafe.name} claimed successfully!${loyaltyMessage}`,
+        data: {
+          isVisited: true,
+          visitedAt: view.viewedAt,
+          pointsAwarded,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

@@ -1,7 +1,8 @@
 // server/src/scripts/deploy-preflight.ts
+import '../loadEnv.js';
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '../config/database.js';
+import { prisma, connectWithRetry } from '../config/database.js';
 import { validateEnvironment } from './validate-env.js';
 import { scanMigrations } from './migration-safety.js';
 
@@ -62,8 +63,13 @@ export async function runPreflightChecks(): Promise<PreflightReport> {
 
   // 3. Database Connectivity & Latency Check
   try {
+    await connectWithRetry();
     const t0 = performance.now();
-    await prisma.$queryRaw`SELECT 1`;
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch {
+      await prisma.cafe.findFirst({ select: { id: true } });
+    }
     const latencyMs = Math.round(performance.now() - t0);
     checks.push({
       name: 'Database Connectivity',

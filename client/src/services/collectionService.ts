@@ -45,6 +45,10 @@ export const collectionService = {
     return fetchApi<ApiResponse<UserCollection[]>>(`/collections${qStr ? `?${qStr}` : ''}`);
   },
 
+  getMyCollections: async (params?: Record<string, any>) => {
+    return collectionService.getCollections(params);
+  },
+
   getCollection: async (id: string) => {
     return fetchApi<ApiResponse<UserCollection>>(`/collections/${id}`);
   },
@@ -132,3 +136,5 @@ export const collectionService = {
     });
   },
 };
+
+export default collectionService;

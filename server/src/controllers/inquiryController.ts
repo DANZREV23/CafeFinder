@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { InquiryService } from '../services/inquiryService.js';
+import { prisma } from '../config/database.js';
 
 export class InquiryController {
   private inquiryService = new InquiryService();
@@ -60,10 +61,90 @@ export class InquiryController {
     }
   };
 
+  customerReply = async (req: AuthRequest, res: Response) => {
+    return this.replyToMyInquiry(req, res);
+  };
+
+  customerClose = async (req: AuthRequest, res: Response) => {
+    try {
+      const inquiry = await prisma.cafeInquiry.findFirst({
+        where: { id: req.params.id, userId: req.user!.id },
+      });
+      if (!inquiry) {
+        return res.status(404).json({ success: false, error: { message: 'Inquiry not found' } });
+      }
+      const updated = await prisma.cafeInquiry.update({
+        where: { id: req.params.id },
+        data: { status: 'CLOSED', closedAt: new Date() },
+      });
+      res.json({ success: true, data: updated });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
   reopenMyInquiry = async (req: AuthRequest, res: Response) => {
     try {
       const result = await this.inquiryService.customerReopenInquiry(req.params.id, req.user!.id);
       res.json({ success: true, data: result });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  // Guest inquiry endpoints
+  getGuestInquiry = async (req: AuthRequest, res: Response) => {
+    try {
+      const token = req.params.token;
+      const inquiry = await prisma.cafeInquiry.findFirst({
+        where: {
+          OR: [
+            { id: token },
+            { ipAddressHash: token },
+          ],
+        },
+        include: {
+          cafe: { select: { id: true, name: true, slug: true } },
+          responses: {
+            orderBy: { createdAt: 'asc' },
+            include: { responder: { select: { id: true, name: true, avatarUrl: true, role: true } } },
+          },
+        },
+      });
+      if (!inquiry) {
+        return res.status(404).json({ success: false, error: { message: 'Guest inquiry not found' } });
+      }
+      res.json({ success: true, data: inquiry });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ success: false, error: { message: err.message } });
+    }
+  };
+
+  guestReply = async (req: AuthRequest, res: Response) => {
+    try {
+      const token = req.params.token;
+      const message = req.body.message;
+      if (!message || !message.trim()) {
+        return res.status(400).json({ success: false, error: { message: 'Reply message cannot be empty' } });
+      }
+      const inquiry = await prisma.cafeInquiry.findFirst({
+        where: {
+          OR: [
+            { id: token },
+            { ipAddressHash: token },
+          ],
+        },
+      });
+      if (!inquiry) {
+        return res.status(404).json({ success: false, error: { message: 'Guest inquiry not found' } });
+      }
+      const response = await this.inquiryService.respondToInquiry(
+        inquiry.id,
+        inquiry.userId || 'guest',
+        false,
+        message
+      );
+      res.status(201).json({ success: true, data: response });
     } catch (err: any) {
       res.status(err.status || 400).json({ success: false, error: { message: err.message } });
     }

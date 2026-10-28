@@ -9,20 +9,23 @@ import { createApp } from './app.js';
 console.log('[Server]: Importing scheduler...');
 import { schedulerService } from './services/schedulerService.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT: number = process.env.NODE_ENV === 'production' ? (Number(process.env.PORT) || 3000) : 3030;
 const ENV = process.env.NODE_ENV || 'development';
 
 async function startServer() {
   try {
-    console.log(`[Server]: Starting in ${ENV} mode...`);
-    
-    // Ensure DB connection before starting the app
-    await connectWithRetry();
+    console.log(`[Server]: Starting in ${ENV} mode on port ${PORT}...`);
     
     const app = await createApp();
-    const server = app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', async () => {
       console.log(`[Server]: CafeFinder API is running on http://localhost:${PORT}`);
       console.log(`[Server]: Environment: ${ENV}`);
+      
+      try {
+        await connectWithRetry();
+      } catch (dbErr: any) {
+        console.error('[Server]: Database connection error during startup:', dbErr.message || dbErr);
+      }
       
       // Auto-seed in background if local database was freshly initialized, then start scheduler
       void (async () => {

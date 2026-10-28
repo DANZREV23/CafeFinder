@@ -51,6 +51,11 @@ export function mapToPublicCafeSummary(cafe: any): PublicCafeSummaryDto {
     facebook: cafe.facebook,
     createdAt: cafe.createdAt,
     updatedAt: cafe.updatedAt,
+    ownerId: cafe.ownerId || null,
+    claimStatus: cafe.claimStatus,
+    isClaimed: !!cafe.ownerId,
+    isVisited: cafe.isVisited ?? false,
+    visitedAt: cafe.visitedAt || null,
   };
 }
 
@@ -58,13 +63,19 @@ export function mapToPublicCafeProfile(cafe: any) {
   if (!cafe) return null;
   return {
     ...mapToPublicCafeSummary(cafe),
+    ownerId: cafe.ownerId || null,
+    claimStatus: cafe.claimStatus,
+    isClaimed: !!cafe.ownerId,
+    isVisited: cafe.isVisited ?? false,
+    visitedAt: cafe.visitedAt || null,
     hours: cafe.hours || [],
     reviews: cafe.reviews || [],
     menu: cafe.menu || [],
     claim: cafe.claim || null,
-    isClaimed: !!cafe.ownerId,
     events: cafe.events || [],
     specials: cafe.specials || [],
     announcements: cafe.announcements || [],
+    loyaltyProgram: cafe.loyaltyProgram || null,
+    relatedCafes: cafe.relatedCafes || [],
   };
 }

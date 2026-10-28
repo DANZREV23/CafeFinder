@@ -725,6 +725,30 @@ export async function startLocalPostgresServer(): Promise<string> {
         CREATE INDEX IF NOT EXISTS "cafe_visit_check_ins_accountId_idx" ON "cafe_visit_check_ins"("accountId");
         CREATE INDEX IF NOT EXISTS "cafe_visit_check_ins_status_idx" ON "cafe_visit_check_ins"("status");
         CREATE INDEX IF NOT EXISTS "cafe_visit_check_ins_createdAt_idx" ON "cafe_visit_check_ins"("createdAt");
+
+        DO $$ BEGIN
+          CREATE TYPE "DeploymentStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'SUCCESS', 'FAILED', 'ROLLED_BACK');
+        EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+        CREATE TABLE IF NOT EXISTS "deployment_records" (
+          "id" TEXT NOT NULL,
+          "deploymentId" TEXT NOT NULL,
+          "version" TEXT NOT NULL,
+          "environment" TEXT NOT NULL DEFAULT 'production',
+          "status" "DeploymentStatus" NOT NULL DEFAULT 'PENDING',
+          "migrationStatus" TEXT,
+          "healthStatus" TEXT,
+          "rollbackStatus" TEXT,
+          "details" JSONB,
+          "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "completedAt" TIMESTAMP(3),
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "deployment_records_pkey" PRIMARY KEY ("id")
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS "deployment_records_deploymentId_key" ON "deployment_records"("deploymentId");
+        CREATE INDEX IF NOT EXISTS "deployment_records_status_idx" ON "deployment_records"("status");
+        CREATE INDEX IF NOT EXISTS "deployment_records_startedAt_idx" ON "deployment_records"("startedAt");
       `);
       } catch (schemaErr: any) {
         console.warn('[LocalPostgres]: Non-fatal notice during schema sync:', schemaErr.message || schemaErr);

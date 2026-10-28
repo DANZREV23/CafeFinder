@@ -16,9 +16,7 @@ const inquiryController = new InquiryController();
 router.get('/', optionalAuth, controller.getAll);
 
 // Cafe Inquiries Subroutes
-router.post('/:id/inquiries', optionalAuth, inquiryRateLimit, inquiryController.createInquiry);
 router.post('/:cafeId/inquiries', optionalAuth, inquiryRateLimit, inquiryController.createInquiry);
-router.get('/:id/inquiries', optionalAuth, inquiryController.getOwnerInquiries);
 router.get('/:cafeId/inquiries', optionalAuth, inquiryController.getOwnerInquiries);
 
 // Cafe Favorites Subroutes
@@ -93,6 +91,8 @@ router.get('/:id/announcements', async (req, res, next) => {
 
 router.get('/:slug', optionalAuth, controller.getBySlug);
 router.post('/:id/track/:eventType', optionalAuth, controller.trackInteraction);
+router.post('/:id/claim-visit', requireAuth, controller.claimVisit);
+router.post('/:id/visit', requireAuth, controller.claimVisit);
 
 router.post('/', controller.create);
 router.put('/:id', controller.update);

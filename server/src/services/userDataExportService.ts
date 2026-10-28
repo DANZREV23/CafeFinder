@@ -63,6 +63,7 @@ export class UserDataExportService {
     return {
       exportedAt: new Date().toISOString(),
       user,
+      profile: user,
       reviews,
       favorites,
       submissions,

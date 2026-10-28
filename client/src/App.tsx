@@ -116,6 +116,8 @@ export default function App() {
                 <Route path="/cafes/:slug" element={<CafeProfilePage />} />
                 <Route path="/cafes/:slug/menu" element={<CafeMenuPage />} />
                 <Route path="/cafes/:slug/claim" element={<ProtectedRoute><CafeClaimPage /></ProtectedRoute>} />
+                <Route path="/claim-cafe" element={<ProtectedRoute><CafeClaimPage /></ProtectedRoute>} />
+                <Route path="/claim-cafe/:slug" element={<ProtectedRoute><CafeClaimPage /></ProtectedRoute>} />
                 <Route path="/about" element={<AboutPage />} />
                 
                 {/* Blog Routes */}
